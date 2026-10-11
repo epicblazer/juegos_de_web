@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Isaac Spritesheets</title>
+<style>
+  body{margin:0;background:#2a1a12;color:#e8d8c0;font-family:monospace;display:flex;flex-direction:column;align-items:center;padding:20px 16px}
+  h1{font-size:22px;margin:0 0 6px}
+  h2{font-size:16px;margin:26px 0 10px;color:#8fd060;text-align:center}
+  .grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:1300px}
+  .card{background:#5d402e;border:2px solid #1a100a;border-radius:10px;padding:8px;text-align:center;font-size:12px}
+  canvas{display:block;width:150px;height:150px;background:repeating-conic-gradient(#634533 0 25%,#5a3d2c 0 50%) 0 0/30px 30px;border-radius:6px;margin-bottom:4px}
+</style>
+</head>
+<body>
+<h1>Isaac Soldado — spritesheets</h1>
+<div id="root"></div>
+<script>
+// Datos copiados de los .json (así funciona abriendo el archivo directamente)
+// cada animación: [fila, cuadros, fps, pausa al final en segundos (0 = repetir sin pausa)]
+const BOSS_COMMON = { 'daño': [3, 3, 14, 0.6] }; // las muertes están en jefes_muerte.png
+const DEATHS = { title: 'Muertes de jefes', src: 'jefes_muerte.png', size: 256, anims: {
+  monstro: [0, 12, 10, 1], duque_moscas: [1, 12, 10, 1], isaac_oscuro: [2, 12, 10, 1], rey_koopa: [3, 12, 10, 1],
+  dragon_fin: [4, 12, 10, 1], dr_huevon: [5, 12, 10, 1], rey_fantasma: [6, 12, 10, 1], cerebro_madre: [7, 12, 10, 1] } };
+const SHEETS = [
+  { title: 'Movimiento', src: 'isaac_movimiento.png', size: 160, anims: {
+    idle_down: [0, 4, 6], idle_up: [1, 4, 6], idle_left: [2, 4, 6], idle_right: [3, 4, 6],
+    walk_down: [4, 8, 12], walk_up: [5, 8, 12], walk_left: [6, 8, 12], walk_right: [7, 8, 12] } },
+  { title: 'Disparo', src: 'isaac_disparo.png', size: 160, anims: {
+    shoot_down: [0, 6, 18, 0.5], shoot_up: [1, 6, 18, 0.5], shoot_left: [2, 6, 18, 0.5], shoot_right: [3, 6, 18, 0.5],
+    tear: [4, 4, 10], tear_splash: [5, 6, 20, 0.6] } },
+  { title: 'Daño y muerte', src: 'isaac_dano_muerte.png', size: 160, anims: {
+    hurt_down: [0, 4, 14, 0.6], hurt_up: [1, 4, 14, 0.6], hurt_left: [2, 4, 14, 0.6], hurt_right: [3, 4, 14, 0.6], death: [4, 10, 8, 1.5] } },
+  { title: 'Jefe: Monstro', src: 'jefe_monstro.png', size: 256, anims: { idle: [0, 8, 8], escupir: [1, 8, 12, 0.4], saltar: [2, 8, 12, 0.3], ...BOSS_COMMON } },
+  { title: 'Jefe: Duque de las Moscas', src: 'jefe_duque_moscas.png', size: 256, anims: { idle: [0, 8, 12], soplar: [1, 8, 12, 0.4], invocar: [2, 8, 10, 0.4], ...BOSS_COMMON } },
+  { title: 'Jefe: Isaac Oscuro', src: 'jefe_isaac_oscuro.png', size: 256, anims: { caminar: [0, 8, 12], disparar: [1, 8, 16, 0.3], anillo: [2, 8, 12, 0.4], ...BOSS_COMMON } },
+  { title: 'Jefe secreto: Rey Koopa', src: 'jefe_rey_koopa.png', size: 256, anims: { caminar: [0, 8, 10], fuego: [1, 8, 12, 0.4], caparazon: [2, 8, 20], ...BOSS_COMMON } },
+  { title: 'Jefe secreto: Dragón del Fin', src: 'jefe_dragon_fin.png', size: 256, anims: { volar: [0, 8, 10], embestir: [1, 8, 14], orbes: [2, 8, 12, 0.4], ...BOSS_COMMON } },
+  { title: 'Jefe secreto: Dr. Huevón', src: 'jefe_dr_huevon.png', size: 256, anims: { flotar: [0, 8, 8], bombas: [1, 8, 10, 0.4], laser: [2, 8, 12, 0.4], ...BOSS_COMMON } },
+  { title: 'Jefe secreto: Rey Fantasma', src: 'jefe_rey_fantasma.png', size: 256, anims: { flotar: [0, 8, 8], desvanecer: [1, 8, 10, 0.6], espiral: [2, 8, 12, 0.4], ...BOSS_COMMON } },
+  { title: 'Jefe secreto: Cerebro Madre', src: 'jefe_cerebro_madre.png', size: 256, anims: { idle: [0, 8, 6], atacar: [1, 8, 12, 0.4], 'dañado': [2, 8, 6], ...BOSS_COMMON } },
+  DEATHS,
+];
+const views = [], root = document.getElementById('root');
+for (const s of SHEETS) {
+  const h = document.createElement('h2'); h.textContent = `${s.title}  (${s.src})`; root.append(h);
+  const grid = document.createElement('div'); grid.className = 'grid'; root.append(grid);
+  const img = new Image(); img.src = s.src;
+  for (const [name, [row, frames, fps, pause]] of Object.entries(s.anims)) {
+    const card = document.createElement('div'); card.className = 'card';
+    const c = document.createElement('canvas'); c.width = s.size; c.height = s.size;
+    card.append(c, name); grid.append(card);
+    views.push({ img, size: s.size, row, frames, fps, pause: pause || 0, ctx: c.getContext('2d') });
+  }
+}
+function tick(t) {
+  for (const v of views) {
+    const len = v.frames / v.fps + v.pause, local = (t / 1000) % len;
+    const f = Math.min(v.frames - 1, Math.floor(local * v.fps));
+    v.ctx.clearRect(0, 0, v.size, v.size);
+    if (v.img.complete) v.ctx.drawImage(v.img, f * v.size, v.row * v.size, v.size, v.size, 0, 0, v.size, v.size);
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

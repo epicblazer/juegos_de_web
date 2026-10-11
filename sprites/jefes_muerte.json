@@ -1,0 +1,71 @@
+{
+  "image": "jefes_muerte.png",
+  "frameWidth": 256,
+  "frameHeight": 256,
+  "columns": 12,
+  "rows": 8,
+  "pivot": {
+    "x": 128,
+    "y": 140,
+    "note": "centro del cuerpo, igual que en las hojas de cada jefe"
+  },
+  "note": "Una fila por jefe. 'pop' = cuadro en que el jefe revienta: ahí van la sacudida, el sonido y la mancha en el suelo.",
+  "bosses": {
+    "monstro": {
+      "row": 0,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 7
+    },
+    "duque_moscas": {
+      "row": 1,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 7
+    },
+    "isaac_oscuro": {
+      "row": 2,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "rey_koopa": {
+      "row": 3,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 9
+    },
+    "dragon_fin": {
+      "row": 4,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "dr_huevon": {
+      "row": 5,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 7
+    },
+    "rey_fantasma": {
+      "row": 6,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "cerebro_madre": {
+      "row": 7,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 5
+    }
+  }
+}
