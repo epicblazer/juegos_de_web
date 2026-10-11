@@ -239,6 +239,11 @@ const SFX = {
   ghost() { tone({ f: 500, f2: 300, type: 'sine', dur: 0.4, vol: 0.12 }); tone({ f: 520, f2: 280, type: 'sine', dur: 0.4, vol: 0.1 }); },
   teleport() { tone({ f: 200, f2: 1600, type: 'sine', dur: 0.35, vol: 0.2 }); },
   summon() { [659, 587, 523, 440].forEach((f, i) => tone({ f, type: 'triangle', dur: 0.12, vol: 0.15, delay: i * 0.06 })); },
+  slash() { noise({ dur: 0.12, vol: 0.3, freq: 5000, f2: 1200, type: 'bandpass', q: 2 }); tone({ f: 900, f2: 300, type: 'triangle', dur: 0.08, vol: 0.08 }); },
+  parry() { tone({ f: 1800, f2: 1400, type: 'square', dur: 0.05, vol: 0.08 }); },
+  throw() { noise({ dur: 0.15, vol: 0.18, freq: 800, f2: 2500, type: 'bandpass', q: 2 }); tone({ f: 300, f2: 500, type: 'triangle', dur: 0.1, vol: 0.12 }); },
+  sniper() { noise({ dur: 0.35, vol: 0.5, freq: 3000, f2: 200 }); tone({ f: 180, f2: 40, type: 'sawtooth', dur: 0.25, vol: 0.3 }); },
+  flame() { noise({ dur: 0.18, vol: 0.14, freq: 600, f2: 1400, type: 'bandpass', q: 1 }); },
   bump() { tone({ f: 150, f2: 90, type: 'square', dur: 0.06, vol: 0.18 }); },
   drop() { tone({ f: 900, f2: 200, type: 'sine', dur: 0.3, vol: 0.15 }); },
   select() { tone({ f: 660, type: 'square', dur: 0.06, vol: 0.12 }); tone({ f: 880, type: 'square', dur: 0.06, vol: 0.12, delay: 0.05 }); },
@@ -813,6 +818,96 @@ function hunterArmor() {
   ctx.strokeStyle = 'rgba(60,20,0,.55)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-9, 4); ctx.quadraticCurveTo(0, 8, 9, 4); ctx.moveTo(0, -3); ctx.lineTo(0, 7); ctx.stroke();
   ctx.fillStyle = lin(-4, 0, 4, 0, '#7af07a', '#20a020'); ctx.fillRect(-2, 9, 4, 3);
 }
+// ---------- soldados nuevos ----------
+function knifeHead(face) { // comando con bandana roja y cicatriz
+  headCircle('#e0a878', '#5a3418');
+  const ox = faceOX(face);
+  if (face === 'T') { ell(0, 2, 16, 12); ctx.fillStyle = rad(0, 2, 16, '#3a2a1a', '#20140a'); ctx.fill(); }
+  else {
+    toonEyes(face, '#5a3a1a', { y: 3, rx: 3.2, ry: 3.6, gap: 6.5 });
+    ctx.strokeStyle = '#2a1608'; ctx.lineWidth = 2.2; ctx.beginPath(); // cejas fruncidas
+    ctx.moveTo(ox - 10, -3); ctx.lineTo(ox - 3, -1); ctx.moveTo(ox + 3, -1); ctx.lineTo(ox + 10, -3); ctx.stroke();
+    ctx.strokeStyle = '#a04a3a'; ctx.lineWidth = 1.3; ctx.beginPath(); // cicatriz
+    ctx.moveTo(ox + 8, -1); ctx.lineTo(ox + 12, 10); ctx.moveTo(ox + 9, 2); ctx.lineTo(ox + 12, 1.5); ctx.moveTo(ox + 10, 6); ctx.lineTo(ox + 13, 5.5); ctx.stroke();
+    ctx.strokeStyle = '#5a2a10'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ox - 4, 12.5); ctx.lineTo(ox + 4, 12); ctx.stroke(); // boca seria
+  }
+  ctx.beginPath(); ctx.moveTo(-19.5, -4); ctx.bezierCurveTo(-20, -24, 20, -24, 19.5, -4); ctx.quadraticCurveTo(0, -8, -19.5, -4); // bandana
+  ctx.fillStyle = rad(-4, -14, 22, '#ff5a4a', '#c01818', '#5a0404'); ctx.fill(); ctx.strokeStyle = '#4a0404'; ctx.lineWidth = 1.8; ctx.stroke();
+  if (face !== 'B') { // nudo y puntas al viento
+    const k = face === 'L' ? 1 : face === 'R' ? -1 : 0, kx = k * 18, wv = Math.sin(frame * 0.2) * 2;
+    ctx.fillStyle = '#b01414'; ell(kx, -8, 4, 3.5); ctx.fill(); ctx.stroke();
+    poly([[kx, -8], [kx + (k || 1) * 12, -2 + wv], [kx + (k || 1) * 10, 3 + wv]]); ctx.fill(); ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,.6)'; for (const dx of [-10, -2, 6]) { ell(dx, -15, 1.4, 1.4); ctx.fill(); }
+}
+function knifeVest() { // chaleco con cuchillo envainado
+  ctx.fillStyle = '#3a3a2a'; ctx.fillRect(-11, -4, 22, 6);
+  ctx.fillStyle = '#4a3a1e'; ctx.fillRect(-11, 9, 22, 3);
+  if (bodyFace !== 'T') { ctx.fillStyle = '#2a1a0a'; ctx.fillRect(4, 3, 3.5, 9); ctx.fillStyle = '#ccd'; ctx.fillRect(4.6, -1, 2.3, 4.5); }
+}
+function grenadeHead(face) { // casco grande con gafas
+  headCircle('#d8a070', '#5a3418');
+  if (face !== 'T') {
+    const ox = faceOX(face);
+    toonEyes(face, '#2a6a3a', { y: 5, rx: 3.2, ry: 3.8, gap: 6.5 });
+    ctx.fillStyle = '#5a1a10'; ctx.beginPath(); ctx.arc(ox, 12.5, 4, 0.1, Math.PI - 0.1); ctx.fill(); // sonrisa loca
+    ctx.fillStyle = '#fff'; ctx.fillRect(ox - 3, 12.4, 6, 1.6);
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; for (const s of [-1, 1]) { ell(ox + s * 11, 8, 2.6, 1.6); ctx.fill(); } // hollín
+  }
+  ctx.beginPath(); ctx.moveTo(-23, 0); ctx.bezierCurveTo(-24, -30, 24, -30, 23, 0); ctx.quadraticCurveTo(0, -5, -23, 0); // casco
+  ctx.fillStyle = rad(-5, -16, 26, '#8a9a4a', '#5a6a2a', '#2a3410'); ctx.fill(); ctx.strokeStyle = '#1e2808'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-18, -10); ctx.lineTo(18, -10); ctx.stroke();
+  if (face !== 'T') { // gafas sobre el casco
+    const ox = faceOX(face) * 0.7;
+    ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-20, -9, 40, 3.5);
+    for (const s of [-1, 1]) { ell(ox + s * 7, -9, 5.5, 4.5); ctx.fillStyle = rad(ox + s * 7, -9, 5.5, '#ffe9a0', '#d89a20', '#5a3a04'); ctx.fill(); ctx.strokeStyle = '#2a1a0a'; ctx.lineWidth = 1.5; ctx.stroke(); }
+  }
+  shine(-9, -18, 5, 2.2, 0.3);
+}
+function grenadeBelt() { // cinturón con granadas colgando
+  ctx.fillStyle = '#4a3a1e'; ctx.fillRect(-11, 8, 22, 3.4);
+  if (bodyFace !== 'T') for (const gx of [-6, 0, 6]) {
+    ell(gx, 13, 2.6, 3); ctx.fillStyle = rad(gx, 13, 3, '#8aaa4a', '#4a6a1a', '#1a2a04'); ctx.fill();
+    ctx.fillStyle = '#aaa'; ctx.fillRect(gx - 1, 9.5, 2, 1.6);
+  }
+}
+function sniperHead(face) { // gorro de camuflaje y pintura de guerra
+  headCircle('#c89870', '#4a2a10');
+  const ox = faceOX(face);
+  if (face !== 'T') {
+    ctx.fillStyle = 'rgba(40,60,20,.75)'; ctx.fillRect(ox - 15, 0, 30, 3); ctx.fillRect(ox - 12, 6, 6, 2); ctx.fillRect(ox + 6, 6, 6, 2);
+    toonEyes(face, '#3a5a8a', { y: 1.5, rx: 3, ry: 2.6, gap: 6.5 }); // ojos entrecerrados
+    ctx.strokeStyle = '#1a1008'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ox - 10, -2.5); ctx.lineTo(ox - 3, -1.5); ctx.moveTo(ox + 3, -1.5); ctx.lineTo(ox + 10, -2.5); ctx.stroke();
+    ctx.strokeStyle = '#5a2a10'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(ox - 3, 12.5); ctx.lineTo(ox + 3, 12.5); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(-22, -3); ctx.lineTo(22, -3); ctx.bezierCurveTo(20, -26, -20, -26, -22, -3); ctx.closePath(); // sombrero
+  ctx.fillStyle = rad(-4, -14, 22, '#6a7a3a', '#4a5a24', '#22300a'); ctx.fill(); ctx.strokeStyle = '#1a2208'; ctx.lineWidth = 1.8; ctx.stroke();
+  ctx.fillStyle = 'rgba(30,40,10,.6)'; for (const [x, y] of [[-12, -10], [4, -16], [10, -7], [-4, -6]]) { ell(x, y, 4, 2.5); ctx.fill(); } // manchas de camuflaje
+  ctx.fillStyle = '#3a4a1a'; ell(0, -3, 25, 3.5); ctx.fill(); ctx.stroke(); // ala
+  ctx.strokeStyle = '#6a8a2a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-16, -12); ctx.lineTo(-22, -22); ctx.moveTo(14, -14); ctx.lineTo(18, -24); ctx.stroke(); // ramitas
+}
+function sniperGhillie() {
+  ctx.fillStyle = 'rgba(30,50,10,.5)'; for (const [x, y] of [[-6, 0], [5, 4], [-3, 10], [7, 12]]) { ell(x, y, 3.5, 2.5); ctx.fill(); }
+  ctx.strokeStyle = '#3a2a14'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-9, -2); ctx.lineTo(9, 12); ctx.stroke(); // correa del rifle
+}
+function flameHead(face) { // máscara de gas
+  headCircle('#7a7a72', '#2a2a26');
+  if (face === 'T') { ctx.strokeStyle = '#3a3a32'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-18, -2); ctx.lineTo(18, -2); ctx.stroke(); return; }
+  const ox = faceOX(face);
+  for (const s of [-1, 1]) { // lentes que brillan
+    ell(ox + s * 7.5, 0, 5.8, 5.8); ctx.fillStyle = '#2a2a26'; ctx.fill();
+    ell(ox + s * 7.5, 0, 4.4, 4.4); ctx.fillStyle = rad(ox + s * 7.5, 0, 4.4, '#fff2a0', '#ff9a20', '#a03a04'); ctx.fill();
+    shine(ox + s * 7.5 - 1.5, -1.5, 1.4, 1, 0.8);
+  }
+  ctx.beginPath(); ctx.roundRect(ox - 5, 7, 10, 9, 3); ctx.fillStyle = lin(0, 7, 0, 16, '#5a5a52', '#2a2a26'); ctx.fill(); ctx.strokeStyle = '#111'; ctx.lineWidth = 1.2; ctx.stroke(); // filtro
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 0.8; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(ox - 3.5, 9.5 + i * 2.4); ctx.lineTo(ox + 3.5, 9.5 + i * 2.4); ctx.stroke(); }
+  shine(-8, -12, 5, 2.4, 0.3);
+}
+function flameSuit() { // traje ignífugo con franja reflectante y tanque
+  ctx.fillStyle = '#e8d040'; ctx.fillRect(-11, 4, 22, 2.5);
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-11, 6.5, 22, 1);
+  if (bodyFace === 'T') { ctx.fillStyle = rad(0, 6, 7, '#ff6a4a', '#c01a10', '#4a0404'); ctx.beginPath(); ctx.roundRect(-5, -2, 10, 15, 4); ctx.fill(); }
+}
 
 const CHARS = [
   { name: 'Isaac Soldado', ref: 'The Binding of Isaac', desc: 'Equilibrado. Lágrimas clásicas.', hp: 6, speed: 3.2, dmg: 3.5, delay: 22, range: 45, shotSpeed: 8, tear: 'tear', snd: 'shoot',
@@ -827,7 +922,18 @@ const CHARS = [
     body: withDetail(minerShirt, w => baseBody(w, '#3a3ad0', '#2fb5b5', '#c8916a', '#1a5a5a')), head: minerHead },
   { name: 'Cazadora Espacial', ref: 'Metroid', desc: 'Misiles teledirigidos de largo alcance.', hp: 6, speed: 3.2, dmg: 3, delay: 20, range: 60, shotSpeed: 8.5, tear: 'laser', snd: 'laser', homing: true,
     body: withDetail(hunterArmor, w => baseBody(w, '#c84a10', '#d8641c', '#888', '#5a2008')), head: hunterHead },
+  // soldados nuevos (siempre disponibles). range = alcance del tajo en los de cuerpo a cuerpo
+  { name: 'Comando Cuchillo', ref: 'Cuerpo a cuerpo', desc: 'Tajos de cerca muy fuertes. Corta balas.', hp: 8, speed: 3.8, dmg: 6, delay: 16, range: 16, shotSpeed: 2, tear: 'slash', snd: 'slash', always: true,
+    body: withDetail(knifeVest, w => baseBody(w, '#3a3a2a', '#5a6a3a', '#e0a878', '#1e2410')), head: knifeHead },
+  { name: 'Granadero', ref: 'Explosivos', desc: 'Granadas que rebotan y explotan en área.', hp: 6, speed: 3.0, dmg: 4, delay: 40, range: 50, shotSpeed: 7, tear: 'grenade', snd: 'throw', bounce: 1, always: true,
+    body: withDetail(grenadeBelt, w => baseBody(w, '#3a3020', '#6a5a3a', '#d8a070', '#241a08')), head: grenadeHead },
+  { name: 'Francotirador', ref: 'Precisión', desc: 'Lento, pero cada bala atraviesa todo.', hp: 4, speed: 3.1, dmg: 9, delay: 48, range: 65, shotSpeed: 16, tear: 'bullet', snd: 'sniper', pierce: true, always: true,
+    body: withDetail(sniperGhillie, w => baseBody(w, '#2a3010', '#4a5a24', '#c89870', '#141a04')), head: sniperHead },
+  { name: 'Lanzallamas', ref: 'Fuego', desc: 'Chorro de fuego corto que no para.', hp: 8, speed: 2.8, dmg: 0.75, delay: 4, range: 18, shotSpeed: 6.5, tear: 'flame', snd: 'flame', pierce: true, always: true,
+    body: withDetail(flameSuit, w => baseBody(w, '#3a3a32', '#c85a1a', '#7a7a72', '#3a1404')), head: flameHead },
 ];
+// tipos de ataque propios que los objetos de fuego/luz no reemplazan
+const OWN_ATTACK = ['slash', 'grenade', 'flame'];
 const DARK_CHAR = { body: w => baseBody(w, '#111', '#2b2b2b', '#111', '#000'), head: f => isaacHead(f, DARK_PAL) };
 
 function drawChar(c, x, y, s, face, walk, shootT) {
@@ -906,10 +1012,10 @@ function floorName() {
 // OBJETOS
 // =====================================================================
 const ITEMS = [
-  { name: 'Cebolla de Isaac', desc: '¡Cadencia y daño arriba!', color: '#e8c070', f: p => { p.delay = Math.max(6, p.delay - 3); p.dmg += 0.4; } },
+  { name: 'Cebolla de Isaac', desc: '¡Cadencia y daño arriba!', color: '#e8c070', f: p => { p.delay = Math.max(Math.min(6, p.delay), p.delay - 3); p.dmg += 0.4; } },
   { name: 'Ración de Combate', desc: '+1 contenedor de corazón', color: '#c33', f: p => { p.maxHp += 2; p.hp += 2; } },
   { name: 'Granada de Mano', desc: '¡Daño arriba!', color: '#55602a', f: p => p.dmg += 1.2 },
-  { name: 'Ametralladora', desc: '¡Cadencia arriba!', color: '#666', f: p => p.delay = Math.max(6, p.delay - 5) },
+  { name: 'Ametralladora', desc: '¡Cadencia arriba!', color: '#666', f: p => p.delay = Math.max(Math.min(6, p.delay), p.delay - 5) },
   { name: 'Botas de Combate', desc: '¡Velocidad arriba!', color: '#6a4320', f: p => p.speed = Math.min(6, p.speed + 0.6) },
   { name: 'Mira Telescópica', desc: '¡Alcance y velocidad de disparo!', color: '#88c', f: p => { p.range += 15; p.shotSpeed += 1.5; } },
   { name: 'Triple Cañón', desc: '¡Disparo triple!', color: '#d90', f: p => { p.triple = true; p.dmg += 0.3; } },
@@ -917,11 +1023,11 @@ const ITEMS = [
   { name: 'Flor de Fuego', desc: 'Lágrimas de fuego que rebotan (Mario)', color: '#f80', f: p => { p.fireKind = 'fire'; p.bounce += 1; p.dmg += 0.5; } },
   { name: 'Súper Estrella', desc: '¡Invencible 10 segundos! (Mario)', color: '#ff0', f: p => { p.star = 600; sfx('star'); } },
   { name: 'Espada Maestra', desc: 'Daño arriba + atraviesa (Zelda)', color: '#9cf', f: p => { p.dmg += 1.5; p.pierce = true; } },
-  { name: 'Anillos Dorados', desc: 'Velocidad y cadencia (Sonic)', color: '#fc0', f: p => { p.speed = Math.min(6, p.speed + 0.5); p.delay = Math.max(6, p.delay - 3); } },
+  { name: 'Anillos Dorados', desc: 'Velocidad y cadencia (Sonic)', color: '#fc0', f: p => { p.speed = Math.min(6, p.speed + 0.5); p.delay = Math.max(Math.min(6, p.delay), p.delay - 3); } },
   { name: 'Pico de Diamante', desc: '¡Gran daño arriba! (Minecraft)', color: '#3ee', f: p => p.dmg += 2 },
   { name: 'Tanque de Energía', desc: '+2 contenedores (Metroid)', color: '#c3c', f: p => { p.maxHp += 4; p.hp += 4; } },
   { name: 'Misiles', desc: 'Disparos teledirigidos (Metroid)', color: '#f55', f: p => { p.homing = true; } },
-  { name: 'Cereza Power', desc: 'Vida llena y cadencia (Pac-Man)', color: '#d00', f: p => { p.hp = p.maxHp; p.delay = Math.max(6, p.delay - 2); } },
+  { name: 'Cereza Power', desc: 'Vida llena y cadencia (Pac-Man)', color: '#d00', f: p => { p.hp = p.maxHp; p.delay = Math.max(Math.min(6, p.delay), p.delay - 2); } },
 ];
 ITEMS.forEach(i => { i.retro = /\((Mario|Zelda|Sonic|Minecraft|Metroid|Pac-Man)\)/.test(i.desc); });
 function randItem() {
@@ -944,16 +1050,16 @@ const DEVIL_ITEMS = [
   { name: 'Tridente Infernal', desc: 'Lágrimas infernales que atraviesan', color: '#c02000', price: 2, f: p => { p.fireKind = 'hell'; p.pierce = true; p.dmg += 1; } },
   { name: 'Libro de Belial', desc: 'Daño arriba + lágrimas infernales', color: '#3a0a0a', price: 1, f: p => { p.dmg += 1.5; p.fireKind = 'hell'; } },
   { name: 'Ojo del Abismo', desc: 'Disparos teledirigidos + daño', color: '#600030', price: 2, f: p => { p.homing = true; p.dmg += 0.8; } },
-  { name: 'Ala de Murciélago', desc: 'Velocidad y cadencia arriba', color: '#2a1a2a', price: 1, f: p => { p.speed = Math.min(6, p.speed + 0.5); p.delay = Math.max(6, p.delay - 3); } },
+  { name: 'Ala de Murciélago', desc: 'Velocidad y cadencia arriba', color: '#2a1a2a', price: 1, f: p => { p.speed = Math.min(6, p.speed + 0.5); p.delay = Math.max(Math.min(6, p.delay), p.delay - 3); } },
   { name: 'Cáliz Maldito', desc: 'Disparo triple + daño', color: '#7a1010', price: 2, f: p => { p.triple = true; p.dmg += 0.7; } },
 ];
 const ANGEL_ITEMS = [
-  { name: 'Aureola', desc: '¡Todo arriba!', color: '#ffe680', f: p => { p.dmg += 0.7; p.speed = Math.min(6, p.speed + 0.3); p.delay = Math.max(6, p.delay - 2); p.range += 8; p.maxHp += 2; p.hp += 2; } },
-  { name: 'Alas de Serafín', desc: 'Velocidad y cadencia arriba', color: '#f4f4ff', f: p => { p.speed = Math.min(6, p.speed + 0.6); p.delay = Math.max(6, p.delay - 4); } },
+  { name: 'Aureola', desc: '¡Todo arriba!', color: '#ffe680', f: p => { p.dmg += 0.7; p.speed = Math.min(6, p.speed + 0.3); p.delay = Math.max(Math.min(6, p.delay), p.delay - 2); p.range += 8; p.maxHp += 2; p.hp += 2; } },
+  { name: 'Alas de Serafín', desc: 'Velocidad y cadencia arriba', color: '#f4f4ff', f: p => { p.speed = Math.min(6, p.speed + 0.6); p.delay = Math.max(Math.min(6, p.delay), p.delay - 4); } },
   { name: 'Lágrima Sagrada', desc: 'Lágrimas de luz que atraviesan', color: '#fff6c0', f: p => { p.fireKind = 'holy'; p.pierce = true; p.dmg += 1; } },
   { name: 'Manto Celestial', desc: '+2 contenedores y vida llena', color: '#a8d8ff', f: p => { p.maxHp += 4; p.hp = p.maxHp; } },
   { name: 'Escudo Divino', desc: 'Bloquea el primer golpe de cada sala', color: '#ffd700', f: p => { p.shieldMax = 1; p.shield = 1; } },
-  { name: 'Rosario', desc: 'Cadencia arriba y vida llena', color: '#d0c0a0', f: p => { p.delay = Math.max(6, p.delay - 3); p.hp = p.maxHp; } },
+  { name: 'Rosario', desc: 'Cadencia arriba y vida llena', color: '#d0c0a0', f: p => { p.delay = Math.max(Math.min(6, p.delay), p.delay - 3); p.hp = p.maxHp; } },
   { name: 'Pluma de Ángel', desc: 'Alcance y velocidad de disparo arriba', color: '#ffffff', f: p => { p.range += 15; p.shotSpeed += 2; } },
 ];
 const DEAL_LOOK = {
@@ -1264,6 +1370,20 @@ function explode(x, y, r, dmg) {
   for (const e of enemies) if (!e.boss && Math.hypot(e.x - x, e.y - y) < r + e.r) { e.hp -= 12; e.hit = 6; }
 }
 
+// explosión de granada: daña a todos los enemigos (jefes incluidos) pero nunca al jugador
+function grenadeBoom(x, y, r, dmg) {
+  sfx('boom', 0.08); shake = Math.max(shake, 9);
+  for (let i = 0; i < 28; i++) {
+    const a = rnd(0, 6.28), s = rnd(1, 6), fiery = Math.random() < 0.65;
+    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: ri(18, 38), color: fiery ? pick(['#ff9a1a', '#ffd23a', '#ff4a1a']) : pick(['#555', '#333']), size: rnd(3, 8), glow: fiery });
+  }
+  particles.push({ x, y, ring: true, r: 8, maxR: r, life: 16, color: '#ffcc66', glow: true });
+  addDecal('scorch', x, y, r * 0.6);
+  for (const e of enemies) if (e.spawn <= 0 && !e.inv && e.z < 20 && Math.hypot(e.x - x, e.y - y) < r + e.r) {
+    e.hp -= dmg; e.hit = 6;
+    if (!e.boss) { const a = Math.atan2(e.y - y, e.x - x); moveEnemy(e, Math.cos(a) * 10, Math.sin(a) * 10); }
+  }
+}
 function updateEnemy(e) {
   if (e.hit > 0) e.hit--;
   if (e.shootT > 0) e.shootT--;
@@ -1602,16 +1722,27 @@ function goRoom(dx, dy) {
   enterRoom();
 }
 function shoot(sx, sy) {
-  const base = Math.atan2(sy, sx), kind = p.fireKind || p.char.tear;
+  const base = Math.atan2(sy, sx), own = OWN_ATTACK.includes(p.char.tear), kind = own ? p.char.tear : p.fireKind || p.char.tear;
   const angs = p.triple ? [base - 0.18, base, base + 0.18] : [base];
-  for (const a of angs) {
-    tears.push({ x: p.x + sx * 10, y: p.y - 12 + sy * 6,
+  for (let a of angs) {
+    if (kind === 'flame') a += rnd(-0.22, 0.22);
+    const t = { x: p.x + sx * 10, y: p.y - 12 + sy * 6,
       vx: Math.cos(a) * p.shotSpeed + p.vx * 0.4, vy: Math.sin(a) * p.shotSpeed + p.vy * 0.4,
       life: p.range, r: 7 + Math.min(4, (p.dmg - 3.5) * 0.8), dmg: p.dmg, friendly: true, kind,
-      bounce: p.bounce, pierce: p.pierce, hits: p.pierce ? new Set() : null, home: p.homing ? 0.07 : 0 });
+      bounce: p.bounce, pierce: p.pierce, hits: p.pierce ? new Set() : null, home: p.homing ? 0.07 : 0 };
+    if (kind === 'slash') { // tajo: aparece pegado al jugador, dura poquito y golpea a todo lo que toca
+      Object.assign(t, { x: p.x + Math.cos(a) * 20, y: p.y - 10 + Math.sin(a) * 20, vx: Math.cos(a) * p.shotSpeed + p.vx, vy: Math.sin(a) * p.shotSpeed + p.vy,
+        life: 9, maxLife: 9, r: Math.min(p.range, 40) + 8, ang: a, pierce: true, hits: new Set(), home: 0, bounce: 0, quiet: true, swing: Math.random() < 0.5 ? 1 : -1 });
+    } else if (kind === 'grenade') { // granada: se frena sola y explota al chocar o al acabarse
+      Object.assign(t, { r: 8, drag: 0.965, pierce: false, hits: null, spin: rnd(0, 6), quiet: true });
+    } else if (kind === 'flame') { // llamarada: crece y se desvanece
+      const sp = rnd(0.8, 1.15);
+      Object.assign(t, { vx: t.vx * sp, vy: t.vy * sp, r: 6, grow: 0.55, maxLife: t.life, pierce: true, hits: new Set(), quiet: true });
+    }
+    tears.push(t);
   }
   p.shootT = 8; p.shootAt = frame;
-  sfx(p.fireKind === 'holy' ? 'ringS' : p.fireKind ? 'fire' : p.char.snd);
+  sfx(!own && p.fireKind === 'holy' ? 'ringS' : !own && p.fireKind ? 'fire' : p.char.snd, kind === 'flame' ? 0.12 : 0.04);
 }
 function hurt(n) {
   if (p.inv > 0 || p.star > 0 || state !== 'play') return;
@@ -1838,8 +1969,9 @@ function enterSelect() {
   retro.on = false; deathCut = null;
   state = 'select';
   available = [0];
-  for (let i = 1; i < CHARS.length; i++) if (Math.random() < SECRET_CHAR_CHANCE) available.push(i);
-  secretFound = available.length > 1;
+  for (let i = 1; i < CHARS.length; i++) if (CHARS[i].always || Math.random() < SECRET_CHAR_CHANCE) available.push(i);
+  available.sort((a, b) => a - b);
+  secretFound = available.some(i => i > 0 && !CHARS[i].always);
   selIdx = 0;
   if (secretFound) sfx('star'); else sfx('select');
   playMusic('floor');
@@ -1939,12 +2071,16 @@ function update() {
         t.vx = Math.cos(na) * sp; t.vy = Math.sin(na) * sp;
       }
     }
+    if (t.drag) { t.vx *= t.drag; t.vy *= t.drag; }
+    if (t.grow) t.r += t.grow;
     t.x += t.vx; t.y += t.vy; t.life--;
     if (t.x < L || t.x > R) { if (t.bounce > 0) { t.bounce--; t.vx *= -1; t.x = clamp(t.x, L, R); t.life += 15; sfx('bump', 0.05); } else t.dead = true; }
     if (t.y < TOP || t.y > BOT) { if (t.bounce > 0) { t.bounce--; t.vy *= -1; t.y = clamp(t.y, TOP, BOT); t.life += 15; sfx('bump', 0.05); } else t.dead = true; }
     if (!t.dead && (t.life <= 0 || cur.rocks.some(k => t.x > k.x && t.x < k.x + k.w && t.y > k.y && t.y < k.y + k.h))) t.dead = true;
     if (t.dead) { /* nada */ }
     else if (t.friendly) {
+      if (t.kind === 'slash') for (const o of tears) // el cuchillo corta las balas enemigas
+        if (!o.friendly && !o.dead && Math.hypot(o.x - t.x, o.y - t.y) < t.r + o.r) { o.dead = true; sfx('parry', 0.05); }
       for (const e of enemies) {
         if (e.z < 20 && e.spawn <= 0 && !e.inv && Math.hypot(e.x - t.x, e.y - t.y) < e.r + t.r) {
           if (t.pierce) { if (t.hits.has(e)) continue; t.hits.add(e); }
@@ -1958,9 +2094,10 @@ function update() {
       if (p.inv <= 0 && p.star <= 0) { t.dead = true; hurt(1); }
     }
     if (t.dead) {
-      const col = { tear: '#9fd3ff', fire: '#ff8a1a', beam: '#cfefff', ring: '#ffd700', block: '#8a6a45', laser: '#9f9', holy: '#fff6c0', hell: '#c01010', red: '#c22', arrow: '#ddd', orb: '#c040ff', bolt: '#7cfc00', rinka: '#ff9a40', dark: '#600' }[t.kind] || '#fff';
+      const col = { tear: '#9fd3ff', fire: '#ff8a1a', beam: '#cfefff', ring: '#ffd700', block: '#8a6a45', slash: '#eef', grenade: '#5a6a2a', bullet: '#ffd070', flame: '#ff7a1a', laser: '#9f9', holy: '#fff6c0', hell: '#c01010', red: '#c22', arrow: '#ddd', orb: '#c040ff', bolt: '#7cfc00', rinka: '#ff9a40', dark: '#600' }[t.kind] || '#fff';
       burst(t.x, t.y, col, 5, 2);
-      if (t.friendly) {
+      if (t.friendly && t.kind === 'grenade') grenadeBoom(t.x, t.y, 78, t.dmg * 1.6);
+      if (t.friendly && !t.quiet) {
         sfx('splash', 0.06); if (Math.random() < 0.3) addDecal('wet', t.x, t.y + 6, 6 + t.r);
         if (t.kind === 'tear' && p.char === CHARS[0] && sprOK('shoot')) fxAnims.push({ k: 'shoot', F: 160, row: 5, frames: 6, fps: 20, x: t.x, y: t.y, ax: 80, ay: 84, sc: t.r / 15, t0: frame });
       }
@@ -2404,6 +2541,7 @@ let lights = [];
 const addLight = (x, y, r, i, color) => lights.push({ x, y, r, i, color });
 const TEAR_LIGHT = {
   tear: [60, 0.5, '150,200,255'], fire: [95, 0.75, '255,130,30'], beam: [70, 0.6, '170,225,255'], ring: [55, 0.5, '255,210,40'],
+  slash: [0, 0, null], grenade: [0, 0, null], bullet: [45, 0.4, '255,210,120'], flame: [70, 0.55, '255,120,30'],
   block: [40, 0.25, null], laser: [80, 0.7, '255,235,110'], red: [48, 0.35, '255,50,40'], arrow: [0, 0, null],
   holy: [90, 0.75, '255,240,170'], hell: [80, 0.65, '255,40,10'],
   orb: [80, 0.65, '200,70,255'], bolt: [60, 0.55, '120,255,60'], rinka: [65, 0.6, '255,150,50'], dark: [50, 0.4, '255,20,20'],
@@ -4499,7 +4637,7 @@ function drawBoss(e, flash) {
   ctx.restore();
 }
 function drawTear(t) {
-  softShadow(t.x, t.y + 14, t.r * 0.95, t.r * 0.35, 0.4);
+  if (t.kind !== 'slash' && t.kind !== 'flame') softShadow(t.x, t.y + 14, t.r * 0.95, t.r * 0.35, 0.4);
   if (t.kind === 'tear' && t.friendly && p && p.char === CHARS[0] && sprOK('shoot')) {
     // lágrima animada del spritesheet de disparo (fila 4)
     if (t.seed === undefined) t.seed = ri(0, 3);
@@ -4509,6 +4647,47 @@ function drawTear(t) {
   }
   const a = Math.atan2(t.vy, t.vx);
   switch (t.kind) {
+    case 'slash': { // media luna del tajo, barre de un lado al otro
+      const k = 1 - t.life / t.maxLife, sw = t.swing * (k - 0.5) * 1.6;
+      ctx.save(); ctx.translate(t.x - Math.cos(t.ang) * t.r * 0.7, t.y - Math.sin(t.ang) * t.r * 0.7); ctx.rotate(t.ang + sw);
+      ctx.globalAlpha = 1 - k * 0.7; ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(200,220,255,.45)'; ctx.lineWidth = 10; ctx.beginPath(); ctx.arc(0, 0, t.r, -1, 1); ctx.stroke();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(0, 0, t.r, -0.8, 0.8); ctx.stroke();
+      ctx.globalAlpha = 1; // el cuchillo en la punta
+      ctx.translate(t.r, 0); ctx.fillStyle = '#dde4ee'; ctx.strokeStyle = '#556'; ctx.lineWidth = 1;
+      poly([[-2, -2], [12, 0], [-2, 2.5]]); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#3a2410'; ctx.fillRect(-9, -2, 7, 4.5);
+      ctx.restore();
+      return;
+    }
+    case 'grenade': {
+      ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(t.spin += Math.hypot(t.vx, t.vy) * 0.08);
+      ell(0, 0, t.r, t.r * 1.15); ctx.fillStyle = rad(0, 0, t.r * 1.2, '#9aba5a', '#4a6a1a', '#1a2a04'); ctx.fill(); ctx.strokeStyle = '#142004'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-t.r, 0); ctx.lineTo(t.r, 0); ctx.moveTo(0, -t.r); ctx.lineTo(0, t.r); ctx.stroke();
+      ctx.fillStyle = '#999'; ctx.fillRect(-2.5, -t.r * 1.15 - 3, 5, 4);
+      ctx.strokeStyle = '#ccc'; ctx.beginPath(); ctx.arc(4, -t.r * 1.15 - 2, 2.5, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      if (t.life < 15 && Math.floor(t.life / 3) % 2) { ctx.fillStyle = 'rgba(255,60,40,.85)'; ell(t.x, t.y, 3, 3); ctx.fill(); } // parpadea antes de explotar
+      break;
+    }
+    case 'bullet': {
+      ctx.save(); ctx.translate(t.x, t.y); ctx.rotate(a);
+      ctx.fillStyle = lin(-40, 0, 0, 0, 'rgba(255,230,160,0)', 'rgba(255,230,160,.6)'); ctx.fillRect(-40, -1.5, 40, 3); // estela
+      ctx.fillStyle = '#e8b040'; ctx.beginPath(); ctx.roundRect(-7, -3, 12, 6, 3); ctx.fill();
+      ctx.fillStyle = '#fff4c0'; ctx.fillRect(-5, -1.5, 8, 1.4);
+      ctx.restore();
+      break;
+    }
+    case 'flame': {
+      const k = 1 - t.life / t.maxLife;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1 - k * 0.85;
+      const g = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.r);
+      g.addColorStop(0, k < 0.4 ? 'rgba(255,250,200,1)' : 'rgba(255,190,60,1)'); g.addColorStop(0.45, 'rgba(255,110,20,.8)'); g.addColorStop(1, 'rgba(160,20,0,0)');
+      ctx.fillStyle = g; ell(t.x, t.y, t.r, t.r); ctx.fill();
+      ctx.restore();
+      if (frame % 3 === 0 && Math.random() < 0.3) particles.push({ x: t.x, y: t.y, vx: rnd(-0.5, 0.5), vy: -1, life: 20, color: '#555', size: rnd(2, 4) });
+      return;
+    }
     case 'fire': {
       ctx.fillStyle = 'rgba(255,90,0,.5)'; ell(t.x - t.vx, t.y - t.vy, t.r * 1.1, t.r * 1.1); ctx.fill();
       ctx.fillStyle = '#ff8a1a'; ell(t.x, t.y, t.r, t.r); ctx.fill();
@@ -4906,7 +5085,7 @@ function drawSelect() {
   }
   ctx.textAlign = 'left';
   ctx.fillStyle = '#f2e6d0'; ctx.font = 'bold 30px monospace'; ctx.fillText(c.name, 520, 120);
-  ctx.fillStyle = '#8fd060'; ctx.font = 'italic 16px monospace'; ctx.fillText('Homenaje a: ' + c.ref, 520, 152);
+  ctx.fillStyle = '#8fd060'; ctx.font = 'italic 16px monospace'; ctx.fillText((c.always ? 'Estilo: ' : 'Homenaje a: ') + c.ref, 520, 152);
   ctx.fillStyle = '#d8c4a8'; ctx.font = '15px monospace'; ctx.fillText(c.desc, 520, 182);
   const stats = [['VIDA', c.hp / 12], ['DAÑO', c.dmg / 6], ['VELOCIDAD', c.speed / 5.5], ['CADENCIA', (60 / c.delay) / 6.5], ['ALCANCE', c.range / 65]];
   stats.forEach(([n, v], i) => {
@@ -4915,12 +5094,13 @@ function drawSelect() {
     ctx.fillStyle = '#1a100a'; ctx.fillRect(640, y - 8, 240, 14);
     ctx.fillStyle = '#c9a227'; ctx.fillRect(640, y - 8, 240 * clamp(v, 0.05, 1), 14);
   });
+  const step = Math.min(120, (W - 40) / CHARS.length), bw = step - 8; // las casillas se encogen si hay muchos personajes
   CHARS.forEach((ch, i) => {
-    const x = CX - (CHARS.length - 1) * 60 + i * 120, y = 470;
+    const x = CX - (CHARS.length - 1) * step / 2 + i * step, y = 470;
     ctx.fillStyle = i === selIdx ? 'rgba(201,162,39,.35)' : 'rgba(0,0,0,.35)';
-    ctx.beginPath(); ctx.roundRect(x - 45, y - 50, 90, 80, 10); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x - bw / 2, y - 50, bw, 80, 10); ctx.fill();
     if (i === selIdx) { ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 3; ctx.stroke(); }
-    if (available.includes(i)) drawCharShaded(ch, x, y, 1.3, 'B', 0, 0);
+    if (available.includes(i)) drawCharShaded(ch, x, y, Math.min(1.3, bw / 70), 'B', 0, 0);
     else { ctx.fillStyle = '#3a2a20'; ctx.font = 'bold 36px monospace'; ctx.textAlign = 'center'; ctx.fillText('?', x, y - 10); }
   });
   ctx.textAlign = 'center'; ctx.fillStyle = '#8a7a66'; ctx.font = '14px monospace';
