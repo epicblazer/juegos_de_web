@@ -684,143 +684,6 @@ function isaacBody(w, pal) {
   }
   ctx.restore();
 }
-function plumberHead(face) {
-  const ox = faceOX(face);
-  headCircle('#f6cfa6', '#6b3e1e');
-  if (face === 'T') { ell(0, 6, 16, 11); ctx.fillStyle = rad(0, 6, 16, '#6a3a18', '#4a2a10', '#241004'); ctx.fill(); }
-  else {
-    ctx.fillStyle = rad(0, 2, 7, '#5a3418', '#3a200a'); // patillas
-    if (face !== 'R') { ell(-17, 2, 4, 7); ctx.fill(); }
-    if (face !== 'L') { ell(17, 2, 4, 7); ctx.fill(); }
-    toonEyes(face, '#2a5ad0', { y: 3.2, rx: 3.2, ry: 4, gap: 6 });
-    ctx.strokeStyle = '#3a200a'; ctx.lineWidth = 1.8; ctx.beginPath(); // cejas
-    ctx.moveTo(ox - 9, -6.5); ctx.quadraticCurveTo(ox - 6, -8.5, ox - 3, -6.8); ctx.moveTo(ox + 3, -6.8); ctx.quadraticCurveTo(ox + 6, -8.5, ox + 9, -6.5); ctx.stroke();
-    ell(ox, 8.6, 5, 3.9); ctx.fillStyle = rad(ox, 8.6, 5, '#ffd8b8', '#eda67a', '#b86a48'); ctx.fill(); ctx.strokeStyle = '#8a4a28'; ctx.lineWidth = 0.8; ctx.stroke();
-    ctx.fillStyle = '#5a1a10'; ctx.beginPath(); ctx.arc(ox, 15.4, 2.6, 0.15, Math.PI - 0.15); ctx.fill(); // boca
-    for (const s of [-1, 1]) { // bigote
-      ell(ox + s * 5, 12.2, 6.4, 3); ctx.fillStyle = rad(ox + s * 5, 12, 6.4, '#5a3418', '#2a1608', '#120802'); ctx.fill();
-      ell(ox + s * 10.3, 11.8, 2.1, 2); ctx.fill();
-    }
-    ctx.strokeStyle = 'rgba(255,230,200,.18)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(ox - 9, 11); ctx.lineTo(ox - 3, 10.5); ctx.moveTo(ox + 3, 10.5); ctx.lineTo(ox + 9, 11); ctx.stroke();
-  }
-  ctx.beginPath(); ctx.moveTo(-20, -4); ctx.bezierCurveTo(-21, -29, 21, -29, 20, -4); ctx.closePath(); // gorra
-  ctx.fillStyle = rad(-4, -16, 24, '#ff6a5a', '#d42020', '#6a0606'); ctx.fill(); ctx.strokeStyle = '#5a0606'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.fillStyle = lin(-20, 0, 20, 0, '#8a1010', '#c01c1c', '#7a0a0a');
-  if (face === 'B') { ell(0, -4, 22, 5); ctx.fill(); ctx.stroke(); }
-  else if (face === 'L') { ell(-14, -4, 16, 4); ctx.fill(); ctx.stroke(); }
-  else if (face === 'R') { ell(14, -4, 16, 4); ctx.fill(); ctx.stroke(); }
-  if (face !== 'T') {
-    ell(ox * 0.6, -15, 6.2, 6.2); ctx.fillStyle = rad(ox * 0.6, -15, 6.2, '#ffffff', '#f0f0f0', '#c8c8c8'); ctx.fill(); ctx.strokeStyle = '#8a1010'; ctx.lineWidth = 0.8; ctx.stroke();
-    ctx.fillStyle = '#d42020'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('M', ox * 0.6, -14.5);
-  }
-  shine(-9, -19, 5, 2.4, 0.35);
-}
-function heroHead(face) {
-  const tip = { B: [28, -2], L: [32, -8], R: [-32, -8], T: [6, 22] }[face];
-  ctx.beginPath(); ctx.moveTo(-8, -18); ctx.quadraticCurveTo(tip[0] * 0.6, tip[1] - 8, tip[0], tip[1]); ctx.lineTo(8, -14); ctx.closePath(); // punta del gorro
-  ctx.fillStyle = lin(-8, -18, tip[0], tip[1], '#46a646', '#2e8b2e', '#155a15'); ctx.fill(); ctx.strokeStyle = '#0e3a0e'; ctx.lineWidth = 2; ctx.stroke();
-  if (face !== 'T') for (const s of [-1, 1]) { // orejas puntiagudas
-    if ((face === 'L' && s === 1) || (face === 'R' && s === -1)) continue;
-    ctx.beginPath(); ctx.moveTo(s * 17, -2); ctx.lineTo(s * 31, -10); ctx.lineTo(s * 18, 5); ctx.closePath();
-    ctx.fillStyle = lin(s * 17, 0, s * 31, -10, '#f4cfa4', '#d8a878'); ctx.fill(); ctx.strokeStyle = '#7a5030'; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.fillStyle = 'rgba(200,110,90,.45)'; ctx.beginPath(); ctx.moveTo(s * 19, -1); ctx.lineTo(s * 27, -7); ctx.lineTo(s * 19, 2.5); ctx.fill();
-  }
-  headCircle('#f6d2a8', '#7a5030');
-  const ox = faceOX(face);
-  if (face === 'T') { ell(0, 4, 15, 10); ctx.fillStyle = rad(0, 4, 15, '#ffe680', '#e8c040', '#a07a10'); ctx.fill(); }
-  else {
-    toonEyes(face, '#1f6fdf', { y: 3, rx: 3.5, ry: 4.8, gap: 6.5 });
-    ctx.strokeStyle = '#a0701a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ox - 9, -2.5); ctx.lineTo(ox - 4, -3.3); ctx.moveTo(ox + 4, -3.3); ctx.lineTo(ox + 9, -2.5); ctx.stroke();
-    ctx.strokeStyle = '#8a5030'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(ox - 2.5, 12.5); ctx.quadraticCurveTo(ox, 13.6, ox + 2.5, 12.5); ctx.stroke();
-    for (let i = -14; i <= 10; i += 6) { // flequillo
-      ctx.beginPath(); ctx.moveTo(i + ox * 0.5, -6); ctx.lineTo(i + 3 + ox * 0.5, 1.5); ctx.lineTo(i + 6 + ox * 0.5, -6);
-      ctx.fillStyle = lin(0, -6, 0, 1.5, '#fff0a0', '#e8c040', '#b88a18'); ctx.fill();
-    }
-  }
-  ctx.beginPath(); ctx.moveTo(-20, -5); ctx.bezierCurveTo(-20, -24, 20, -24, 20, -5); ctx.closePath();
-  ctx.fillStyle = rad(-4, -16, 22, '#52b052', '#2e8b2e', '#124012'); ctx.fill(); ctx.strokeStyle = '#0e3a0e'; ctx.lineWidth = 2; ctx.stroke();
-  shine(-8, -16, 5, 2.2, 0.3);
-}
-function hedgehogHead(face) {
-  const back = { B: -Math.PI / 2, L: 0, R: Math.PI, T: Math.PI / 2 }[face];
-  const blue = (x, y, r) => rad(x, y, r, '#5a8aff', '#1f4fd8', '#0a1f6a');
-  ctx.strokeStyle = '#08184a'; ctx.lineWidth = 2;
-  for (const off of [-0.75, 0, 0.75]) { // púas
-    const a = back + off;
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(a - 0.45) * 15, Math.sin(a - 0.45) * 15);
-    ctx.quadraticCurveTo(Math.cos(a - 0.1) * 28, Math.sin(a - 0.1) * 28, Math.cos(a) * 36, Math.sin(a) * 36 + 4);
-    ctx.quadraticCurveTo(Math.cos(a + 0.15) * 26, Math.sin(a + 0.15) * 26, Math.cos(a + 0.45) * 15, Math.sin(a + 0.45) * 15);
-    ctx.closePath(); ctx.fillStyle = blue(Math.cos(a) * 20, Math.sin(a) * 20, 18); ctx.fill(); ctx.stroke();
-  }
-  for (const s of [-1, 1]) { // orejas
-    ctx.beginPath(); ctx.moveTo(s * 15, -10); ctx.lineTo(s * 12, -26); ctx.lineTo(s * 4, -17); ctx.closePath(); ctx.fillStyle = blue(s * 10, -18, 10); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#f0b8a0'; ctx.beginPath(); ctx.moveTo(s * 12.5, -13); ctx.lineTo(s * 11.5, -22); ctx.lineTo(s * 7, -16.5); ctx.closePath(); ctx.fill();
-  }
-  ctx.fillStyle = blue(0, 0, 21); ctx.beginPath(); ctx.arc(0, 0, 19, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  if (face === 'T') return;
-  const ox = faceOX(face);
-  ell(ox, 8, 12, 8); ctx.fillStyle = rad(ox, 8, 12, '#ffe2c0', '#f2c49a', '#c08a60'); ctx.fill(); // hocico
-  ell(ox, -1, 11.5, 7.2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#08184a'; ctx.lineWidth = 1; ctx.stroke(); // ojos unidos
-  for (const s of [-1, 1]) {
-    const ix = ox + s * 4 + ox * 0.2;
-    ell(ix, 0, 2.7, 4.2); ctx.fillStyle = rad(ix, 0, 4, '#6ae070', '#1a9a3a', '#0a4a1a'); ctx.fill();
-    ell(ix, 0.4, 1.2, 2); ctx.fillStyle = '#000'; ctx.fill(); shine(ix - 0.9, -1.6, 0.8, 1, 0.95);
-  }
-  ell(ox, 6, 2.6, 2.1); ctx.fillStyle = rad(ox, 6, 2.6, '#555', '#000'); ctx.fill(); shine(ox - 0.8, 5.3, 0.8, 0.5, 0.7); // nariz
-  ctx.strokeStyle = '#3a1a0a'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(ox + 2, 9, 4, 0.2, Math.PI * 0.8); ctx.stroke(); // sonrisa
-}
-// cara de bloques con píxeles (8x8) estilo Minecraft
-const MINER_FACE = ['hhHhhhHh', 'hHhhHhhh', 'hsssssSh', 'ssssssss', 'swbssbws', 'sssnnsss', 'ssmmmmss', 'sSssssSs'];
-const MINER_PAL = { h: '#4a2e14', H: '#3a220c', s: '#c8916a', S: '#b07a54', w: '#ffffff', b: '#4a3ab0', n: '#8a5a3a', m: '#6a3a1e' };
-function minerHead(face) {
-  const P = 34 / 8, sh = face === 'L' ? -1 : face === 'R' ? 1 : 0;
-  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-    let k = face === 'T' ? (r < 7 ? 'h' : 'H') : MINER_FACE[r][c];
-    if (face !== 'T' && r >= 4 && r <= 6) { const cc = c - sh; k = cc < 0 || cc > 7 ? 's' : MINER_FACE[r][cc]; }
-    const n = (((r * 7 + c * 13) * 2654435761) >>> 0) % 5 - 2; // variación de tono por píxel
-    ctx.fillStyle = shade(MINER_PAL[k], n * 0.035);
-    ctx.fillRect(-17 + c * P, -17 + r * P, P + 0.3, P + 0.3);
-  }
-  ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(-17, -17, 34, 3);
-  ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(10, -17, 7, 34);
-  ctx.strokeStyle = '#3a2410'; ctx.lineWidth = 2; ctx.strokeRect(-17, -17, 34, 34);
-}
-function hunterHead(face) {
-  headCircle('#e06a22', '#4a1806');
-  ctx.beginPath(); ctx.roundRect(-3.2, -19.5, 6.4, 13, 2); ctx.fillStyle = lin(-3, 0, 3, 0, '#ffd060', '#e8a020', '#a06a08'); ctx.fill(); ctx.strokeStyle = '#5a3a04'; ctx.lineWidth = 0.8; ctx.stroke();
-  for (const s of [-1, 1]) { ell(s * 18, 5, 5, 6); ctx.fillStyle = rad(s * 18, 5, 6, '#ff5a4a', '#b02020', '#4a0606'); ctx.fill(); ctx.strokeStyle = '#3a0606'; ctx.lineWidth = 1.2; ctx.stroke(); }
-  shine(-8, -11, 5, 2.4, 0.35);
-  if (face === 'T') return;
-  const ox = faceOX(face);
-  ctx.beginPath(); ctx.roundRect(ox - 13, -6, 26, 13, 5); ctx.fillStyle = '#1a4a1a'; ctx.fill(); ctx.strokeStyle = '#0a200a'; ctx.lineWidth = 1.5; ctx.stroke();
-  ctx.beginPath(); ctx.roundRect(ox - 11, -4, 22, 9, 4); ctx.fillStyle = lin(0, -4, 0, 5, '#9aff8a', '#3ad83a', '#106a10'); ctx.fill();
-  ctx.save(); ctx.beginPath(); ctx.roundRect(ox - 11, -4, 22, 9, 4); ctx.clip(); // reflejo diagonal del visor
-  ctx.fillStyle = 'rgba(255,255,255,.55)'; poly([[ox - 9, -4], [ox - 3, -4], [ox - 8, 5], [ox - 14, 5]]); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,.3)'; poly([[ox - 1, -4], [ox + 1.5, -4], [ox - 3.5, 5], [ox - 6, 5]]); ctx.fill();
-  ctx.restore();
-}
-// detalles de la ropa de cada personaje (se dibujan dentro del torso)
-function plumberOveralls() {
-  ctx.strokeStyle = '#1a3aa0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-6, -4); ctx.lineTo(-5, 6); ctx.moveTo(6, -4); ctx.lineTo(5, 6); ctx.stroke();
-  ctx.fillStyle = '#d42020'; ctx.fillRect(-12, -4, 24, 5); // camisa roja arriba
-  if (bodyFace !== 'T') for (const s of [-1, 1]) { ell(s * 5, 6, 1.7, 1.7); ctx.fillStyle = rad(s * 5, 6, 1.7, '#fff6a0', '#f0c020', '#8a6a00'); ctx.fill(); }
-}
-function heroBelt() {
-  ctx.fillStyle = '#5a3a1a'; ctx.fillRect(-11, 8, 22, 3.4);
-  if (bodyFace !== 'T') { ctx.fillStyle = lin(-2, 0, 2, 0, '#fff0a0', '#c89820'); ctx.fillRect(-2.2, 7.6, 4.4, 4.2); }
-  ctx.strokeStyle = 'rgba(0,40,0,.4)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-10, 12); ctx.lineTo(-7, 15); ctx.moveTo(0, 12); ctx.lineTo(0, 15); ctx.moveTo(10, 12); ctx.lineTo(7, 15); ctx.stroke();
-}
-function hedgehogBelly() { if (bodyFace !== 'T') { ell(0, 8, 6.5, 6); ctx.fillStyle = rad(0, 8, 6.5, '#ffe6c8', '#f2c49a', '#c08a60'); ctx.fill(); } }
-function minerShirt() {
-  for (let x = -10; x < 10; x += 3) for (let y = -3; y < 15; y += 3) { ctx.fillStyle = `rgba(0,${(x * 7 + y * 3) % 2 ? 40 : 0},40,${0.08 + (((x + 10) * 3 + y) % 3) * 0.05})`; ctx.fillRect(x, y, 3, 3); }
-  ctx.fillStyle = '#c8916a'; ctx.fillRect(-3, -3, 6, 3); // cuello
-}
-function hunterArmor() {
-  ctx.strokeStyle = 'rgba(60,20,0,.55)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-9, 4); ctx.quadraticCurveTo(0, 8, 9, 4); ctx.moveTo(0, -3); ctx.lineTo(0, 7); ctx.stroke();
-  ctx.fillStyle = lin(-4, 0, 4, 0, '#7af07a', '#20a020'); ctx.fillRect(-2, 9, 4, 3);
-}
 // ---------- soldados nuevos: misma cabeza de Isaac, cada uno con su color, su cara y su gorro ----------
 const isaacTint = (skin, line, hat, detail, face) => ({ head: f => isaacHead(f, { ...ISAAC_PAL, skin, line, hat, face }),
   body: withDetail(detail, w => baseBody(w, shade(skin, -0.25), skin, shade(skin, -0.25), line)) });
@@ -948,27 +811,118 @@ function flameSuit() { // traje ignífugo con franja reflectante y tanque
   if (bodyFace === 'T') { ctx.fillStyle = rad(0, 6, 7, '#ff6a4a', '#c01a10', '#4a0404'); ctx.beginPath(); ctx.roundRect(-5, -2, 10, 15, 4); ctx.fill(); }
 }
 
+// ---------- personajes de Isaac: misma cabeza, cada uno con su color, su cara y lo que lleva en la cabeza ----------
+function demonHat(face) { // cuernos
+  for (const s of [-1, 1]) {
+    if ((face === 'L' && s > 0) || (face === 'R' && s < 0)) continue;
+    const bx = s * 11 + faceOX(face) * 0.4;
+    ctx.beginPath(); ctx.moveTo(bx - s * 5, -14); ctx.quadraticCurveTo(bx + s * 4, -22, bx + s * 9, -31); ctx.quadraticCurveTo(bx + s * 3, -20, bx + s * 4, -11); ctx.closePath();
+    ctx.fillStyle = lin(bx, -11, bx + s * 9, -31, '#5a0a0a', '#a01818', '#1a0202'); ctx.fill(); ctx.strokeStyle = '#120000'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+}
+function demonFace(ox, EY, pose, P) { // travieso: ojos con brillo rojo, cejas pícaras y colmillitos
+  cheeks(ox, 'rgba(255,60,60,.3)');
+  for (const s of [-1, 1]) {
+    isaacEye(ox + s * 7, EY);
+    ctx.fillStyle = 'rgba(255,40,30,.85)'; ell(ox + s * 7 - 1.7, EY - 1.6, 1.8, 1.8); ctx.fill(); // brillo rojo
+  }
+  ctx.strokeStyle = P.line; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath();
+  for (const s of [-1, 1]) { ctx.moveTo(ox + s * 11, EY - 7.4); ctx.lineTo(ox + s * 3.5, EY - 5.4); }
+  ctx.stroke();
+  ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(ox, pose > 0.3 ? 10.5 : 11, pose > 0.3 ? 5 : 4.4, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke(); ctx.lineCap = 'butt';
+  ctx.fillStyle = '#fff'; for (const s of [-1, 1]) poly([[ox + s * 2.8, 14.6], [ox + s * 1.2, 14.9], [ox + s * 2.1, 17.4]]), ctx.fill();
+}
+function demonBody(w) { // alas de murciélago y colita, por detrás del cuerpo
+  const flap = Math.sin(frame * 0.18) * 0.18;
+  if (bodyFace !== 'L' && bodyFace !== 'R') for (const s of [-1, 1]) {
+    ctx.save(); ctx.translate(s * 8, 2); ctx.rotate(s * flap); ctx.scale(s, 1);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(10, -14, 22, -12); ctx.lineTo(19, -4); ctx.lineTo(23, 1); ctx.lineTo(16, 3); ctx.lineTo(18, 9); ctx.quadraticCurveTo(8, 4, 0, 8); ctx.closePath();
+    ctx.fillStyle = lin(0, 0, 22, 0, '#3a1018', '#1a060a'); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.restore();
+  }
+  ctx.strokeStyle = '#1a0a10'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 13); ctx.quadraticCurveTo(14, 16, 13, 6); ctx.stroke(); // cola
+  ctx.fillStyle = '#a01818'; poly([[13, 2], [10, 7], [16, 7]]); ctx.fill();
+  baseBody(w, '#2a1e28', '#3e2e3c', '#2a1e28', '#0a0408');
+}
+function lostFace(ox, EY, pose, P) { // fantasmita tierno
+  cheeks(ox, 'rgba(160,190,255,.4)');
+  for (const s of [-1, 1]) { if (pose > 0.3) happyEye(ox + s * 7, EY); else isaacEye(ox + s * 7, EY, 4.9, 5.6); }
+  ctx.strokeStyle = P.line; ctx.lineWidth = 1.7; ctx.beginPath(); ell(ox, 13.6, 2, pose > 0.3 ? 2.6 : 1.8); ctx.stroke(); // boquita en "o"
+}
+function lostHat() { // aureola flotante
+  const y = -26 + Math.sin(frame * 0.08) * 1.5;
+  ctx.strokeStyle = 'rgba(255,230,120,.95)'; ctx.lineWidth = 2.4; ell(0, y, 11, 3.2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,250,210,.7)'; ctx.lineWidth = 1; ctx.stroke();
+}
+const ghostly = f => a => { ctx.save(); ctx.globalAlpha *= 0.78; f(a); ctx.restore(); }; // medio transparente
+function judasHat(face) { // fez rojo con borla
+  ctx.beginPath(); ctx.moveTo(-13, -12); ctx.lineTo(-10, -30); ctx.lineTo(10, -30); ctx.lineTo(13, -12); ctx.quadraticCurveTo(0, -9, -13, -12);
+  ctx.fillStyle = lin(-13, 0, 13, 0, '#7a0a10', '#d02030', '#6a0610'); ctx.fill(); ctx.strokeStyle = '#3a0206'; ctx.lineWidth = 1.6; ctx.stroke();
+  ell(0, -30, 10, 2.4); ctx.fillStyle = '#a01020'; ctx.fill(); ctx.stroke();
+  const k = face === 'L' ? -1 : 1, sw = Math.sin(frame * 0.1) * 1.5;
+  ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(0, -30); ctx.quadraticCurveTo(k * 8, -31, k * 11 + sw, -22); ctx.stroke();
+  ctx.fillStyle = '#1a1a1a'; poly([[k * 11 + sw, -23], [k * 9 + sw, -16], [k * 13 + sw, -16]]); ctx.fill();
+}
+function judasFace(ox, EY, pose, P) { // pícaro: una ceja arriba y sonrisa de lado
+  cheeks(ox, 'rgba(255,90,60,.3)');
+  for (const s of [-1, 1]) isaacEye(ox + s * 7, EY);
+  ctx.strokeStyle = P.line; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath();
+  ctx.moveTo(ox - 11, EY - 6.2); ctx.lineTo(ox - 3.5, EY - 5.6); // ceja normal
+  ctx.moveTo(ox + 3.5, EY - 7); ctx.quadraticCurveTo(ox + 7, EY - 10, ox + 11, EY - 8); ctx.stroke(); // ceja levantada
+  ctx.lineWidth = 1.8; ctx.beginPath();
+  if (pose > 0.3) { ctx.moveTo(ox - 5, 12.5); ctx.quadraticCurveTo(ox, 17.5, ox + 5, 12.5); ctx.closePath(); ctx.fillStyle = '#4a0808'; ctx.fill(); }
+  else { ctx.moveTo(ox - 4, 13.4); ctx.quadraticCurveTo(ox + 1, 16, ox + 5.5, 12); }
+  ctx.stroke(); ctx.lineCap = 'butt';
+}
+function judasRobe() { // túnica con cinturón dorado
+  ctx.fillStyle = 'rgba(90,10,20,.55)'; ctx.fillRect(-11, -4, 22, 18);
+  ctx.fillStyle = '#d8b040'; ctx.fillRect(-11, 8.5, 22, 2.6);
+}
+function maggyHat(face) { // pelo castaño con fleco y moño rosa
+  ctx.beginPath(); ctx.moveTo(-20, 2); ctx.bezierCurveTo(-22, -26, 22, -26, 20, 2);
+  if (face === 'T') ctx.quadraticCurveTo(0, 8, -20, 2);
+  else { const ox = faceOX(face); ctx.quadraticCurveTo(18, -6, ox + 10, -5); ctx.quadraticCurveTo(ox + 4, -2, ox, -5); ctx.quadraticCurveTo(ox - 5, -2, ox - 10, -5); ctx.quadraticCurveTo(-18, -6, -20, 2); }
+  ctx.fillStyle = rad(-4, -14, 24, '#a0623a', '#6a3a1a', '#2a1406'); ctx.fill(); ctx.strokeStyle = '#2a1406'; ctx.lineWidth = 1.6; ctx.stroke();
+  shine(-8, -15, 5, 2, 0.3);
+  const bx = face === 'R' ? -12 : 12; // moño
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(bx, -16); ctx.lineTo(bx + s * 7, -21); ctx.lineTo(bx + s * 7, -11); ctx.closePath(); ctx.fillStyle = '#ff6aa8'; ctx.fill(); ctx.strokeStyle = '#8a1a4a'; ctx.lineWidth = 1; ctx.stroke(); }
+  ell(bx, -16, 2.2, 2.2); ctx.fillStyle = '#e04a8a'; ctx.fill();
+}
+function maggyFace(ox, EY, pose, P) { // dulce: pestañas y sonrisa
+  cheeks(ox, 'rgba(255,90,140,.45)');
+  for (const s of [-1, 1]) {
+    const ex = ox + s * 7;
+    if (pose > 0.3) { happyEye(ex, EY); continue; }
+    isaacEye(ex, EY);
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(ex + s * 3.6, EY - 3.4); ctx.lineTo(ex + s * 6, EY - 5); ctx.moveTo(ex + s * 4.4, EY - 1.8); ctx.lineTo(ex + s * 6.8, EY - 2.6); ctx.stroke();
+  }
+  ctx.strokeStyle = P.line; ctx.lineWidth = 1.7; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(ox, 11.4, 3.8, Math.PI * 0.18, Math.PI * 0.82); ctx.stroke(); ctx.lineCap = 'butt';
+}
+function maggyDress() { // vestidito con un corazón
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(-11, -4, 22, 4);
+  if (bodyFace !== 'T') { ctx.fillStyle = '#e0204a'; ctx.beginPath(); ctx.moveTo(0, 10); ctx.bezierCurveTo(-6, 5, -3, 1, 0, 4); ctx.bezierCurveTo(3, 1, 6, 5, 0, 10); ctx.fill(); }
+}
+
 const CHARS = [
   { name: 'Isaac Soldado', ref: 'The Binding of Isaac', desc: 'Equilibrado. Lágrimas clásicas.', hp: 6, speed: 3.2, dmg: 3.5, delay: 22, range: 45, shotSpeed: 8, tear: 'tear', snd: 'shoot',
     body: w => isaacBody(w, ['#4e9a2e', '#78c850', '#4e9a2e', '#234a14']), head: f => isaacHead(f, ISAAC_PAL) },
-  { name: 'Fontanero', ref: 'Super Mario', desc: 'Bolas de fuego que rebotan en las paredes.', hp: 6, speed: 3.4, dmg: 3.2, delay: 20, range: 55, shotSpeed: 7, tear: 'fire', snd: 'fire', bounce: 1,
-    body: withDetail(plumberOveralls, w => baseBody(w, '#5a3010', '#2a4fc9', '#d42020', '#10205a')), head: plumberHead },
-  { name: 'Héroe del Bosque', ref: 'The Legend of Zelda', desc: 'Rayos de espada que atraviesan enemigos.', hp: 6, speed: 3.0, dmg: 5, delay: 30, range: 40, shotSpeed: 9, tear: 'beam', snd: 'sword', pierce: true,
-    body: withDetail(heroBelt, w => baseBody(w, '#6a4a2a', '#2e8b2e', '#f4cfa4', '#124012')), head: heroHead },
-  { name: 'Erizo Veloz', ref: 'Sonic the Hedgehog', desc: 'Velocísimo. Lanza anillos sin parar.', hp: 4, speed: 5.0, dmg: 2.2, delay: 10, range: 40, shotSpeed: 10, tear: 'ring', snd: 'ringS',
-    body: withDetail(hedgehogBelly, w => baseBody(w, '#d42020', '#1f4fd8', '#fff', '#0a1f6a')), head: hedgehogHead },
-  { name: 'Minero', ref: 'Minecraft', desc: 'Mucha vida. Lanza bloques pesados.', hp: 10, speed: 2.7, dmg: 4.8, delay: 28, range: 38, shotSpeed: 7, tear: 'block', snd: 'block',
-    body: withDetail(minerShirt, w => baseBody(w, '#3a3ad0', '#2fb5b5', '#c8916a', '#1a5a5a')), head: minerHead },
-  { name: 'Cazadora Espacial', ref: 'Metroid', desc: 'Misiles teledirigidos de largo alcance.', hp: 6, speed: 3.2, dmg: 3, delay: 20, range: 60, shotSpeed: 8.5, tear: 'laser', snd: 'laser', homing: true,
-    body: withDetail(hunterArmor, w => baseBody(w, '#c84a10', '#d8641c', '#888', '#5a2008')), head: hunterHead },
-  // soldados nuevos (siempre disponibles). range = alcance del tajo en los de cuerpo a cuerpo
-  { name: 'Comando Cuchillo', ref: 'Cuerpo a cuerpo', desc: 'Tajos de cerca muy fuertes. Corta balas.', hp: 8, speed: 3.8, dmg: 6, delay: 16, range: 16, shotSpeed: 2, tear: 'slash', snd: 'slash', always: true,
+  // personajes de Isaac
+  { name: 'Demonio', ref: 'Azazel', desc: 'Lágrimas infernales que cruzan rocas.', hp: 6, speed: 3.4, dmg: 4.2, delay: 26, range: 40, shotSpeed: 8, tear: 'hell', snd: 'fire', pierce: true, spectral: true,
+    body: demonBody, head: f => isaacHead(f, { ...ISAAC_PAL, skin: '#3e2e3c', line: '#0a0408', hat: demonHat, face: demonFace }) },
+  { name: 'Alma Perdida', ref: 'The Lost', desc: 'Un solo corazón, muy veloz. Cruza rocas.', hp: 2, speed: 4.4, dmg: 3.4, delay: 16, range: 55, shotSpeed: 9.5, tear: 'tear', snd: 'shoot', spectral: true,
+    body: ghostly(w => baseBody(w, '#c8d4ea', '#eef4ff', '#c8d4ea', '#6a7a9a')), head: ghostly(f => isaacHead(f, { ...ISAAC_PAL, skin: '#eef4ff', line: '#6a7a9a', hat: lostHat, face: lostFace })) },
+  { name: 'Judas', ref: 'Judas', desc: 'Poca vida, mucho daño. Lágrimas de sangre.', hp: 4, speed: 3.3, dmg: 5.2, delay: 24, range: 45, shotSpeed: 8.5, tear: 'red', snd: 'shoot',
+    ...isaacTint('#f0a050', '#5a2a08', judasHat, judasRobe, judasFace) },
+  { name: 'Magdalena', ref: 'Magdalene', desc: 'Muchísima vida, pero lenta.', hp: 12, speed: 2.6, dmg: 3.3, delay: 24, range: 42, shotSpeed: 7.5, tear: 'tear', snd: 'shoot',
+    ...isaacTint('#f4a0c0', '#6a1a3a', maggyHat, maggyDress, maggyFace) },
+  // soldados. range = alcance del tajo en los de cuerpo a cuerpo
+  { name: 'Comando Cuchillo', ref: 'Cuerpo a cuerpo', desc: 'Tajos de cerca muy fuertes. Corta balas.', hp: 8, speed: 3.8, dmg: 6, delay: 16, range: 16, shotSpeed: 2, tear: 'slash', snd: 'slash',
     ...isaacTint('#5aa0e0', '#14385a', knifeHat, knifeVest, knifeFace) },
-  { name: 'Granadero', ref: 'Explosivos', desc: 'Granadas que rebotan y explotan en área.', hp: 6, speed: 3.0, dmg: 4, delay: 40, range: 50, shotSpeed: 7, tear: 'grenade', snd: 'throw', bounce: 1, always: true,
+  { name: 'Granadero', ref: 'Explosivos', desc: 'Granadas que rebotan y explotan en área.', hp: 6, speed: 3.0, dmg: 4, delay: 40, range: 50, shotSpeed: 7, tear: 'grenade', snd: 'throw', bounce: 1,
     ...isaacTint('#e8c440', '#5a4608', grenadeHat, grenadeBelt, grenadeFace) },
-  { name: 'Francotirador', ref: 'Precisión', desc: 'Lento, pero cada bala atraviesa todo.', hp: 4, speed: 3.1, dmg: 9, delay: 48, range: 65, shotSpeed: 16, tear: 'bullet', snd: 'sniper', pierce: true, always: true,
+  { name: 'Francotirador', ref: 'Precisión', desc: 'Lento, pero cada bala atraviesa todo.', hp: 4, speed: 3.1, dmg: 9, delay: 48, range: 65, shotSpeed: 16, tear: 'bullet', snd: 'sniper', pierce: true,
     ...isaacTint('#a47ad8', '#3a1e5a', sniperHat, sniperGhillie, sniperFace) },
-  { name: 'Lanzallamas', ref: 'Fuego', desc: 'Chorro de fuego corto que no para.', hp: 8, speed: 2.8, dmg: 0.75, delay: 4, range: 18, shotSpeed: 6.5, tear: 'flame', snd: 'flame', pierce: true, always: true,
+  { name: 'Lanzallamas', ref: 'Fuego', desc: 'Chorro de fuego corto que no para.', hp: 8, speed: 2.8, dmg: 0.75, delay: 4, range: 18, shotSpeed: 6.5, tear: 'flame', snd: 'flame', pierce: true,
     body: withDetail(flameSuit, w => baseBody(w, '#3a3a32', '#c85a1a', shade(FLAME_SKIN, -0.25), '#3a1404')), head: flameHead },
 ];
 // tipos de ataque propios que los objetos de fuego/luz no reemplazan
@@ -991,7 +945,6 @@ function drawChar(c, x, y, s, face, walk, shootT) {
 // =====================================================================
 // Probabilidades de lo "retro" (súper raro)
 const SECRET_WORLD_CHANCE = 0.02;   // 2% por piso de que sea un mundo secreto retro
-const SECRET_CHAR_CHANCE = 0.01;    // 1% por personaje cada vez que entras a elegir
 const RETRO_ENEMY_CHANCE = 0.01;    // 1% por enemigo en pisos normales
 const RETRO_ITEM_CHANCE = 0.03;     // 3% de que un objeto normal sea retro
 
@@ -1768,7 +1721,7 @@ function shoot(sx, sy) {
     const t = { x: p.x + sx * 10, y: p.y - 12 + sy * 6,
       vx: Math.cos(a) * p.shotSpeed + p.vx * 0.4, vy: Math.sin(a) * p.shotSpeed + p.vy * 0.4,
       life: p.range, r: 7 + Math.min(4, (p.dmg - 3.5) * 0.8), dmg: p.dmg, friendly: true, kind,
-      bounce: p.bounce, pierce: p.pierce, hits: p.pierce ? new Set() : null, home: p.homing ? 0.07 : 0 };
+      bounce: p.bounce, pierce: p.pierce, hits: p.pierce ? new Set() : null, home: p.homing ? 0.07 : 0, spectral: !!p.char.spectral };
     if (kind === 'slash') { // tajo: aparece pegado al jugador, dura poquito y golpea a todo lo que toca
       Object.assign(t, { x: p.x + Math.cos(a) * 20, y: p.y - 10 + Math.sin(a) * 20, vx: Math.cos(a) * p.shotSpeed + p.vx, vy: Math.sin(a) * p.shotSpeed + p.vy,
         life: 9, maxLife: 9, r: Math.min(p.range, 40) + 8, ang: a, pierce: true, hits: new Set(), home: 0, bounce: 0, quiet: true, swing: Math.random() < 0.5 ? 1 : -1 });
@@ -2002,17 +1955,14 @@ function drawRetroGameOver() {
   ctx.fillText('ENTER: jugar otra vez  ·  ESC: salir', CX, 390);
 }
 
-// Personajes disponibles: Isaac siempre; los retro solo con muchísima suerte
-let available = [0], secretFound = false;
+// todos los personajes están disponibles
+let available = [0];
 function enterSelect() {
   retro.on = false; deathCut = null;
   state = 'select';
-  available = [0];
-  for (let i = 1; i < CHARS.length; i++) if (CHARS[i].always || Math.random() < SECRET_CHAR_CHANCE) available.push(i);
-  available.sort((a, b) => a - b);
-  secretFound = available.some(i => i > 0 && !CHARS[i].always);
+  available = CHARS.map((c, i) => i);
   selIdx = 0;
-  if (secretFound) sfx('star'); else sfx('select');
+  sfx('select');
   playMusic('floor');
 }
 function moveSel(d) {
@@ -2115,7 +2065,7 @@ function update() {
     t.x += t.vx; t.y += t.vy; t.life--;
     if (t.x < L || t.x > R) { if (t.bounce > 0) { t.bounce--; t.vx *= -1; t.x = clamp(t.x, L, R); t.life += 15; sfx('bump', 0.05); } else t.dead = true; }
     if (t.y < TOP || t.y > BOT) { if (t.bounce > 0) { t.bounce--; t.vy *= -1; t.y = clamp(t.y, TOP, BOT); t.life += 15; sfx('bump', 0.05); } else t.dead = true; }
-    if (!t.dead && (t.life <= 0 || cur.rocks.some(k => t.x > k.x && t.x < k.x + k.w && t.y > k.y && t.y < k.y + k.h))) t.dead = true;
+    if (!t.dead && (t.life <= 0 || !t.spectral && cur.rocks.some(k => t.x > k.x && t.x < k.x + k.w && t.y > k.y && t.y < k.y + k.h))) t.dead = true;
     if (t.dead) { /* nada */ }
     else if (t.friendly) {
       if (t.kind === 'slash') for (const o of tears) // el cuchillo corta las balas enemigas
@@ -5118,13 +5068,9 @@ function drawSelect() {
   ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H);
   drawCharShaded(c, 270, 250 + Math.sin(frame * 0.06) * 5, 4.2, 'B', frame * 0.12, 0);
   if (available.length > 1) { ctx.fillStyle = '#f2e6d0'; ctx.font = 'bold 22px monospace'; ctx.fillText('◀', 90, 250); ctx.fillText('▶', 450, 250); }
-  if (secretFound) {
-    ctx.fillStyle = `hsl(${frame * 6 % 360},90%,65%)`; ctx.font = 'bold 18px monospace';
-    ctx.fillText('★ ¡UN PERSONAJE SECRETO APARECIÓ! ★', CX, 88);
-  }
   ctx.textAlign = 'left';
   ctx.fillStyle = '#f2e6d0'; ctx.font = 'bold 30px monospace'; ctx.fillText(c.name, 520, 120);
-  ctx.fillStyle = '#8fd060'; ctx.font = 'italic 16px monospace'; ctx.fillText((c.always ? 'Estilo: ' : 'Homenaje a: ') + c.ref, 520, 152);
+  ctx.fillStyle = '#8fd060'; ctx.font = 'italic 16px monospace'; ctx.fillText('Estilo: ' + c.ref, 520, 152);
   ctx.fillStyle = '#d8c4a8'; ctx.font = '15px monospace'; ctx.fillText(c.desc, 520, 182);
   const stats = [['VIDA', c.hp / 12], ['DAÑO', c.dmg / 6], ['VELOCIDAD', c.speed / 5.5], ['CADENCIA', (60 / c.delay) / 6.5], ['ALCANCE', c.range / 65]];
   stats.forEach(([n, v], i) => {
