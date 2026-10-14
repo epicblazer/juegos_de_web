@@ -908,6 +908,125 @@ function maggyDress() { // vestidito con un corazón
   if (bodyFace !== 'T') { ctx.fillStyle = '#e0204a'; ctx.beginPath(); ctx.moveTo(0, 10); ctx.bezierCurveTo(-6, 5, -3, 1, 0, 4); ctx.bezierCurveTo(3, 1, 6, 5, 0, 10); ctx.fill(); }
 }
 
+// ---------- más personajes de Isaac (se arman con piezas: pelo, cara y ropa) ----------
+function hairHat({ c, bow = null, pig = false, band = null, long = false }) { // pelo con fleco, y opcionales: moño, coletas, cinta, pelo largo
+  return face => {
+    const back = face === 'T';
+    if (long) for (const s of [-1, 1]) { ell(s * 18, 4, 5.5, 14); ctx.fillStyle = shade(c, -0.15); ctx.fill(); ctx.strokeStyle = shade(c, -0.6); ctx.lineWidth = 1.2; ctx.stroke(); }
+    if (pig) for (const s of [-1, 1]) { ell(s * 24, 0, 6.5, 7.5); ctx.fillStyle = rad(s * 24, 0, 7.5, shade(c, 0.3), c, shade(c, -0.5)); ctx.fill(); }
+    ctx.beginPath(); ctx.moveTo(-20, 2); ctx.bezierCurveTo(-22, -26, 22, -26, 20, 2);
+    if (back) ctx.quadraticCurveTo(0, 8, -20, 2);
+    else { const ox = faceOX(face); ctx.quadraticCurveTo(18, -6, ox + 10, -5); ctx.quadraticCurveTo(ox + 4, -2, ox, -5); ctx.quadraticCurveTo(ox - 5, -2, ox - 10, -5); ctx.quadraticCurveTo(-18, -6, -20, 2); }
+    ctx.fillStyle = rad(-4, -14, 24, shade(c, 0.35), c, shade(c, -0.55)); ctx.fill(); ctx.strokeStyle = shade(c, -0.7); ctx.lineWidth = 1.6; ctx.stroke();
+    shine(-8, -15, 5, 2, 0.3);
+    if (band) { ctx.save(); ctx.beginPath(); ctx.arc(0, 0, 19.5, 0, Math.PI * 2); ctx.clip(); ctx.fillStyle = band; ctx.fillRect(-21, -12, 42, 4.5); ctx.restore(); }
+    const ribbon = (bx, by, col) => {
+      for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + s * 6, by - 4.5); ctx.lineTo(bx + s * 6, by + 4.5); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = shade(col, -0.5); ctx.lineWidth = 1; ctx.stroke(); }
+      ell(bx, by, 2, 2); ctx.fillStyle = shade(col, -0.2); ctx.fill();
+    };
+    if (pig && bow) for (const s of [-1, 1]) ribbon(s * 19, -5, bow);
+    else if (bow) ribbon(face === 'R' ? -12 : 12, -16, bow);
+  };
+}
+function makeFace({ brow = null, mouth = 'smile', lash = false, patch = false, hollow = false, blind = false, glow = null, blush = 'rgba(255,120,140,.35)' }) {
+  return (ox, EY, pose, P) => {
+    if (blush) cheeks(ox, blush);
+    if (!blind) for (const s of [-1, 1]) {
+      const ex = ox + s * 7;
+      if (patch && s > 0) continue;
+      if (hollow) { ell(ex, EY + 0.5, 5.2, 6); ctx.fillStyle = '#1e1810'; ctx.fill(); ctx.fillStyle = '#fff'; ell(ex, EY + 1, 1.4, 1.4); ctx.fill(); continue; }
+      isaacEye(ex, EY);
+      if (glow) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = glow; ctx.lineWidth = 1.6; ell(ex, EY, 5.8, 6.3); ctx.stroke(); ctx.restore(); }
+      if (lash) { ctx.strokeStyle = '#111'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(ex + s * 3.6, EY - 3.4); ctx.lineTo(ex + s * 6, EY - 5); ctx.moveTo(ex + s * 4.4, EY - 1.8); ctx.lineTo(ex + s * 6.8, EY - 2.6); ctx.stroke(); }
+    }
+    if (patch) { // parche en el ojo derecho con su correa
+      ctx.strokeStyle = '#1a1008'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(ox - 18, -2); ctx.lineTo(ox + 18, EY - 6); ctx.stroke();
+      ell(ox + 7, EY + 0.3, 5.4, 5.6); ctx.fillStyle = rad(ox + 7, EY, 5.6, '#3a3028', '#1a1410'); ctx.fill();
+    }
+    ctx.strokeStyle = P.line; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath();
+    if (brow === 'brave') for (const s of [-1, 1]) { ctx.moveTo(ox + s * 11, EY - 6.8); ctx.lineTo(ox + s * 3.5, EY - 5.2); }
+    if (brow === 'sad') for (const s of [-1, 1]) { ctx.moveTo(ox + s * 11, EY - 5); ctx.lineTo(ox + s * 3.5, EY - 7.2); }
+    ctx.stroke();
+    ctx.lineWidth = 1.7; ctx.beginPath();
+    if (pose > 0.3) { ell(ox, 14, 3.2, 2.6); ctx.fillStyle = '#3a0a0a'; ctx.fill(); } // grito al atacar
+    else if (mouth === 'smile') ctx.arc(ox, 11.4, 3.8, Math.PI * 0.18, Math.PI * 0.82);
+    else if (mouth === 'smirk') { ctx.moveTo(ox - 4, 13.4); ctx.quadraticCurveTo(ox + 1, 16, ox + 5.5, 12); }
+    else if (mouth === 'flat') { ctx.moveTo(ox - 3.5, 14); ctx.lineTo(ox + 3.5, 14); }
+    else if (mouth === 'stitch') { ctx.moveTo(ox - 6, 13.5); ctx.quadraticCurveTo(ox, 16, ox + 6, 13.5); for (let x = -4.5; x <= 4.5; x += 3) { ctx.moveTo(ox + x, 12.6); ctx.lineTo(ox + x, 16.2); } }
+    else if (mouth === 'teeth') { ctx.rect(ox - 5, 12, 10, 4); for (let x = -2.5; x <= 2.5; x += 2.5) { ctx.moveTo(ox + x, 12); ctx.lineTo(ox + x, 16); } }
+    ctx.stroke(); ctx.lineCap = 'butt';
+  };
+}
+// gorros y ropa de cada uno
+const cainHat = hairHat({ c: '#6a4020' });
+const evaHat = hairHat({ c: '#221a22', bow: '#d02a3a', long: true });
+const samsonHat = hairHat({ c: '#9a4a1e', band: '#f2f0e8', long: true });
+const lazHair = hairHat({ c: '#4a3020' });
+function lazarusHat(face) { // pelo con vendas
+  lazHair(face);
+  ctx.save(); ctx.beginPath(); ctx.arc(0, 0, 19.5, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = '#f2ece0'; ctx.strokeStyle = '#b8ae98'; ctx.lineWidth = 0.8;
+  ctx.save(); ctx.rotate(-0.25); ctx.fillRect(-22, -10, 44, 5); ctx.strokeRect(-22, -10, 44, 5); ctx.restore();
+  ctx.save(); ctx.rotate(0.35); ctx.fillRect(-22, 13, 44, 4); ctx.strokeRect(-22, 13, 44, 4); ctx.restore();
+  ctx.restore();
+}
+const edenHair = hairHat({ c: '#2a6a5a' });
+function edenHat(face) { // pelo con un brote de hojita
+  edenHair(face);
+  ctx.strokeStyle = '#3a7a2a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(0, -19); ctx.quadraticCurveTo(2, -26, 0, -30); ctx.stroke();
+  for (const s of [-1, 1]) { ctx.save(); ctx.translate(0, -28); ctx.rotate(s * 0.9 + Math.sin(frame * 0.06) * 0.1); ell(s * 5, 0, 5, 2.4); ctx.fillStyle = '#6ad04a'; ctx.fill(); ctx.restore(); }
+}
+const lilithHair = hairHat({ c: '#141420', long: true });
+function lilithHat(face) { // pelo negro y venda en los ojos
+  lilithHair(face);
+  if (face === 'T') return;
+  const ox = faceOX(face);
+  ctx.save(); ctx.beginPath(); ctx.arc(0, 0, 19.5, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = lin(0, 0, 0, 9, '#f6f2ff', '#c8c0dc'); ctx.fillRect(-21, 0, 42, 8.5);
+  ctx.strokeStyle = 'rgba(80,60,120,.4)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(ox - 14, 4.2); ctx.lineTo(ox + 14, 4.2); ctx.stroke();
+  ctx.restore();
+}
+function keeperHat(face) { // saco atado arriba con cuerda y costuras
+  ctx.strokeStyle = 'rgba(90,60,20,.45)'; ctx.lineWidth = 0.8; ctx.beginPath(); // tejido del saco
+  for (let y = -14; y <= 14; y += 5) { ctx.moveTo(-15, y); ctx.lineTo(15, y + 1); }
+  ctx.stroke();
+  if (face !== 'T') { const ox = faceOX(face); ctx.strokeStyle = '#5a3a10'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(ox + 14, -10); ctx.lineTo(ox + 16, 6); for (let y = -8; y <= 4; y += 4) { ctx.moveTo(ox + 13, y); ctx.lineTo(ox + 17, y + 1); } ctx.stroke(); }
+  ctx.fillStyle = '#b89a68'; poly([[-6, -18], [6, -18], [10, -28], [-10, -28]]); ctx.fill(); ctx.strokeStyle = '#5a3a10'; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.strokeStyle = '#7a5a2a'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(-7, -19); ctx.lineTo(7, -19); ctx.stroke(); // cuerda
+}
+function apollyonHat() { // corona de púas del vacío
+  ctx.fillStyle = lin(0, -32, 0, -14, '#4a3a6a', '#1a1424'); ctx.strokeStyle = '#0a0810'; ctx.lineWidth = 1.2;
+  poly([[-17, -11], [-15, -26], [-9, -17], [-5, -31], [0, -18], [5, -31], [9, -17], [15, -26], [17, -11], [0, -15]]); ctx.fill(); ctx.stroke();
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(170,90,255,${0.5 + Math.sin(frame * 0.1) * 0.25})`; ell(0, -20, 2.6, 2.6); ctx.fill(); ctx.restore();
+}
+const bethHair = hairHat({ c: '#7a4a24', pig: true, bow: '#5aa0ff' });
+function bethanyHat(face) { // coletas con lazos azules y una llamita de alma
+  bethHair(face);
+  const fy = -32 + Math.sin(frame * 0.08) * 2;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createRadialGradient(16, fy, 0, 16, fy, 8); g.addColorStop(0, 'rgba(200,230,255,.95)'); g.addColorStop(1, 'rgba(60,140,255,0)');
+  ctx.fillStyle = g; ell(16, fy, 8, 8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(16, fy - 7); ctx.quadraticCurveTo(20, fy, 16, fy + 4); ctx.quadraticCurveTo(12, fy, 16, fy - 7); ctx.fillStyle = 'rgba(140,200,255,.9)'; ctx.fill();
+  ctx.restore();
+}
+function forgottenHat() { // grietas en el cráneo
+  ctx.strokeStyle = 'rgba(90,80,60,.75)'; ctx.lineWidth = 1.2; ctx.beginPath();
+  ctx.moveTo(-6, -19); ctx.lineTo(-4, -13); ctx.lineTo(-8, -9); ctx.lineTo(-6, -5);
+  ctx.moveTo(10, -16); ctx.lineTo(8, -11); ctx.lineTo(12, -8);
+  ctx.stroke();
+}
+const overlay = (col, y0 = -4, h = 18) => () => { ctx.fillStyle = col; ctx.fillRect(-11, y0, 22, h); };
+function cainGear() { ctx.fillStyle = '#4a3a1e'; ctx.fillRect(-11, 9, 22, 3); ctx.strokeStyle = '#6a4a20'; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(9, -3); ctx.lineTo(-9, 10); ctx.stroke(); }
+const evaDress = overlay('rgba(40,10,30,.55)');
+function samsonFur() { ctx.fillStyle = '#6a4a2a'; ctx.fillRect(-11, -4, 7, 18); ctx.fillRect(4, -4, 7, 18); ctx.fillStyle = '#4a2e14'; for (let y = -2; y < 14; y += 4) { poly([[-4, y], [-1.5, y + 2], [-4, y + 4]]); ctx.fill(); poly([[4, y], [1.5, y + 2], [4, y + 4]]); ctx.fill(); } }
+function lazarusWraps() { ctx.fillStyle = 'rgba(245,240,228,.85)'; ctx.save(); ctx.rotate(0.35); ctx.fillRect(-14, 0, 28, 3.5); ctx.restore(); ctx.save(); ctx.rotate(-0.3); ctx.fillRect(-14, 9, 28, 3.5); ctx.restore(); }
+function edenLeaf() { if (bodyFace !== 'T') { ctx.save(); ctx.translate(0, 6); ctx.rotate(-0.5); ell(0, 0, 4.5, 2.2); ctx.fillStyle = '#6ad04a'; ctx.fill(); ctx.restore(); } }
+const lilithRobe = overlay('rgba(20,10,40,.6)');
+function keeperPouch() { ctx.fillStyle = '#5a3a1a'; ctx.fillRect(-11, 8.5, 22, 2.6); if (bodyFace !== 'T') { ell(5, 12, 3.6, 3.2); ctx.fillStyle = '#8a6a3a'; ctx.fill(); ell(-4, 4, 2.4, 2.4); ctx.fillStyle = rad(-4, 4, 2.4, '#fff4a0', '#e8b020', '#8a5a00'); ctx.fill(); } }
+function apollyonVoid() { ctx.strokeStyle = 'rgba(150,80,240,.6)'; ctx.lineWidth = 1.4; ctx.beginPath(); for (let a = 0; a < 9; a += 0.3) { const r = a * 0.9; ctx.lineTo(Math.cos(a + frame * 0.05) * r, 5 + Math.sin(a + frame * 0.05) * r); } ctx.stroke(); }
+function bethanyDress() { ctx.fillStyle = 'rgba(60,110,200,.45)'; ctx.fillRect(-11, -4, 22, 18); ctx.fillStyle = '#f4f4ff'; ell(0, -2, 5, 2.4); ctx.fill(); }
+function forgottenRibs() { if (bodyFace === 'T') return; ctx.strokeStyle = 'rgba(80,70,50,.6)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(0, 12); for (let y = 0; y < 10; y += 3.2) { ctx.moveTo(-7, y + 1.5); ctx.quadraticCurveTo(-3, y - 1, 0, y); ctx.quadraticCurveTo(3, y - 1, 7, y + 1.5); } ctx.stroke(); }
+
 const CHARS = [
   { name: 'Isaac Soldado', ref: 'The Binding of Isaac', desc: 'Equilibrado. Lágrimas clásicas.', hp: 6, speed: 3.2, dmg: 3.5, delay: 22, range: 45, shotSpeed: 8, tear: 'tear', snd: 'shoot',
     body: w => isaacBody(w, ['#4e9a2e', '#78c850', '#4e9a2e', '#234a14']), head: f => isaacHead(f, ISAAC_PAL) },
@@ -920,6 +1039,26 @@ const CHARS = [
     ...isaacTint('#f0a050', '#5a2a08', judasHat, judasRobe, judasFace) },
   { name: 'Magdalena', ref: 'Magdalene', desc: 'Muchísima vida, pero lenta.', hp: 12, speed: 2.6, dmg: 3.3, delay: 24, range: 42, shotSpeed: 7.5, tear: 'tear', snd: 'shoot',
     ...isaacTint('#f4a0c0', '#6a1a3a', maggyHat, maggyDress, maggyFace) },
+  { name: 'Caín', ref: 'Cain', desc: 'Dispara tres lágrimas a la vez.', hp: 6, speed: 3.3, dmg: 2.6, delay: 24, range: 45, shotSpeed: 8, tear: 'tear', snd: 'shoot', triple: true,
+    ...isaacTint('#c8875a', '#4a2410', cainHat, cainGear, makeFace({ brow: 'brave', mouth: 'smirk', patch: true })) },
+  { name: 'Eva', ref: 'Eve', desc: 'Lágrimas oscuras que persiguen.', hp: 4, speed: 3.4, dmg: 3.6, delay: 20, range: 50, shotSpeed: 8, tear: 'dark', snd: 'shoot', homing: true,
+    ...isaacTint('#f2d0c0', '#5a2a2a', evaHat, evaDress, makeFace({ brow: 'sad', lash: true })) },
+  { name: 'Sansón', ref: 'Samson', desc: 'Golpes de cerca brutales.', hp: 10, speed: 3.4, dmg: 7.5, delay: 22, range: 18, shotSpeed: 2, tear: 'slash', snd: 'slash',
+    ...isaacTint('#e0a070', '#5a2a08', samsonHat, samsonFur, makeFace({ brow: 'brave', mouth: 'smile' })) },
+  { name: 'Lázaro', ref: 'Lazarus', desc: 'Revive una vez cuando muere.', hp: 6, speed: 3.0, dmg: 3.4, delay: 22, range: 45, shotSpeed: 8, tear: 'tear', snd: 'shoot', revive: true,
+    ...isaacTint('#b8c4d4', '#3a4458', lazarusHat, lazarusWraps, makeFace({ brow: 'sad', mouth: 'flat', blush: 'rgba(150,170,220,.4)' })) },
+  { name: 'Edén', ref: 'Eden', desc: 'Cada partida empieza con poderes al azar.', hp: 6, speed: 3.2, dmg: 3.5, delay: 22, range: 45, shotSpeed: 8, tear: 'tear', snd: 'shoot', random: true,
+    ...isaacTint('#5ad0b0', '#14504a', edenHat, edenLeaf, makeFace({ mouth: 'smile', blush: 'rgba(255,200,120,.35)' })) },
+  { name: 'Lilith', ref: 'Lilith', desc: 'Orbes que persiguen y cruzan rocas.', hp: 6, speed: 3.2, dmg: 3.2, delay: 18, range: 55, shotSpeed: 7.5, tear: 'orb', snd: 'orb', homing: true, spectral: true,
+    ...isaacTint('#5a5a8a', '#141430', lilithHat, lilithRobe, makeFace({ blind: true, mouth: 'smile', blush: 'rgba(255,120,200,.3)' })) },
+  { name: 'Guardián', ref: 'Keeper', desc: 'Lanza tres monedas a la vez.', hp: 4, speed: 3.2, dmg: 2.5, delay: 20, range: 45, shotSpeed: 8.5, tear: 'ring', snd: 'ringS', triple: true,
+    ...isaacTint('#c8b088', '#5a3a10', keeperHat, keeperPouch, makeFace({ mouth: 'stitch', blush: null })) },
+  { name: 'Apolión', ref: 'Apollyon', desc: 'Rayos del vacío que atraviesan.', hp: 6, speed: 3.2, dmg: 4, delay: 24, range: 50, shotSpeed: 9, tear: 'bolt', snd: 'laser', pierce: true,
+    ...isaacTint('#6a6a7c', '#14141e', apollyonHat, apollyonVoid, makeFace({ mouth: 'flat', glow: 'rgba(180,90,255,.9)', blush: 'rgba(160,90,255,.3)' })) },
+  { name: 'Bethany', ref: 'Bethany', desc: 'Lágrimas de alma que atraviesan.', hp: 4, speed: 3.2, dmg: 3.8, delay: 20, range: 50, shotSpeed: 8, tear: 'holy', snd: 'ringS', pierce: true,
+    ...isaacTint('#ffd4a8', '#6a3a10', bethanyHat, bethanyDress, makeFace({ lash: true, mouth: 'smile' })) },
+  { name: 'El Olvidado', ref: 'The Forgotten', desc: 'Lanza huesos pesados que atraviesan.', hp: 8, speed: 2.8, dmg: 6, delay: 30, range: 40, shotSpeed: 9, tear: 'arrow', snd: 'arrow', pierce: true,
+    ...isaacTint('#ece4d0', '#5a5040', forgottenHat, forgottenRibs, makeFace({ hollow: true, mouth: 'teeth', blush: null })) },
   // soldados. range = alcance del tajo en los de cuerpo a cuerpo
   { name: 'Comando Cuchillo', ref: 'Cuerpo a cuerpo', desc: 'Tajos de cerca muy fuertes. Corta balas.', hp: 8, speed: 3.8, dmg: 6, delay: 16, range: 16, shotSpeed: 2, tear: 'slash', snd: 'slash',
     ...isaacTint('#5aa0e0', '#14385a', knifeHat, knifeVest, knifeFace) },
@@ -950,6 +1089,16 @@ const UNLOCKS = {
   'Lanzallamas': { req: 'Derrota 6 jefes en total', ok: s => s.bosses >= 6 },
   'Alma Perdida': { req: 'Muere 10 veces', ok: s => s.deaths >= 10 },
   'Demonio': { req: 'Despierta del sueño (gana el juego)', ok: s => s.wins >= 1 },
+  'Caín': { req: 'Llega al Útero', ok: s => s.bestFloor >= 7 },
+  'Eva': { req: 'Juega 20 partidas', ok: s => s.runs >= 20 },
+  'Sansón': { req: 'Derrota 10 jefes en total', ok: s => s.bosses >= 10 },
+  'Lázaro': { req: 'Muere 25 veces', ok: s => s.deaths >= 25 },
+  'Edén': { req: 'Juega 40 partidas', ok: s => s.runs >= 40 },
+  'Lilith': { req: 'Haz 3 pactos con el Diablo', ok: s => s.devil >= 3 },
+  'Guardián': { req: 'Recoge 50 objetos en total', ok: s => s.items >= 50 },
+  'Apolión': { req: 'Despierta 3 veces (gana 3 veces)', ok: s => s.wins >= 3 },
+  'Bethany': { req: 'Llega a la Torre Final', ok: s => s.bestFloor >= 8 },
+  'El Olvidado': { req: 'Recoge 25 objetos en total', ok: s => s.items >= 25 },
 };
 const isUnlocked = c => !UNLOCKS[c.name] || SAVE.unlocked.includes(c.name);
 let unlockToasts = []; // avisos de "¡nuevo personaje!" en una burbuja
@@ -1202,10 +1351,17 @@ function drawDealFx() {
 }
 
 function newPlayer(c) {
-  return { char: c, x: CX, y: CY, vx: 0, vy: 0, r: 16, hp: c.hp, maxHp: c.hp, speed: c.speed, dmg: c.dmg, delay: c.delay, cd: 0,
+  const pl = { char: c, x: CX, y: CY, vx: 0, vy: 0, r: 16, hp: c.hp, maxHp: c.hp, speed: c.speed, dmg: c.dmg, delay: c.delay, cd: 0,
     range: c.range, shotSpeed: c.shotSpeed, triple: false, bounce: c.bounce || 0, pierce: !!c.pierce, homing: !!c.homing, fireKind: null,
     star: 0, inv: 0, face: 'B', items: [], walk: 0, shootT: 0, shield: 0, shieldMax: 0,
     deal: { devil: DEVIL_BASE_CHANCE, angel: ANGEL_BASE_CHANCE, hits: 0, tookDevil: false } };
+  pl.triple = !!c.triple;
+  if (c.random) { // Edén: estadísticas y poderes al azar en cada partida
+    pl.maxHp = pl.hp = ri(2, 5) * 2; pl.speed = rnd(2.7, 4.2); pl.dmg = rnd(2.6, 5.2); pl.delay = ri(14, 30); pl.range = ri(38, 60); pl.shotSpeed = rnd(7, 10);
+    const perk = pick(['homing', 'pierce', 'bounce', 'triple', 'fire']);
+    if (perk === 'bounce') pl.bounce = 1; else if (perk === 'fire') pl.fireKind = pick(['fire', 'holy', 'hell']); else pl[perk] = true;
+  }
+  return pl;
 }
 
 // =====================================================================
@@ -1784,6 +1940,11 @@ function hurt(n) {
   if (p.hp <= 0 && retro.on && retro.lives > 1) { // minijuego retro: pierdes una vida y sigues
     retro.lives--; p.hp = p.maxHp; p.inv = 150;
     showMsg('¡VIDA PERDIDA!', `Te quedan ${retro.lives}`); sfx('death');
+    return;
+  }
+  if (p.hp <= 0 && !retro.on && p.char.revive && !p.revived) { // Lázaro: segunda oportunidad
+    p.revived = true; p.hp = 2; p.inv = 150;
+    showMsg('¡Lázaro revive!', 'Segunda oportunidad'); sfx('angelEnter'); burst(p.x, p.y - 12, '#e8f0ff', 40);
     return;
   }
   if (p.hp <= 0 && retro.on) { retro.lives = 0; retro.newBest = saveRetroBest(); }
@@ -5205,7 +5366,7 @@ function enterMenu() {
 function menuKey(c) {
   const up = c === 'ArrowUp' || c === 'KeyW', down = c === 'ArrowDown' || c === 'KeyS';
   if (menuSub === 'chars') { // galería: flechas para mirar cada personaje
-    const d = c === 'ArrowLeft' || c === 'KeyA' ? -1 : c === 'ArrowRight' || c === 'KeyD' ? 1 : up ? -3 : down ? 3 : 0;
+    const d = c === 'ArrowLeft' || c === 'KeyA' ? -1 : c === 'ArrowRight' || c === 'KeyD' ? 1 : up ? -5 : down ? 5 : 0;
     if (d) { galIdx = (galIdx + d + CHARS.length) % CHARS.length; sfx('select'); }
     else if (c === 'Escape' || isConfirm(c)) { menuSub = null; sfx('select'); }
     return;
@@ -5271,12 +5432,14 @@ function drawCharsCloud() {
   ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(26); ctx.fillText('Personajes', cx, 70);
   CHARS.forEach((c, i) => {
-    const x = cx + (i % 3 - 1) * 200, y = 140 + Math.floor(i / 3) * 120, open = isUnlocked(c), sel = i === galIdx;
-    roundBubble(x, y - 8, 36, sel);
-    if (open) drawChar(c, x, y + 4, 0.85, 'B', 0, 0); else drawCharLocked(c, x, y + 4, 0.85);
-    ctx.textAlign = 'center'; ctx.fillStyle = open ? DREAM_INK : '#8a7aa8'; ctx.font = dreamFont(14); ctx.fillText(open ? c.name : '???', x, y + 42);
-    if (sel) { ctx.fillStyle = open ? '#5a9a4a' : '#a05a8a'; ctx.font = dreamFont(12, false); ctx.fillText(open ? '¡Desbloqueado!' : '🔒 ' + UNLOCKS[c.name].req, x, y + 58); }
+    const x = cx + (i % 5 - 2) * 122, y = 120 + Math.floor(i / 5) * 86, open = isUnlocked(c), sel = i === galIdx;
+    roundBubble(x, y - 6, 27, sel);
+    if (open) drawChar(c, x, y + 4, 0.62, 'B', 0, 0); else drawCharLocked(c, x, y + 4, 0.62);
+    ctx.textAlign = 'center'; ctx.fillStyle = open ? DREAM_INK : '#8a7aa8'; ctx.font = dreamFont(12); ctx.fillText(open ? c.name : '???', x, y + 32);
   });
+  const gc = CHARS[galIdx], go = isUnlocked(gc);
+  ctx.fillStyle = go ? '#5a9a4a' : '#a05a8a'; ctx.font = dreamFont(15);
+  ctx.fillText(go ? gc.name + ' · ¡Desbloqueado!' : '🔒 ' + UNLOCKS[gc.name].req, cx, 470);
   menuHint('flechas para mirar  ·  ENTER o ESC para volver');
 }
 function drawSelect() {
@@ -5309,12 +5472,15 @@ function drawSelect() {
     ctx.fillStyle = '#6a5a90'; ctx.font = dreamFont(16, false); ctx.fillText('Para soñar con este personaje:', ix, 250);
     ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(18); ctx.fillText(UNLOCKS[c.name].req, ix, 280);
   }
-  const n = CHARS.length, step = Math.min(96, (W - 60) / n); // fila de burbujitas
-  CHARS.forEach((ch, i) => {
-    const x = CX - (n - 1) * step / 2 + i * step, y = 478 + Math.sin(frame * 0.05 + i) * 3;
-    roundBubble(x, y - 6, step / 2 - 8, i === selIdx);
+  const n = CHARS.length; // carrusel de burbujitas: el elegido siempre en el centro
+  for (let k = -4; k <= 4; k++) {
+    const i = (selIdx + k + n) % n, ch = CHARS[i], x = CX + k * 96, y = 478 + Math.sin(frame * 0.05 + i) * 3;
+    ctx.save(); ctx.globalAlpha = 1 - Math.abs(k) * 0.12;
+    roundBubble(x, y - 6, 40, k === 0);
     if (isUnlocked(ch)) drawChar(ch, x, y + 6, 0.8, 'B', 0, 0); else drawCharLocked(ch, x, y + 6, 0.8);
-  });
+    ctx.restore();
+  }
+  ctx.fillStyle = 'rgba(235,225,255,.8)'; ctx.font = dreamFont(13); ctx.textAlign = 'center'; ctx.fillText(`${selIdx + 1} / ${n}`, CX, 420);
   menuHint('◀ ▶ elegir  ·  ENTER jugar  ·  ESC menú');
 }
 function drawUnlockToasts() { // aviso de personaje nuevo dentro de una burbuja de sueño
