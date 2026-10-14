@@ -139,6 +139,11 @@ for (const b of document.querySelectorAll('#tbtns button')) {
 cv.addEventListener('pointerdown', e => {
   if (e.pointerType === 'mouse') return;
   e.preventDefault();
+  if (state === 'menu' && !menuSub) {
+    const r = cv.getBoundingClientRect(), fy = (e.clientY - r.top) / r.height * H;
+    const i = MENU_ITEMS.findIndex((_, k) => Math.abs(fy - MENU_Y(k)) < 26);
+    if (i >= 0) menuIdx = i;
+  }
   if (state === 'select') {
     const r = cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width;
     if (fx < 0.3) { onKey('ArrowLeft'); return; }
@@ -927,6 +932,35 @@ const CHARS = [
 ];
 // tipos de ataque propios que los objetos de fuego/luz no reemplazan
 const OWN_ATTACK = ['slash', 'grenade', 'flame'];
+
+// =====================================================================
+// PROGRESO: DESBLOQUEOS Y ESTADÍSTICAS (se guardan en el navegador)
+// =====================================================================
+const SAVE_KEY = 'isaac_epic_save';
+const SAVE = { unlocked: [], stats: { runs: 0, deaths: 0, bosses: 0, items: 0, bestFloor: 1, wins: 0, devil: 0 } };
+try { const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (d) { SAVE.unlocked = d.unlocked || []; Object.assign(SAVE.stats, d.stats); } } catch (e) { }
+function saveProgress() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) { } }
+// cómo se desbloquea cada personaje (Isaac ya viene desbloqueado)
+const UNLOCKS = {
+  'Comando Cuchillo': { req: 'Derrota a tu primer jefe', ok: s => s.bosses >= 1 },
+  'Granadero': { req: 'Llega a las Cuevas', ok: s => s.bestFloor >= 3 },
+  'Magdalena': { req: 'Recoge 10 objetos en total', ok: s => s.items >= 10 },
+  'Judas': { req: 'Haz un pacto con el Diablo', ok: s => s.devil >= 1 },
+  'Francotirador': { req: 'Llega a las Profundidades', ok: s => s.bestFloor >= 5 },
+  'Lanzallamas': { req: 'Derrota 6 jefes en total', ok: s => s.bosses >= 6 },
+  'Alma Perdida': { req: 'Muere 10 veces', ok: s => s.deaths >= 10 },
+  'Demonio': { req: 'Despierta del sueño (gana el juego)', ok: s => s.wins >= 1 },
+};
+const isUnlocked = c => !UNLOCKS[c.name] || SAVE.unlocked.includes(c.name);
+let unlockToasts = []; // avisos de "¡nuevo personaje!" en una burbuja
+function addStat(k, n = 1) {
+  if (retro.on) return; // el minijuego retro no cuenta
+  if (k === 'bestFloor') SAVE.stats.bestFloor = Math.max(SAVE.stats.bestFloor, n); else SAVE.stats[k] += n;
+  for (const c of CHARS) if (!isUnlocked(c) && UNLOCKS[c.name].ok(SAVE.stats)) {
+    SAVE.unlocked.push(c.name); unlockToasts.push({ c, t: 0 }); sfx('star');
+  }
+  saveProgress();
+}
 const DARK_CHAR = { body: w => baseBody(w, '#111', '#2b2b2b', '#111', '#000'), head: f => isaacHead(f, DARK_PAL) };
 
 function drawChar(c, x, y, s, face, walk, shootT) {
@@ -1755,6 +1789,7 @@ function hurt(n) {
   if (p.hp <= 0 && retro.on) { retro.lives = 0; retro.newBest = saveRetroBest(); }
   if (p.hp <= 0) {
     p.hp = 0; state = 'dead'; p.deathAt = frame; burst(p.x, p.y, '#78c850', 30); stopMusic();
+    addStat('deaths');
     const killer = !retro.on && enemies.find(e => e.boss && e.hp > 0);
     if (killer) { sfx('hurt'); startDeathCut(killer); } // cinemática del jefe que te mató
     else sfx('death');
@@ -1792,7 +1827,7 @@ function nextFloor() {
     sub = `Resististe al Diablo... los ángeles te observan (Ángel ${Math.round(p.deal.angel * 100)}%)`;
   }
   p.deal.hits = 0;
-  floorNum++;
+  floorNum++; addStat('bestFloor', floorNum);
   genFloor();
   p.x = CX; p.y = CY; p.vx = p.vy = 0;
   sfx('floor');
@@ -1805,7 +1840,7 @@ function announceFloor(sub) {
 }
 function startGame() {
   retro.on = false;
-  floorNum = 1; winPending = false; p = newPlayer(CHARS[selIdx]);
+  floorNum = 1; winPending = false; p = newPlayer(CHARS[selIdx]); addStat('runs');
   if (AC && AC.state === 'suspended') AC.resume();
   musicName = null;
   genFloor(); enterRoom();
@@ -1955,7 +1990,7 @@ function drawRetroGameOver() {
   ctx.fillText('ENTER: jugar otra vez  ·  ESC: salir', CX, 390);
 }
 
-// todos los personajes están disponibles
+// se pueden mirar todos, pero solo se juega con los desbloqueados
 let available = [0];
 function enterSelect() {
   retro.on = false; deathCut = null;
@@ -1986,11 +2021,13 @@ function onKey(c) {
     if (c === 'KeyP') { paused = !paused; if (AC) { if (paused) AC.suspend(); else AC.resume(); } }
     return;
   }
-  if (state === 'title') { if (isConfirm(c)) enterSelect(); return; }
+  if (state === 'title') { if (isConfirm(c)) enterMenu(); return; }
+  if (state === 'menu') { menuKey(c); return; }
   if (state === 'select') {
     if (c === 'ArrowLeft' || c === 'KeyA') moveSel(-1);
     else if (c === 'ArrowRight' || c === 'KeyD') moveSel(1);
-    else if (isConfirm(c)) startGame();
+    else if (c === 'Escape') enterMenu();
+    else if (isConfirm(c)) { if (isUnlocked(CHARS[selIdx])) startGame(); else { sfx('bump'); selShake = 16; } }
     return;
   }
   if (state === 'dead' && deathCut) { if (isConfirm(c) && deathCut.t > 30) endDeathCut(); return; } // saltar la cinemática
@@ -2131,6 +2168,7 @@ function update() {
       if (boss) { shake = 18; sfx('bossDie'); }
     };
     if (e.boss) {
+      addStat('bosses');
       // con sprite, el reventón espera al cuadro de la animación en que el jefe explota
       if (!bossDeathAnim(e, splat)) splat();
       shake = Math.max(shake, 6);
@@ -2158,14 +2196,14 @@ function update() {
           k.warnT = 90; continue;
         }
         p.maxHp -= k.price * 2; p.hp = Math.min(p.hp, p.maxHp);
-        p.deal.tookDevil = true;
+        p.deal.tookDevil = true; addStat('devil');
         showMsg(k.item.name, `${k.item.desc}  (−${k.price} ❤)`, k.item.name); sfx('devilBuy'); burst(k.x, k.y - 30, '#ff2a10', 30);
       } else {
         showMsg(k.item.name, k.item.desc, k.item.name); sfx(k.deal === 'angel' ? 'angelEnter' : 'item'); burst(k.x, k.y - 30, k.item.color, 25);
         // en el cuarto del Ángel sólo puedes elegir uno: los demás desaparecen
         if (k.deal === 'angel') for (const o of cur.pickups) if (o !== k && o.deal === 'angel' && o.type === 'item') { o.type = 'pedestal'; burst(o.x, o.y - 30, '#fff6c0', 15); }
       }
-      k.item.f(p); p.items.push(k.item.name);
+      k.item.f(p); p.items.push(k.item.name); addStat('items');
       k.type = 'pedestal';
     } else if (k.type === 'item' && k.warnT > 0) {
       k.warnT--;
@@ -3273,7 +3311,7 @@ const seg = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
 const smooth = k => k * k * (3 - 2 * k);
 
 function startEnding() {
-  state = 'ending'; stopMusic();
+  state = 'ending'; stopMusic(); addStat('wins');
   tears = []; hazards = []; particles = []; msgT = 0; shake = 0;
   let sx = clamp(p.x, L + 120, R - 120);
   if (Math.abs(sx - CX) < 110) sx = CX + (p.x < CX ? -220 : 220); // no sentarse frente a la puerta
@@ -5058,38 +5096,241 @@ function drawTitle() {
   ctx.font = 'italic 12px monospace'; ctx.fillStyle = 'rgba(160,140,110,.6)';
   ctx.fillText(AC ? 'dicen que a veces se abren portales a otros mundos...' : 'haz clic o pulsa una tecla para activar el sonido', CX, 562);
 }
-function drawSelect() {
-  bgGradient();
-  const c = CHARS[selIdx];
+// =====================================================================
+// MENÚ DEL SUEÑO: Isaac duerme y todo pasa dentro de sus burbujas de sueño
+// =====================================================================
+const DREAM = { stars: null, clouds: null };
+const DREAM_INK = '#3a2a6a', DREAM_SOFT = '#8a6ac8', DREAM_EDGE = '#9a86c8';
+function dreamSetup() {
+  const rr = mulberry(4242);
+  DREAM.stars = Array.from({ length: 110 }, () => ({ x: rr() * W, y: rr() * H * 0.85, s: 0.6 + rr() * 1.6, ph: rr() * 6.28 }));
+  DREAM.clouds = Array.from({ length: 6 }, (_, i) => ({ x: rr() * W, y: 60 + rr() * 420, r: 50 + rr() * 50, sp: 0.1 + rr() * 0.2, c: i % 2 ? '255,170,230' : '170,190,255' }));
+}
+function dreamSky() {
+  if (!DREAM.stars) dreamSetup();
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#120c30'); g.addColorStop(0.55, '#3a2a6a'); g.addColorStop(1, '#7a5a9a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const s of DREAM.stars) { ctx.fillStyle = `rgba(255,250,220,${0.35 + Math.sin(frame * 0.05 + s.ph) * 0.3})`; ell(s.x, s.y, s.s, s.s); ctx.fill(); }
+  for (const c of DREAM.clouds) { // nubecitas de colores que pasan
+    const x = (c.x + frame * c.sp) % (W + c.r * 4) - c.r * 2;
+    const cg = ctx.createRadialGradient(x, c.y, 0, x, c.y, c.r * 2);
+    cg.addColorStop(0, `rgba(${c.c},.16)`); cg.addColorStop(1, `rgba(${c.c},0)`);
+    ctx.fillStyle = cg; ctx.fillRect(x - c.r * 2, c.y - c.r * 2, c.r * 4, c.r * 4);
+  }
+  const mg = ctx.createRadialGradient(880, 70, 10, 880, 70, 90); // brillo de la luna
+  mg.addColorStop(0, 'rgba(255,240,200,.25)'); mg.addColorStop(1, 'rgba(255,240,200,0)');
+  ctx.fillStyle = mg; ctx.fillRect(790, -20, 180, 180);
+  ctx.restore();
+  ctx.save(); ctx.beginPath(); ctx.arc(880, 70, 28, 0, Math.PI * 2); ctx.clip(); // luna creciente
+  ctx.beginPath(); ctx.rect(800, 0, 160, 160); ctx.arc(893, 61, 25, 0, Math.PI * 2, true);
+  ctx.fillStyle = '#fff4c8'; ctx.fill(); ctx.restore();
+}
+function cloudPath(x, y, w, h, wob = 0) { // contorno de nube: bolitas alrededor de una elipse
+  const m = Math.min(w, h), n = Math.max(9, Math.round((w + h) / 30));
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2, r = m * 0.2 * (1 + 0.2 * Math.sin(i * 2.7)) + Math.sin(frame * 0.04 + i) * wob;
+    const px = x + Math.cos(a) * (w / 2 - r * 0.7), py = y + Math.sin(a) * (h / 2 - r * 0.7);
+    ctx.moveTo(px + r, py); ctx.arc(px, py, r, 0, Math.PI * 2);
+  }
+  ctx.moveTo(x + w / 2 - m * 0.15, y); ctx.ellipse(x, y, w / 2 - m * 0.15, h / 2 - m * 0.15, 0, 0, Math.PI * 2);
+}
+function dreamBubble(x, y, w, h, { glow = 0, wob = 1 } = {}) {
+  ctx.save();
+  ctx.shadowColor = `rgba(210,180,255,${0.4 + glow * 0.4})`; ctx.shadowBlur = 20 + glow * 16;
+  ctx.fillStyle = DREAM_EDGE; cloudPath(x, y, w + 7, h + 7, wob); ctx.fill(); // borde
+  ctx.shadowBlur = 0;
+  const g = ctx.createLinearGradient(0, y - h / 2, 0, y + h / 2);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#e6defc');
+  ctx.fillStyle = g; cloudPath(x, y, w, h, wob); ctx.fill();
+  ctx.restore();
+  shine(x - w * 0.24, y - h * 0.3, w * 0.1, h * 0.05, 0.45);
+}
+function roundBubble(x, y, r, glow = 0) { // burbuja redonda de jabón
+  if (glow) { ctx.save(); ctx.shadowColor = 'rgba(255,220,140,.9)'; ctx.shadowBlur = 18; }
+  ell(x, y, r + 3, r + 3); ctx.fillStyle = glow ? '#e8c060' : DREAM_EDGE; ctx.fill();
+  if (glow) ctx.restore();
+  ell(x, y, r, r); ctx.fillStyle = rad(x, y, r, '#ffffff', '#f2eeff', '#d8ccf8'); ctx.fill();
+  shine(x - r * 0.4, y - r * 0.45, r * 0.22, r * 0.12, 0.9);
+}
+function trailBubbles(x0, y0, x1, y1, n = 4) { // burbujitas que salen de la cabeza de Isaac
+  for (let i = 0; i < n; i++) {
+    const t = (i + 1) / (n + 1), r = 4 + t * 13;
+    roundBubble(lerp(x0, x1, t), lerp(y0, y1, t) + Math.sin(frame * 0.06 + i) * 2, r);
+  }
+}
+function drawSleepingIsaac(x, y, s) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  softShadow(5, 26, 95, 12, 0.5);
+  ctx.fillStyle = lin(0, -50, 0, 30, '#7a5034', '#4a2e1a'); // cama
+  ctx.beginPath(); ctx.roundRect(-82, -46, 16, 74, 5); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(78, -12, 14, 40, 5); ctx.fill();
+  ctx.fillStyle = '#5a3a24'; ctx.beginPath(); ctx.roundRect(-80, 6, 168, 16, 5); ctx.fill();
+  ell(-44, -6, 26, 12); ctx.fillStyle = rad(-44, -6, 26, '#ffffff', '#f0ecf8', '#c8c0e0'); ctx.fill(); // almohada
+  ctx.save(); ctx.translate(-42, -22); ctx.rotate(-0.3); ctx.scale(0.95, 0.95); // cabeza dormida
+  const em = eyeMode, nh = noHelmet, sp = shootPose, po = poseOverride;
+  eyeMode = 'closed'; noHelmet = true; shootPose = 0; poseOverride = null;
+  CHARS[0].head('B');
+  eyeMode = em; noHelmet = nh; shootPose = sp; poseOverride = po;
+  ctx.restore();
+  const breath = Math.sin(frame * 0.05) * 1.5; // cobija que sube y baja al respirar
+  ctx.beginPath(); ctx.roundRect(-26, -14 - breath, 112, 30 + breath, 12); ctx.fillStyle = lin(0, -16, 0, 14, '#8a6ad0', '#4a3a8a'); ctx.fill();
+  ctx.strokeStyle = 'rgba(30,20,60,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,240,180,.75)'; for (const [sx, sy] of [[0, -2], [28, 4], [56, -4], [72, 8]]) { starPath(sx, sy - breath / 2, 4, 1.7); ctx.fill(); }
+  ctx.restore();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; // Zzz
+  for (let i = 0; i < 3; i++) {
+    const k = (frame * 0.008 + i / 3) % 1;
+    ctx.fillStyle = `rgba(230,220,255,${Math.sin(k * Math.PI)})`; ctx.font = `bold ${12 + k * 14}px "Trebuchet MS", sans-serif`;
+    ctx.fillText('z', x - 30 * s + k * 50, y - 50 * s - k * 60);
+  }
+}
+const dreamFont = (px, bold = true) => `${bold ? 'bold ' : ''}${px}px "Trebuchet MS", "Comic Sans MS", sans-serif`;
+function drawCharLocked(c, x, y, s) { // silueta oscura con signo de pregunta
+  ctx.save(); ctx.filter = 'brightness(0)'; ctx.globalAlpha = 0.4; drawChar(c, x, y, s, 'B', 0, 0); ctx.restore();
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = dreamFont(Math.round(26 * s)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('?', x, y - 14 * s);
+}
+
+const MENU_ITEMS = ['Nueva partida', 'Personajes', 'Estadísticas', 'Sonido', 'Despertar'];
+let menuIdx = 0, menuSub = null, galIdx = 0, selShake = 0; // menuSub: null | 'chars' | 'stats'
+const MENU_Y = i => 200 + i * 56;
+function enterMenu() {
+  retro.on = false; deathCut = null; ending = null;
+  state = 'menu'; menuSub = null;
+  sfx('select');
+}
+function menuKey(c) {
+  const up = c === 'ArrowUp' || c === 'KeyW', down = c === 'ArrowDown' || c === 'KeyS';
+  if (menuSub === 'chars') { // galería: flechas para mirar cada personaje
+    const d = c === 'ArrowLeft' || c === 'KeyA' ? -1 : c === 'ArrowRight' || c === 'KeyD' ? 1 : up ? -3 : down ? 3 : 0;
+    if (d) { galIdx = (galIdx + d + CHARS.length) % CHARS.length; sfx('select'); }
+    else if (c === 'Escape' || isConfirm(c)) { menuSub = null; sfx('select'); }
+    return;
+  }
+  if (menuSub) { if (c === 'Escape' || isConfirm(c)) { menuSub = null; sfx('select'); } return; }
+  if (up || down) { menuIdx = (menuIdx + (up ? -1 : 1) + MENU_ITEMS.length) % MENU_ITEMS.length; sfx('select'); }
+  else if (c === 'Escape') { state = 'title'; sfx('select'); }
+  else if (isConfirm(c)) {
+    if (menuIdx === 0) enterSelect();
+    else if (menuIdx === 1) { menuSub = 'chars'; galIdx = 0; sfx('select'); }
+    else if (menuIdx === 2) { menuSub = 'stats'; sfx('select'); }
+    else if (menuIdx === 3) { if (AC) { muted = !muted; master.gain.value = muted ? 0 : 0.6; } sfx('select'); }
+    else { state = 'title'; sfx('select'); }
+  }
+}
+function menuHint(t) { ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(235,225,255,.7)'; ctx.font = dreamFont(14, false); ctx.fillText(t, CX, 556); }
+function drawMenu() {
+  dreamSky();
+  if (AC && AC.state === 'running' && musicName !== 'title') playMusic('title', 0.3);
+  drawSleepingIsaac(160, 470, 1.5);
+  if (menuSub === 'stats') return drawStatsCloud();
+  if (menuSub === 'chars') return drawCharsCloud();
+  trailBubbles(115, 385, 330, 330);
+  const cx = 600, cy = 280;
+  dreamBubble(cx, cy, 520, 450, { wob: 1.5 });
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#e8d8c0'; ctx.font = 'bold 34px Georgia, serif'; ctx.fillText('Elige a tu personaje', CX, 50);
-  const lg = ctx.createRadialGradient(270, 200, 10, 270, 230, 230);
-  lg.addColorStop(0, 'rgba(255,200,140,.3)'); lg.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H);
-  drawCharShaded(c, 270, 250 + Math.sin(frame * 0.06) * 5, 4.2, 'B', frame * 0.12, 0);
-  if (available.length > 1) { ctx.fillStyle = '#f2e6d0'; ctx.font = 'bold 22px monospace'; ctx.fillText('◀', 90, 250); ctx.fillText('▶', 450, 250); }
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#f2e6d0'; ctx.font = 'bold 30px monospace'; ctx.fillText(c.name, 520, 120);
-  ctx.fillStyle = '#8fd060'; ctx.font = 'italic 16px monospace'; ctx.fillText('Estilo: ' + c.ref, 520, 152);
-  ctx.fillStyle = '#d8c4a8'; ctx.font = '15px monospace'; ctx.fillText(c.desc, 520, 182);
-  const stats = [['VIDA', c.hp / 12], ['DAÑO', c.dmg / 6], ['VELOCIDAD', c.speed / 5.5], ['CADENCIA', (60 / c.delay) / 6.5], ['ALCANCE', c.range / 65]];
-  stats.forEach(([n, v], i) => {
-    const y = 225 + i * 32;
-    ctx.fillStyle = '#bfae94'; ctx.font = 'bold 13px monospace'; ctx.fillText(n, 520, y);
-    ctx.fillStyle = '#1a100a'; ctx.fillRect(640, y - 8, 240, 14);
-    ctx.fillStyle = '#c9a227'; ctx.fillRect(640, y - 8, 240 * clamp(v, 0.05, 1), 14);
+  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(30); ctx.fillText('The Binding of Epic', cx, 112);
+  ctx.fillStyle = DREAM_SOFT; ctx.font = 'italic ' + dreamFont(15, false); ctx.fillText('~ todo es un sueño ~', cx, 142);
+  MENU_ITEMS.forEach((name, i) => {
+    const sel = i === menuIdx, y = MENU_Y(i) + (sel ? Math.sin(frame * 0.12) * 2 : 0);
+    const label = i === 3 ? 'Sonido: ' + (muted ? 'NO' : 'SÍ') : name;
+    if (sel) { ctx.fillStyle = 'rgba(170,140,240,.22)'; ctx.beginPath(); ctx.roundRect(cx - 150, y - 22, 300, 44, 22); ctx.fill(); }
+    ctx.fillStyle = sel ? DREAM_INK : '#7a6aa0'; ctx.font = dreamFont(sel ? 30 : 25); ctx.fillText(label, cx, y);
+    if (sel) { // cursor: una lagrimita de Isaac
+      const tx = cx - 135 + Math.sin(frame * 0.15) * 3;
+      ctx.beginPath(); ctx.moveTo(tx, y - 10); ctx.quadraticCurveTo(tx + 8, y + 1, tx, y + 9); ctx.quadraticCurveTo(tx - 8, y + 1, tx, y - 10);
+      ctx.fillStyle = rad(tx, y, 9, '#ffffff', '#7ac0ff', '#2a6ab0'); ctx.fill();
+    }
   });
-  const step = Math.min(120, (W - 40) / CHARS.length), bw = step - 8; // las casillas se encogen si hay muchos personajes
+  menuHint('↑ ↓ elegir  ·  ENTER aceptar  ·  ESC volver');
+}
+function drawStatsCloud() {
+  trailBubbles(115, 385, 330, 330);
+  const cx = 600, cy = 275, s = SAVE.stats;
+  dreamBubble(cx, cy, 540, 460, { wob: 1.5 });
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(30); ctx.fillText('Estadísticas', cx, 105);
+  const nL = ISAAC_LEVELS.length, bf = s.bestFloor, lap = Math.floor((bf - 1) / nL);
+  const rows = [['Partidas jugadas', s.runs], ['Muertes', s.deaths], ['Jefes derrotados', s.bosses], ['Objetos recogidos', s.items],
+    ['Piso más profundo', ISAAC_LEVELS[(bf - 1) % nL].name + (lap ? ` (+${lap})` : '')], ['Pactos con el Diablo', s.devil],
+    ['Veces que despertaste', s.wins], ['Personajes', `${CHARS.filter(isUnlocked).length} / ${CHARS.length}`]];
+  rows.forEach(([k, v], i) => {
+    const y = 150 + i * 34;
+    ctx.textAlign = 'left'; ctx.fillStyle = '#6a5a90'; ctx.font = dreamFont(17, false); ctx.fillText(k, cx - 200, y);
+    ctx.textAlign = 'right'; ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(18); ctx.fillText(String(v), cx + 200, y);
+  });
+  menuHint('ENTER o ESC para volver');
+}
+function drawCharsCloud() {
+  trailBubbles(115, 385, 290, 350, 3);
+  const cx = 580, cy = 262;
+  dreamBubble(cx, cy, 680, 470, { wob: 1.5 });
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(26); ctx.fillText('Personajes', cx, 70);
+  CHARS.forEach((c, i) => {
+    const x = cx + (i % 3 - 1) * 200, y = 140 + Math.floor(i / 3) * 120, open = isUnlocked(c), sel = i === galIdx;
+    roundBubble(x, y - 8, 36, sel);
+    if (open) drawChar(c, x, y + 4, 0.85, 'B', 0, 0); else drawCharLocked(c, x, y + 4, 0.85);
+    ctx.textAlign = 'center'; ctx.fillStyle = open ? DREAM_INK : '#8a7aa8'; ctx.font = dreamFont(14); ctx.fillText(open ? c.name : '???', x, y + 42);
+    if (sel) { ctx.fillStyle = open ? '#5a9a4a' : '#a05a8a'; ctx.font = dreamFont(12, false); ctx.fillText(open ? '¡Desbloqueado!' : '🔒 ' + UNLOCKS[c.name].req, x, y + 58); }
+  });
+  menuHint('flechas para mirar  ·  ENTER o ESC para volver');
+}
+function drawSelect() {
+  dreamSky();
+  const c = CHARS[selIdx], open = isUnlocked(c);
+  if (selShake > 0) selShake--;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#f2ecff'; ctx.font = dreamFont(32); ctx.fillText('¿Con quién vas a soñar?', CX, 42);
+  const bx = 260 + Math.sin(selShake * 1.3) * selShake * 0.8;
+  dreamBubble(bx, 255, 330, 300, { wob: 1.5 });
+  if (open) drawCharShaded(c, bx, 268 + Math.sin(frame * 0.06) * 5, 3.6, 'B', frame * 0.12, 0);
+  else drawCharLocked(c, bx, 268, 3.6);
+  ctx.fillStyle = '#f2ecff'; ctx.font = dreamFont(26); ctx.fillText('◀', 62, 255); ctx.fillText('▶', 458, 255);
+  const ix = 700; // nube con la información
+  dreamBubble(ix, 255, 440, 340, { wob: 1.2 });
+  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(28); ctx.fillText(open ? c.name : '???', ix, 125);
+  if (open) {
+    ctx.fillStyle = DREAM_SOFT; ctx.font = 'italic ' + dreamFont(15, false); ctx.fillText('Estilo: ' + c.ref, ix, 155);
+    ctx.fillStyle = '#4a3a6a'; ctx.font = dreamFont(14, false); ctx.fillText(c.desc, ix, 182);
+    const stats = [['VIDA', c.hp / 12], ['DAÑO', c.dmg / 6], ['VELOCIDAD', c.speed / 5.5], ['CADENCIA', (60 / c.delay) / 6.5], ['ALCANCE', c.range / 65]];
+    stats.forEach(([n, v], i) => {
+      const y = 218 + i * 28;
+      ctx.textAlign = 'left'; ctx.fillStyle = '#6a5a90'; ctx.font = dreamFont(12); ctx.fillText(n, ix - 165, y);
+      ctx.fillStyle = '#e4dcf8'; ctx.beginPath(); ctx.roundRect(ix - 70, y - 7, 230, 14, 7); ctx.fill();
+      ctx.fillStyle = lin(ix - 70, 0, ix + 160, 0, '#ff9ad0', '#a07ae8'); ctx.beginPath(); ctx.roundRect(ix - 70, y - 7, 230 * clamp(v, 0.05, 1), 14, 7); ctx.fill();
+    });
+    ctx.textAlign = 'center';
+  } else {
+    ctx.fillStyle = '#a05a8a'; ctx.font = dreamFont(40); ctx.fillText('🔒', ix, 200);
+    ctx.fillStyle = '#6a5a90'; ctx.font = dreamFont(16, false); ctx.fillText('Para soñar con este personaje:', ix, 250);
+    ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(18); ctx.fillText(UNLOCKS[c.name].req, ix, 280);
+  }
+  const n = CHARS.length, step = Math.min(96, (W - 60) / n); // fila de burbujitas
   CHARS.forEach((ch, i) => {
-    const x = CX - (CHARS.length - 1) * step / 2 + i * step, y = 470;
-    ctx.fillStyle = i === selIdx ? 'rgba(201,162,39,.35)' : 'rgba(0,0,0,.35)';
-    ctx.beginPath(); ctx.roundRect(x - bw / 2, y - 50, bw, 80, 10); ctx.fill();
-    if (i === selIdx) { ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 3; ctx.stroke(); }
-    if (available.includes(i)) drawCharShaded(ch, x, y, Math.min(1.3, bw / 70), 'B', 0, 0);
-    else { ctx.fillStyle = '#3a2a20'; ctx.font = 'bold 36px monospace'; ctx.textAlign = 'center'; ctx.fillText('?', x, y - 10); }
+    const x = CX - (n - 1) * step / 2 + i * step, y = 478 + Math.sin(frame * 0.05 + i) * 3;
+    roundBubble(x, y - 6, step / 2 - 8, i === selIdx);
+    if (isUnlocked(ch)) drawChar(ch, x, y + 6, 0.8, 'B', 0, 0); else drawCharLocked(ch, x, y + 6, 0.8);
   });
-  ctx.textAlign = 'center'; ctx.fillStyle = '#8a7a66'; ctx.font = '14px monospace';
-  ctx.fillText('◀ ▶ para elegir · ENTER para jugar', CX, 548);
+  menuHint('◀ ▶ elegir  ·  ENTER jugar  ·  ESC menú');
+}
+function drawUnlockToasts() { // aviso de personaje nuevo dentro de una burbuja de sueño
+  const t = unlockToasts[0];
+  if (!t) return;
+  if (++t.t > 300) { unlockToasts.shift(); return; }
+  const prevCtx = ctx; ctx = mainCtx; ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalAlpha = clamp(Math.min(t.t / 20, (300 - t.t) / 30), 0, 1);
+  const x = W - 175, y = 78 - Math.max(0, 20 - t.t) * 3;
+  dreamBubble(x, y, 310, 112);
+  drawChar(t.c, x - 92, y + 20, 0.85, 'B', 0, 0);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = DREAM_SOFT; ctx.font = dreamFont(14); ctx.fillText('¡Nuevo personaje!', x + 35, y - 22);
+  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(20); ctx.fillText(t.c.name, x + 35, y + 2);
+  ctx.fillStyle = '#6a5a90'; ctx.font = dreamFont(12, false); ctx.fillText('ya está disponible', x + 35, y + 24);
+  ctx.restore(); ctx = prevCtx;
 }
 
 function draw() {
@@ -5099,7 +5340,8 @@ function draw() {
   ctx.setTransform(R8 ? 1 : DPR, 0, 0, R8 ? 1 : DPR, 0, 0);
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   if (state === 'title') { drawTitle(); drawPost(0.6); return; }
-  if (state === 'select') { drawSelect(); drawPost(0.5); return; }
+  if (state === 'menu') { drawMenu(); drawPost(0.45); drawUnlockToasts(); return; }
+  if (state === 'select') { drawSelect(); drawPost(0.45); drawUnlockToasts(); return; }
   if (state === 'ending') { drawEnding(); drawPost(0.55); return; }
   ctx.save();
   if (shake) ctx.translate(rnd(-shake, shake), rnd(-shake, shake));
@@ -5152,6 +5394,7 @@ function draw() {
   drawHUD();
   if (R8) drawRetroHUD();
   drawMsg();
+  drawUnlockToasts();
   if (bossIntro) drawBossIntro();
   if (deathCut && state === 'dead') drawDeathCut();
   if (paused) {
