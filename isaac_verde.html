@@ -825,67 +825,57 @@ function hunterArmor() {
 const isaacTint = (skin, line, hat, detail, face) => ({ head: f => isaacHead(f, { ...ISAAC_PAL, skin, line, hat, face }),
   body: withDetail(detail, w => baseBody(w, shade(skin, -0.25), skin, shade(skin, -0.25), line)) });
 const FLAME_SKIN = '#e86a6a', FLAME_LINE = '#5a1414';
-// caras propias (ox = centro de la cara, EY = altura de los ojos, pose > 0.3 = atacando)
-function knifeFace(ox, EY, pose, P) { // Comando: mirada afilada de asesino tranquilo, cicatriz y sonrisa de lado
-  for (const s of [-1, 1]) {
-    const ex = ox + s * 7, ry = pose > 0.3 ? 2 : 3, ix = ex + ox * 0.15 - s * 0.8;
-    ell(ex, EY + 0.5, 5, ry); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = P.line; ctx.lineWidth = 1.2; ctx.stroke();
-    ell(ix, EY + 0.6, 2.4, ry * 0.95); ctx.fillStyle = '#5ad0ff'; ctx.fill(); // iris helado
-    ell(ix, EY + 0.6, 1.2, ry * 0.7); ctx.fillStyle = '#04121e'; ctx.fill();
-    ctx.fillStyle = '#fff'; ell(ix - 0.8, EY - 0.4, 0.7, 0.6); ctx.fill();
-    ctx.fillStyle = P.skin; poly([[ex - 6 * s, EY - 6], [ex + 6 * s, EY - 6], [ex + 6 * s, EY - 3.2], [ex - 6 * s, EY + 0.4]]); ctx.fill(); // párpado en diagonal
-    ctx.strokeStyle = P.line; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(ex + 5.5 * s, EY - 4.2); ctx.lineTo(ex - 4.5 * s, EY - 0.6); ctx.stroke(); // ceja fruncida
-  }
-  ctx.strokeStyle = '#d8eef8'; ctx.lineWidth = 1.4; ctx.beginPath(); // cicatriz con puntadas sobre el ojo
-  ctx.moveTo(ox + 9, -3); ctx.lineTo(ox + 5, 12); ctx.stroke();
-  ctx.lineWidth = 1; ctx.beginPath(); for (const t of [0.2, 0.5, 0.8]) { const x = lerp(ox + 9, ox + 5, t), y = lerp(-3, 12, t); ctx.moveTo(x - 2, y - 0.4); ctx.lineTo(x + 2, y + 0.4); } ctx.stroke();
-  if (pose > 0.3) { // dientes apretados al atacar
-    ctx.fillStyle = '#1a0a0a'; ctx.beginPath(); ctx.roundRect(ox - 6, 12, 12, 4.4, 2); ctx.fill();
-    ctx.fillStyle = '#f4f0e0'; ctx.fillRect(ox - 5, 12.5, 10, 3.4);
-    ctx.strokeStyle = '#999'; ctx.lineWidth = 0.6; ctx.beginPath(); for (const dx of [-2.5, 0, 2.5]) { ctx.moveTo(ox + dx, 12.5); ctx.lineTo(ox + dx, 15.9); } ctx.moveTo(ox - 5, 14.2); ctx.lineTo(ox + 5, 14.2); ctx.stroke();
-  } else { // sonrisa de lado con un colmillo
-    ctx.strokeStyle = P.line; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(ox - 5, 14.5); ctx.quadraticCurveTo(ox + 1, 15.5, ox + 6, 12); ctx.stroke();
-    ctx.fillStyle = '#fff'; poly([[ox + 2, 14.6], [ox + 4.2, 13.6], [ox + 3.4, 16.2]]); ctx.fill();
+// caras propias, con los ojos de Isaac pero contentos (ox = centro de la cara, EY = altura de los ojos, pose > 0.3 = atacando)
+function isaacEye(ex, ey, rx = 4.7, ry = 5.2) { // ojo negro grande con brillos, igual que Isaac
+  ctx.fillStyle = '#111'; ell(ex, ey, rx, ry); ctx.fill();
+  ctx.fillStyle = '#fff'; ell(ex - rx * 0.36, ey - ry * 0.3, rx * 0.38, rx * 0.38); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.7)'; ell(ex + rx * 0.34, ey + ry * 0.36, rx * 0.19, rx * 0.19); ctx.fill();
+}
+function happyEye(ex, ey) { // ojo cerrado de felicidad  ^
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(ex, ey + 2, 4, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); ctx.lineCap = 'butt';
+}
+function cheeks(ox, col = 'rgba(255,120,140,.35)') { ctx.fillStyle = col; for (const s of [-1, 1]) { ell(ox + s * 12, 10.5, 3.8, 2.3); ctx.fill(); } }
+function knifeFace(ox, EY, pose, P) { // Comando: valiente y seguro de sí mismo
+  cheeks(ox);
+  for (const s of [-1, 1]) isaacEye(ox + s * 7, EY);
+  ctx.strokeStyle = P.line; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath(); // cejas decididas
+  for (const s of [-1, 1]) { ctx.moveTo(ox + s * 11, EY - 6.6); ctx.lineTo(ox + s * 3.5, EY - 5); }
+  ctx.stroke();
+  if (pose > 0.3) { // grito de ataque
+    ctx.fillStyle = '#3a0a0a'; ell(ox, 14, 4, 3); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(ox - 3, 11.4, 6, 1.4);
+  } else { // sonrisa segura, un poco de lado
+    ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(ox - 4.5, 13.2); ctx.quadraticCurveTo(ox, 16.8, ox + 5, 12.4); ctx.stroke();
   }
   ctx.lineCap = 'butt';
+  ctx.save(); ctx.translate(ox - 12, 11); ctx.rotate(-0.5); // curita en el cachete
+  ctx.fillStyle = '#f2d2a8'; ctx.beginPath(); ctx.roundRect(-3.6, -1.6, 7.2, 3.2, 1.4); ctx.fill();
+  ctx.fillStyle = 'rgba(160,110,70,.6)'; ctx.fillRect(-1, -1.1, 2, 2.2); ctx.restore();
 }
-function grenadeFace(ox, EY, pose, P) { // Granadero: loco de las explosiones, ojos disparejos y sonrisota
-  const jit = Math.sin(frame * 0.9) * 0.6; // las pupilas no se están quietas
-  for (const [s, rx, ry, pr] of [[-1, 5.6, 6.2, 1.5], [1, 4.2, 4.6, 1.8]]) {
-    const ex = ox + s * 7.2, ey = EY + (s < 0 ? 0.6 : 1.4), pk = pose > 0.3 ? 0.7 : 1;
-    ell(ex, ey, rx, ry); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = P.line; ctx.lineWidth = 1.3; ctx.stroke();
-    ctx.strokeStyle = 'rgba(220,60,40,.6)'; ctx.lineWidth = 0.6; ctx.beginPath(); // venitas
-    ctx.moveTo(ex - rx + 0.5, ey); ctx.lineTo(ex - rx + 2.2, ey - 1); ctx.moveTo(ex + rx - 0.5, ey + 1); ctx.lineTo(ex + rx - 2, ey + 1.6); ctx.stroke();
-    ell(ex + ox * 0.15 + jit * s, ey + jit, pr * pk, pr * pk); ctx.fillStyle = '#100800'; ctx.fill();
-  }
-  ctx.fillStyle = 'rgba(255,120,30,.35)'; for (const s of [-1, 1]) { ell(ox + s * 12, 10.8, 3.6, 2.2); ctx.fill(); } // cachetes emocionados
-  const open = pose > 0.3 ? 6.5 : 4.5; // sonrisota, se abre más al lanzar
-  const mouth = () => { ctx.beginPath(); ctx.moveTo(ox - 8, 11.5); ctx.quadraticCurveTo(ox, 12.5, ox + 8, 11.5); ctx.quadraticCurveTo(ox, 12 + open * 2, ox - 8, 11.5); };
-  mouth(); ctx.fillStyle = '#4a0a06'; ctx.fill();
+function grenadeFace(ox, EY, pose, P) { // Granadero: alegre y emocionado
+  cheeks(ox, 'rgba(255,130,60,.4)');
+  for (const s of [-1, 1]) { if (pose > 0.3) happyEye(ox + s * 7, EY); else isaacEye(ox + s * 7, EY + 0.5, 5, 5.6); }
+  const open = pose > 0.3 ? 4.6 : 3.4; // sonrisota con lengua
+  const mouth = () => { ctx.beginPath(); ctx.moveTo(ox - 6, 11.6); ctx.quadraticCurveTo(ox, 12.4, ox + 6, 11.6); ctx.quadraticCurveTo(ox, 12 + open * 1.9, ox - 6, 11.6); };
+  mouth(); ctx.fillStyle = '#5a1010'; ctx.fill();
   ctx.save(); ctx.clip();
-  ctx.fillStyle = '#fffbe8'; ctx.fillRect(ox - 8, 11, 16, 2.6);
-  ctx.fillStyle = '#e8506a'; ell(ox + 1, 12 + open * 1.6, 3.6, 2.4); ctx.fill(); // lengua
-  ctx.strokeStyle = '#bbb'; ctx.lineWidth = 0.6; ctx.beginPath(); for (const dx of [-4.5, -1.5, 1.5, 4.5]) { ctx.moveTo(ox + dx, 11); ctx.lineTo(ox + dx, 13.6); } ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.fillRect(ox - 6, 11, 12, 1.8);
+  ctx.fillStyle = '#ff7a8a'; ell(ox, 12 + open * 1.7, 3.2, 2.2); ctx.fill();
   ctx.restore();
-  mouth(); ctx.strokeStyle = P.line; ctx.lineWidth = 1.3; ctx.stroke();
+  mouth(); ctx.strokeStyle = P.line; ctx.lineWidth = 1.2; ctx.stroke();
 }
-function sniperFace(ox, EY, pose, P) { // Francotirador: guiña un ojo apuntando, el otro con la mira, y una ramita en la boca
-  ctx.strokeStyle = P.line; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; // ojo izquierdo cerrado
-  ctx.beginPath(); ctx.moveTo(ox - 11.5, EY + 0.5); ctx.quadraticCurveTo(ox - 7, EY + 2.4, ox - 2.5, EY + 0.2); ctx.stroke();
-  ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(ox - 11.5, EY + 0.5); ctx.lineTo(ox - 13, EY - 1); ctx.stroke();
-  const ex = ox + 7, r = pose > 0.3 ? 5.4 : 4.8, ix = ex + ox * 0.15, iy = EY + 0.6; // ojo derecho bien abierto, se agranda al disparar
-  ell(ex, EY + 0.4, r, r); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = P.line; ctx.lineWidth = 1.2; ctx.stroke();
-  ell(ix, iy, r * 0.62, r * 0.62); ctx.fillStyle = rad(ix, iy, r * 0.62, '#f0c0ff', '#a040e0', '#3a0a5a'); ctx.fill();
-  ell(ix, iy, r * 0.24, r * 0.24); ctx.fillStyle = '#0a0410'; ctx.fill();
-  ctx.strokeStyle = 'rgba(255,60,60,.9)'; ctx.lineWidth = 0.7; ctx.beginPath(); // reflejo de la mira
-  ctx.arc(ix, iy, r * 0.45, 0, Math.PI * 2);
-  ctx.moveTo(ix - r * 0.62, iy); ctx.lineTo(ix + r * 0.62, iy); ctx.moveTo(ix, iy - r * 0.62); ctx.lineTo(ix, iy + r * 0.62); ctx.stroke();
-  ctx.strokeStyle = P.line; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ex - 4.5, EY - r - 1.2); ctx.lineTo(ex + 4.5, EY - r - 2.4); ctx.stroke(); // ceja levantada
-  ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(ox - 4, 14.2); ctx.lineTo(ox + 3, 13.6); ctx.stroke(); // boca seria
-  const sw = Math.sin(frame * 0.05);
-  ctx.strokeStyle = '#c8b060'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(ox + 2, 13.8); ctx.lineTo(ox + 12, 10 + sw); ctx.stroke(); // ramita
-  ctx.fillStyle = '#7aa040'; ell(ox + 12.5, 9.6 + sw, 1.8, 1); ctx.fill();
-  ctx.lineCap = 'butt';
+function sniperFace(ox, EY, pose, P) { // Francotirador: tranquilo y concentrado, guiña un ojo al disparar
+  cheeks(ox, 'rgba(255,140,200,.3)');
+  for (const s of [-1, 1]) {
+    const ex = ox + s * 7;
+    if (pose > 0.3 && s < 0) { happyEye(ex, EY); continue; } // guiño al apuntar
+    isaacEye(ex, EY);
+    ctx.fillStyle = shade(P.skin, -0.05); ctx.beginPath(); ctx.ellipse(ex, EY, 5.6, 6.2, 0, Math.PI, 0); ctx.lineTo(ex + 5.6, EY - 3.4); ctx.lineTo(ex - 5.6, EY - 3.4); ctx.closePath(); // párpado relajado
+    ctx.fill(); ctx.strokeStyle = P.line; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ex - 4.6, EY - 3.4); ctx.lineTo(ex + 4.6, EY - 3.4); ctx.stroke();
+  }
+  ctx.strokeStyle = P.line; ctx.lineWidth = 1.7; ctx.lineCap = 'round'; ctx.beginPath(); // sonrisita tranquila
+  ctx.arc(ox + 0.5, 11.5, 3.6, Math.PI * 0.2, Math.PI * 0.8); ctx.stroke(); ctx.lineCap = 'butt';
 }
 function knifeHat(face) { // bandana roja
   ctx.beginPath(); ctx.moveTo(-19.5, -4); ctx.bezierCurveTo(-20, -24, 20, -24, 19.5, -4); ctx.quadraticCurveTo(0, -8, -19.5, -4);
