@@ -5288,33 +5288,51 @@ function dreamSky() {
   ctx.beginPath(); ctx.rect(800, 0, 160, 160); ctx.arc(893, 61, 25, 0, Math.PI * 2, true);
   ctx.fillStyle = '#fff4c8'; ctx.fill(); ctx.restore();
 }
-function cloudPath(x, y, w, h, wob = 0) { // contorno de nube: bolitas alrededor de una elipse
+// para que el menú no dé lag: cada burbuja y cada personaje se dibuja una sola vez
+// en un lienzo aparte y después solo se copia la imagen
+const SPR_CACHE = new Map();
+function cachedSprite(key, w, h, ox, oy, fn) {
+  let c = SPR_CACHE.get(key);
+  if (!c) {
+    c = mkCanvas(Math.ceil(w * DPR), Math.ceil(h * DPR));
+    const prev = ctx; ctx = c.getContext('2d'); ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.translate(ox, oy);
+    try { fn(); } finally { ctx = prev; }
+    SPR_CACHE.set(key, c);
+  }
+  ctx.drawImage(c, -ox, -oy, w, h); // se dibuja con el origen del que llama
+}
+function atSprite(x, y, key, w, h, ox, oy, fn) { ctx.save(); ctx.translate(x, y); cachedSprite(key, w, h, ox, oy, fn); ctx.restore(); }
+function cloudPath(x, y, w, h) { // contorno de nube: bolitas alrededor de una elipse
   const m = Math.min(w, h), n = Math.max(9, Math.round((w + h) / 30));
   ctx.beginPath();
   for (let i = 0; i < n; i++) {
-    const a = i / n * Math.PI * 2, r = m * 0.2 * (1 + 0.2 * Math.sin(i * 2.7)) + Math.sin(frame * 0.04 + i) * wob;
+    const a = i / n * Math.PI * 2, r = m * 0.2 * (1 + 0.2 * Math.sin(i * 2.7));
     const px = x + Math.cos(a) * (w / 2 - r * 0.7), py = y + Math.sin(a) * (h / 2 - r * 0.7);
     ctx.moveTo(px + r, py); ctx.arc(px, py, r, 0, Math.PI * 2);
   }
   ctx.moveTo(x + w / 2 - m * 0.15, y); ctx.ellipse(x, y, w / 2 - m * 0.15, h / 2 - m * 0.15, 0, 0, Math.PI * 2);
 }
-function dreamBubble(x, y, w, h, { glow = 0, wob = 1 } = {}) {
-  ctx.save();
-  ctx.shadowColor = `rgba(210,180,255,${0.4 + glow * 0.4})`; ctx.shadowBlur = 20 + glow * 16;
-  ctx.fillStyle = DREAM_EDGE; cloudPath(x, y, w + 7, h + 7, wob); ctx.fill(); // borde
-  ctx.shadowBlur = 0;
-  const g = ctx.createLinearGradient(0, y - h / 2, 0, y + h / 2);
-  g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#e6defc');
-  ctx.fillStyle = g; cloudPath(x, y, w, h, wob); ctx.fill();
-  ctx.restore();
-  shine(x - w * 0.24, y - h * 0.3, w * 0.1, h * 0.05, 0.45);
+function dreamBubble(x, y, w, h) {
+  const pad = 45;
+  atSprite(x, y, `cloud|${w}|${h}`, w + pad * 2, h + pad * 2, w / 2 + pad, h / 2 + pad, () => {
+    ctx.shadowColor = 'rgba(210,180,255,.4)'; ctx.shadowBlur = 20;
+    ctx.fillStyle = DREAM_EDGE; cloudPath(0, 0, w + 7, h + 7); ctx.fill(); // borde
+    ctx.shadowBlur = 0;
+    const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#e6defc');
+    ctx.fillStyle = g; cloudPath(0, 0, w, h); ctx.fill();
+    shine(-w * 0.24, -h * 0.3, w * 0.1, h * 0.05, 0.45);
+  });
 }
 function roundBubble(x, y, r, glow = 0) { // burbuja redonda de jabón
-  if (glow) { ctx.save(); ctx.shadowColor = 'rgba(255,220,140,.9)'; ctx.shadowBlur = 18; }
-  ell(x, y, r + 3, r + 3); ctx.fillStyle = glow ? '#e8c060' : DREAM_EDGE; ctx.fill();
-  if (glow) ctx.restore();
-  ell(x, y, r, r); ctx.fillStyle = rad(x, y, r, '#ffffff', '#f2eeff', '#d8ccf8'); ctx.fill();
-  shine(x - r * 0.4, y - r * 0.45, r * 0.22, r * 0.12, 0.9);
+  const pad = r + 24;
+  atSprite(x, y, `bub|${r}|${glow ? 1 : 0}`, pad * 2, pad * 2, pad, pad, () => {
+    if (glow) { ctx.save(); ctx.shadowColor = 'rgba(255,220,140,.9)'; ctx.shadowBlur = 18; }
+    ell(0, 0, r + 3, r + 3); ctx.fillStyle = glow ? '#e8c060' : DREAM_EDGE; ctx.fill();
+    if (glow) ctx.restore();
+    ell(0, 0, r, r); ctx.fillStyle = rad(0, 0, r, '#ffffff', '#f2eeff', '#d8ccf8'); ctx.fill();
+    shine(-r * 0.4, -r * 0.45, r * 0.22, r * 0.12, 0.9);
+  });
 }
 function trailBubbles(x0, y0, x1, y1, n = 4) { // burbujitas que salen de la cabeza de Isaac
   for (let i = 0; i < n; i++) {
@@ -5349,8 +5367,17 @@ function drawSleepingIsaac(x, y, s) {
   }
 }
 const dreamFont = (px, bold = true) => `${bold ? 'bold ' : ''}${px}px "Trebuchet MS", "Comic Sans MS", sans-serif`;
+function drawCharIcon(c, x, y, s, locked = false) { // personaje quieto ya dibujado (o su silueta si está bloqueado)
+  atSprite(x, y, `ch|${c.name}|${s}|${locked ? 1 : 0}`, 90 * s, 100 * s, 45 * s, 70 * s, () => {
+    drawChar(c, 0, 0, s, 'B', 0, 0);
+    if (locked) { // silueta: pinta de negro todo lo dibujado
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'source-in';
+      ctx.fillStyle = 'rgba(20,10,40,.55)'; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.restore();
+    }
+  });
+}
 function drawCharLocked(c, x, y, s) { // silueta oscura con signo de pregunta
-  ctx.save(); ctx.filter = 'brightness(0)'; ctx.globalAlpha = 0.4; drawChar(c, x, y, s, 'B', 0, 0); ctx.restore();
+  drawCharIcon(c, x, y, s, true);
   ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = dreamFont(Math.round(26 * s)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('?', x, y - 14 * s);
 }
@@ -5391,7 +5418,7 @@ function drawMenu() {
   if (menuSub === 'chars') return drawCharsCloud();
   trailBubbles(115, 385, 330, 330);
   const cx = 600, cy = 280;
-  dreamBubble(cx, cy, 520, 450, { wob: 1.5 });
+  dreamBubble(cx, cy, 520, 450);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(30); ctx.fillText('The Binding of Epic', cx, 112);
   ctx.fillStyle = DREAM_SOFT; ctx.font = 'italic ' + dreamFont(15, false); ctx.fillText('~ todo es un sueño ~', cx, 142);
@@ -5411,7 +5438,7 @@ function drawMenu() {
 function drawStatsCloud() {
   trailBubbles(115, 385, 330, 330);
   const cx = 600, cy = 275, s = SAVE.stats;
-  dreamBubble(cx, cy, 540, 460, { wob: 1.5 });
+  dreamBubble(cx, cy, 540, 460);
   ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(30); ctx.fillText('Estadísticas', cx, 105);
   const nL = ISAAC_LEVELS.length, bf = s.bestFloor, lap = Math.floor((bf - 1) / nL);
@@ -5428,13 +5455,13 @@ function drawStatsCloud() {
 function drawCharsCloud() {
   trailBubbles(115, 385, 290, 350, 3);
   const cx = 580, cy = 262;
-  dreamBubble(cx, cy, 680, 470, { wob: 1.5 });
+  dreamBubble(cx, cy, 680, 470);
   ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(26); ctx.fillText('Personajes', cx, 70);
   CHARS.forEach((c, i) => {
     const x = cx + (i % 5 - 2) * 122, y = 120 + Math.floor(i / 5) * 86, open = isUnlocked(c), sel = i === galIdx;
     roundBubble(x, y - 6, 27, sel);
-    if (open) drawChar(c, x, y + 4, 0.62, 'B', 0, 0); else drawCharLocked(c, x, y + 4, 0.62);
+    if (open) drawCharIcon(c, x, y + 4, 0.62); else drawCharLocked(c, x, y + 4, 0.62);
     ctx.textAlign = 'center'; ctx.fillStyle = open ? DREAM_INK : '#8a7aa8'; ctx.font = dreamFont(12); ctx.fillText(open ? c.name : '???', x, y + 32);
   });
   const gc = CHARS[galIdx], go = isUnlocked(gc);
@@ -5449,12 +5476,12 @@ function drawSelect() {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = '#f2ecff'; ctx.font = dreamFont(32); ctx.fillText('¿Con quién vas a soñar?', CX, 42);
   const bx = 260 + Math.sin(selShake * 1.3) * selShake * 0.8;
-  dreamBubble(bx, 255, 330, 300, { wob: 1.5 });
+  dreamBubble(bx, 255, 330, 300);
   if (open) drawCharShaded(c, bx, 268 + Math.sin(frame * 0.06) * 5, 3.6, 'B', frame * 0.12, 0);
   else drawCharLocked(c, bx, 268, 3.6);
   ctx.fillStyle = '#f2ecff'; ctx.font = dreamFont(26); ctx.fillText('◀', 62, 255); ctx.fillText('▶', 458, 255);
   const ix = 700; // nube con la información
-  dreamBubble(ix, 255, 440, 340, { wob: 1.2 });
+  dreamBubble(ix, 255, 440, 340);
   ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(28); ctx.fillText(open ? c.name : '???', ix, 125);
   if (open) {
     ctx.fillStyle = DREAM_SOFT; ctx.font = 'italic ' + dreamFont(15, false); ctx.fillText('Estilo: ' + c.ref, ix, 155);
@@ -5477,7 +5504,7 @@ function drawSelect() {
     const i = (selIdx + k + n) % n, ch = CHARS[i], x = CX + k * 96, y = 478 + Math.sin(frame * 0.05 + i) * 3;
     ctx.save(); ctx.globalAlpha = 1 - Math.abs(k) * 0.12;
     roundBubble(x, y - 6, 40, k === 0);
-    if (isUnlocked(ch)) drawChar(ch, x, y + 6, 0.8, 'B', 0, 0); else drawCharLocked(ch, x, y + 6, 0.8);
+    if (isUnlocked(ch)) drawCharIcon(ch, x, y + 6, 0.8); else drawCharLocked(ch, x, y + 6, 0.8);
     ctx.restore();
   }
   ctx.fillStyle = 'rgba(235,225,255,.8)'; ctx.font = dreamFont(13); ctx.textAlign = 'center'; ctx.fillText(`${selIdx + 1} / ${n}`, CX, 420);
@@ -5491,7 +5518,7 @@ function drawUnlockToasts() { // aviso de personaje nuevo dentro de una burbuja 
   ctx.globalAlpha = clamp(Math.min(t.t / 20, (300 - t.t) / 30), 0, 1);
   const x = W - 175, y = 78 - Math.max(0, 20 - t.t) * 3;
   dreamBubble(x, y, 310, 112);
-  drawChar(t.c, x - 92, y + 20, 0.85, 'B', 0, 0);
+  drawCharIcon(t.c, x - 92, y + 20, 0.85);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = DREAM_SOFT; ctx.font = dreamFont(14); ctx.fillText('¡Nuevo personaje!', x + 35, y - 22);
   ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(20); ctx.fillText(t.c.name, x + 35, y + 2);
