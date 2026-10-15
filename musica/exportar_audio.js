@@ -79,7 +79,10 @@ async function evaluate(cdp, expression) {
     const jobs = [...Object.entries(MUSICA).map(([k, n]) => ['music', k, path.join(MUS_DIR, n + '.mp3')]),
       ...Object.entries(SONIDOS).map(([k, n]) => ['sfx', k, path.join(SFX_DIR, n + '.mp3')])];
     for (const [kind, key, out] of jobs) {
-      const b64 = await evaluate(cdp, `exportarAudio(${JSON.stringify(kind)}, ${JSON.stringify(key)})`);
+      // el WAV se trae en pedazos: un mensaje muy grande traba la conexión con el navegador
+      const len = await evaluate(cdp, `exportarAudio(${JSON.stringify(kind)}, ${JSON.stringify(key)}).then(s => (window.__wav = s).length)`);
+      let b64 = '';
+      for (let i = 0; i < len; i += 1 << 20) b64 += await evaluate(cdp, `window.__wav.slice(${i}, ${i + (1 << 20)})`);
       const wav = path.join(profile, key + '.wav');
       fs.writeFileSync(wav, Buffer.from(b64, 'base64'));
       execFileSync(ffmpeg, ['-y', '-loglevel', 'error', '-i', wav, '-c:a', 'libmp3lame', '-b:a', kind === 'music' ? '192k' : '160k', out]);
