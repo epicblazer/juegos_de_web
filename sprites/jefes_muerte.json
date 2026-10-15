@@ -3,7 +3,7 @@
   "frameWidth": 256,
   "frameHeight": 256,
   "columns": 12,
-  "rows": 8,
+  "rows": 20,
   "pivot": {
     "x": 128,
     "y": 140,
@@ -62,6 +62,90 @@
     },
     "cerebro_madre": {
       "row": 7,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 5
+    },
+    "gurdy": {
+      "row": 8,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 7
+    },
+    "peep": {
+      "row": 9,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 7
+    },
+    "viuda": {
+      "row": 10,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 7
+    },
+    "pie_mama": {
+      "row": 11,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "satanas": {
+      "row": 12,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "rey_slime": {
+      "row": 13,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "rey_boo": {
+      "row": 14,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "nave_nodriza": {
+      "row": 15,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 7
+    },
+    "ridley": {
+      "row": 16,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "wither": {
+      "row": 17,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "ganon": {
+      "row": 18,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 7
+    },
+    "sans": {
+      "row": 19,
       "frames": 12,
       "fps": 10,
       "loop": false,

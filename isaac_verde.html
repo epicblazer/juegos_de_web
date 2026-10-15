@@ -3128,6 +3128,9 @@ const SPRITE_FILES = {
   monstro: 'sprites/jefe_monstro.png', dukeFlies: 'sprites/jefe_duque_moscas.png', darkIsaac: 'sprites/jefe_isaac_oscuro.png',
   koopa: 'sprites/jefe_rey_koopa.png', dragon: 'sprites/jefe_dragon_fin.png', eggman: 'sprites/jefe_dr_huevon.png',
   ghostKing: 'sprites/jefe_rey_fantasma.png', brain: 'sprites/jefe_cerebro_madre.png', bossDeath: 'sprites/jefes_muerte.png',
+  gurdy: 'sprites/jefe_gurdy.png', peep: 'sprites/jefe_peep.png', widow: 'sprites/jefe_viuda.png', momFoot: 'sprites/jefe_pie_mama.png',
+  satan: 'sprites/jefe_satanas.png', kingSlime: 'sprites/jefe_rey_slime.png', kingBoo: 'sprites/jefe_rey_boo.png', mothership: 'sprites/jefe_nave_nodriza.png',
+  ridley: 'sprites/jefe_ridley.png', wither: 'sprites/jefe_wither.png', ganon: 'sprites/jefe_ganon.png', sans: 'sprites/jefe_sans.png',
 };
 const SPR = {};
 if (typeof Image !== 'undefined') for (const [k, src] of Object.entries(SPRITE_FILES)) {
@@ -3155,7 +3158,11 @@ function drawPlayerSprite() {
 }
 
 // Jefes: qué fila de su hoja usar según lo que están haciendo
-const BOSS_SPR = { monstro: 1.6, dukeFlies: 1.6, darkIsaac: 2.4, koopa: 1.6, dragon: 1.35, eggman: 1.6, ghostKing: 1.6, brain: 1.6 };
+const BOSS_SPR = { monstro: 1.6, dukeFlies: 1.6, darkIsaac: 2.4, koopa: 1.6, dragon: 1.35, eggman: 1.6, ghostKing: 1.6, brain: 1.6,
+  gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6 };
+const FACES_RIGHT = ['dragon', 'ridley']; // hojas que miran a la derecha: se giran hacia donde vuelan
+// tamaño de la hoja en las cinemáticas: los jefes nuevos se igualan al tamaño de los viejos
+const cutScale = type => ['gurdy', 'peep', 'widow', 'momFoot', 'satan', 'kingSlime', 'kingBoo', 'mothership', 'ridley', 'wither', 'ganon', 'sans'].includes(type) ? Math.min(2.08 / BOSS_SPR[type], 2) : 1.3;
 function bossFrame(e, row, frames, fps, loop) {
   if (e.animRow !== row) { e.animRow = row; e.animAt = frame; }
   const i = Math.floor((frame - e.animAt) / 60 * fps);
@@ -3200,30 +3207,54 @@ function bossAnim(e) {
     case 'brain':
       if (e.state !== 'idle') return { row: 1, col: bossFrame(e, 1, 8, 12, true) };
       return { row: e.hp < e.maxHp / 2 ? 2 : 0, col: bossFrame(e, e.hp < e.maxHp / 2 ? 2 : 0, 8, 6, true) };
+    case 'gurdy': { const r = e.state === 'idle' ? 0 : e.state === 'flies' ? 2 : 1; return { row: r, col: bossFrame(e, r, 8, r ? 10 : 8, true) }; }
+    case 'peep': { const r = e.state === 'cry' ? (e.popped ? 4 : 1) : (e.popped ? 2 : 0); return { row: r, col: bossFrame(e, r, 8, r === 1 || r === 4 ? 12 : 8, true) }; }
+    case 'widow': {
+      if (e.state === 'spit') return { row: 1, col: bossFrame(e, 1, 8, 10, true) };
+      const r = e.state === 'idle' && e.wt > 8 ? 0 : 2; return { row: r, col: bossFrame(e, r, 8, r ? 8 : 12, true) };
+    }
+    case 'satan': { const r = e.state === 'idle' ? 0 : ['brim', 'sweep', 'cross'].includes(e.state) ? 1 : 2; return { row: r, col: bossFrame(e, r, 8, r ? 12 : 8, true) }; }
+    case 'kingSlime':
+      if (e.state === 'hop') return { row: 1, col: clamp(Math.floor(e.timer / e.dur * 8), 0, 7) };
+      if (e.state === 'sink') return { row: 2, col: clamp(Math.floor(e.timer / 70 * 8), 0, 7) };
+      return { row: 0, col: bossFrame(e, 0, 8, 8, true) };
+    case 'kingBoo': { const r = e.shy ? 1 : e.state === 'laugh' ? 2 : 0; return { row: r, col: bossFrame(e, r, 8, r === 2 ? 10 : 8, true) }; }
+    case 'mothership': { const r = e.state === 'beam' ? 1 : e.state === 'idle' ? 0 : 2; return { row: r, col: bossFrame(e, r, 8, r ? 12 : 10, true) }; }
+    case 'ridley': { const r = e.state === 'swoop' ? 1 : e.state === 'fireballs' ? 2 : 0; return { row: r, col: bossFrame(e, r, 8, r === 1 ? 16 : r ? 12 : 10, true) }; }
+    case 'wither': { const r = e.armor ? (e.state === 'idle' ? 2 : 4) : (e.state === 'idle' ? 0 : 1); return { row: r, col: bossFrame(e, r, 8, r === 1 || r === 4 ? 10 : 8, true) }; }
+    case 'ganon':
+      if (e.state === 'trident') return { row: 1, col: e.timer < 30 ? clamp(Math.floor(e.timer / 10), 0, 2) : 3 + Math.floor((e.timer - 30) / 6) % 5 };
+      if (e.state === 'spin' && e.timer >= 20) return { row: 2, col: bossFrame(e, 2, 8, 14, true) };
+      return { row: 0, col: bossFrame(e, 0, 8, 8, true) };
+    case 'sans': { const r = e.state === 'tired' ? 2 : e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r === 2 ? 4 : 8, true) }; }
   }
   return { row: 0, col: 0 };
 }
 function drawBossSprite(e) {
   const S = BOSS_SPR[e.type];
-  if (!S || !sprOK(e.type)) return false;
+  if (!S || !sprOK(e.type) || e.drawHigh) return false; // el pie de mamá baja con la pierna entera: se dibuja por código
   const a = bossAnim(e), F = 256;
   const sh = Math.max(0.3, 1 - e.z / 400);
   softShadow(e.x, e.y + e.r * 0.7, e.r * 1.15 * sh, e.r * 0.42 * sh, 0.6);
   if (e.z > 450) return true;
   ctx.save();
   if (e.spawn > 0) ctx.globalAlpha = clamp(1 - e.spawn / 60, 0.05, 1);
+  if ((e.type === 'kingBoo' || e.type === 'ganon') && e.alpha !== undefined) ctx.globalAlpha *= Math.max(0.05, e.alpha);
+  if (e.type === 'sans' && e.dodgeAt !== undefined && frame - e.dodgeAt < 10) ctx.globalAlpha *= 0.5 + (frame - e.dodgeAt) / 20;
   ctx.translate(e.x, e.y - e.z + (a.dz || 0));
-  if (e.type === 'dragon') ctx.rotate(e.dir || 0);
+  if (FACES_RIGHT.includes(e.type)) ctx.rotate(e.dir || 0);
+  if (e.type === 'kingSlime') ctx.scale(e.r / 50, e.r / 50); // se encoge al perder vida
   ctx.drawImage(SPR[e.type], a.col * F, a.row * F, F, F, -128 / S, -140 / S, F / S, F / S);
   ctx.restore();
   return true;
 }
 // sprites/jefes_muerte.png: una fila por jefe (12 cuadros); pop = cuadro en que revienta (ver jefes_muerte.json)
-const BOSS_DEATH = { monstro: [0, 7], dukeFlies: [1, 7], darkIsaac: [2, 6], koopa: [3, 9], dragon: [4, 6], eggman: [5, 7], ghostKing: [6, 6], brain: [7, 5] };
+const BOSS_DEATH = { monstro: [0, 7], dukeFlies: [1, 7], darkIsaac: [2, 6], koopa: [3, 9], dragon: [4, 6], eggman: [5, 7], ghostKing: [6, 6], brain: [7, 5],
+  gurdy: [8, 7], peep: [9, 7], widow: [10, 7], momFoot: [11, 6], satan: [12, 6], kingSlime: [13, 6], kingBoo: [14, 6], mothership: [15, 7], ridley: [16, 6], wither: [17, 6], ganon: [18, 7], sans: [19, 5] };
 function bossDeathAnim(e, onPop) {
   const S = BOSS_SPR[e.type], D = BOSS_DEATH[e.type];
   if (!S || !D || !sprOK('bossDeath')) return false;
-  fxAnims.push({ k: 'bossDeath', F: 256, row: D[0], frames: 12, fps: 10, pop: D[1], onPop, hold: 0.5, x: e.x, y: e.y - e.z, ax: 128, ay: 140, sc: 1 / S, t0: frame, rot: e.type === 'dragon' ? e.dir || 0 : 0 });
+  fxAnims.push({ k: 'bossDeath', F: 256, row: D[0], frames: 12, fps: 10, pop: D[1], onPop, hold: 0.5, x: e.x, y: e.y - e.z, ax: 128, ay: 140, sc: (e.type === 'kingSlime' ? e.r / 50 : 1) / S, t0: frame, rot: FACES_RIGHT.includes(e.type) ? e.dir || 0 : 0 });
   return true;
 }
 function drawFxAnims() {
@@ -3562,8 +3593,8 @@ function drawIntroBoss(b, x, y, t) {
   if (roar) ctx.scale(1.07, 1.07);
   if (t < INTRO.vs) ctx.filter = 'brightness(0.06)'; // silueta hasta el golpe del VS
   if (sprOK(b.type)) {
-    const row = roar ? 1 : 0, col = roar ? 4 + Math.floor((t - INTRO.roar) / 6) % 4 : Math.floor(frame / 60 * 8) % 8, S = 1.3;
-    if (b.type === 'dragon') ctx.scale(-1, 1); // que mire hacia el jugador
+    const row = roar ? 1 : 0, col = roar ? 4 + Math.floor((t - INTRO.roar) / 6) % 4 : Math.floor(frame / 60 * 8) % 8, S = cutScale(b.type);
+    if (FACES_RIGHT.includes(b.type)) ctx.scale(-1, 1); // que mire hacia el jugador
     ctx.drawImage(SPR[b.type], col * 256, row * 256, 256, 256, -128 * S, -140 * S, 256 * S, 256 * S);
   } else {
     ctx.scale(2.3, 2.3);
@@ -3701,6 +3732,7 @@ function koGlow(x, y, r, color) {
 function drawKOPlayer(x, y, t, o = {}) {
   ctx.save(); ctx.translate(x, y);
   if (o.alpha !== undefined) ctx.globalAlpha *= o.alpha;
+  if (o.scale) ctx.scale(o.scale, o.scale);
   softShadow(0, 10, 70 * (1 + (o.squash || 0) * 0.5), 18, 0.7);
   if (o.squash) ctx.scale(1 + o.squash * 0.6, 1 - o.squash * 0.65);
   const f = [];
@@ -3725,8 +3757,8 @@ function drawKOBoss(b, x, y, row, col, o = {}) {
   if (o.filter) ctx.filter = o.filter;
   ctx.scale((o.scale || 1) * (o.sx || 1), (o.scale || 1) * (o.sy || 1));
   if (sprOK(b.type)) {
-    const S = 1.3;
-    if (b.type === 'dragon' && o.flip !== false) ctx.scale(-1, 1); // la hoja mira a la derecha: así mira al jugador
+    const S = cutScale(b.type);
+    if (FACES_RIGHT.includes(b.type) && o.flip !== false) ctx.scale(-1, 1); // la hoja mira a la derecha: así mira al jugador
     ctx.drawImage(SPR[b.type], col * 256, row * 256, 256, 256, -128 * S, -140 * S, 256 * S, 256 * S);
   } else {
     ctx.scale(2.3, 2.3);
@@ -3755,16 +3787,19 @@ function koFlame(x0, y0, x1, y1, a) { // chorro de fuego
   }
   ctx.restore();
 }
-function koBeam(x0, y0, x1, y1, a) { // láser verde del Dr. Huevón
+// láser de las cinemáticas: verde (Dr. Huevón), rojo (Satanás) o blanco (Sans)
+const KO_BEAM = { green: ['60,255,60', '160,255,120', '200,255,180'], red: ['255,30,10', '255,120,60', '255,200,160'], white: ['120,180,255', '220,240,255', '235,245,255'] };
+function koBeam(x0, y0, x1, y1, a, pal = 'green', wd = 26) {
   if (a <= 0) return;
-  const d = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / d, uy = (y1 - y0) / d, w = 26 * a * (1 + Math.sin(frame * 0.8) * 0.15);
+  const [c0, c1, c2] = KO_BEAM[pal];
+  const d = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / d, uy = (y1 - y0) / d, w = wd * a * (1 + Math.sin(frame * 0.8) * 0.15);
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
-  [[2.4, 'rgba(60,255,60,.35)'], [1.2, 'rgba(160,255,120,.8)'], [0.45, 'rgba(255,255,255,1)']].forEach(([k, c]) => {
+  [[2.4, `rgba(${c0},.35)`], [1.2, `rgba(${c1},.8)`], [0.45, 'rgba(255,255,255,1)']].forEach(([k, c]) => {
     ctx.strokeStyle = c; ctx.lineWidth = w * k;
     ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + ux * 1400, y0 + uy * 1400); ctx.stroke();
   });
   ctx.restore();
-  koGlow(x1, y1, 90 * a, 'rgba(160,255,120,.7)'); koGlow(x0, y0, 50 * a, 'rgba(200,255,180,.8)');
+  koGlow(x1, y1, 90 * a, `rgba(${c1},.7)`); koGlow(x0, y0, 50 * a, `rgba(${c2},.8)`);
 }
 function koBolts(x0, y0, x1, y1, n) { // rayos eléctricos (cambian de forma cada cuadro)
   ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round';
@@ -3938,20 +3973,215 @@ const KO_FIN = {
   },
 };
 // los jefes nuevos reutilizan la cinemática que mejor les queda, con su propia frase
+const koUnit = b => cutScale(b.type) * (BOSS_SPR[b.type] || 1.6); // píxeles de pantalla por unidad del dibujo del jefe
+function koFall(b, t, row, land) { // salta muy alto desde su lugar y cae sobre el jugador (cuadro 100)
+  const I = KO_I, B = KO_B;
+  if (t < 70) {
+    const up = easeIn(koK(t, 46, 70));
+    softShadow(B.x, B.y + 95, 120 * (1 - up * 0.6), 26 * (1 - up * 0.6), 0.7);
+    drawKOPlayer(I.x, I.y, t);
+    drawKOBoss(b, B.x, B.y - up * 700, t < 40 ? 0 : row, koCyc(12, 8));
+  } else {
+    const k = koK(t, 70, 100);
+    softShadow(I.x, I.y + 8, 20 + k * 110, 6 + k * 30, 0.3 + k * 0.5); // su sombra crece sobre el jugador
+    drawKOPlayer(I.x, I.y, t);
+    if (t >= 88) drawKOBoss(b, I.x, lerp(-250, land, easeIn(koK(t, 88, 100))), row, 4);
+  }
+}
+function koEye(x, y, r, look) { // ojo suelto (Peep)
+  ell(x, y, r, r); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#4a3a04'; ctx.lineWidth = 2; ctx.stroke();
+  ell(x + Math.cos(look) * r * 0.35, y + Math.sin(look) * r * 0.35, r * 0.42, r * 0.5); ctx.fillStyle = '#111'; ctx.fill();
+  ctx.strokeStyle = '#b01818'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - Math.cos(look) * r, y - Math.sin(look) * r); ctx.lineTo(x - Math.cos(look) * r * 1.8, y - Math.sin(look) * r * 1.8); ctx.stroke();
+}
 Object.assign(KO_FIN, {
-  gurdy: { ...KO_FIN.dukeFlies, line: '"Más moscas para mi colección."' },
-  peep: { ...KO_FIN.monstro, line: '"¡Splash! Quedaste hecho un charco."' },
-  widow: { ...KO_FIN.monstro, line: '"Caíste en mi telaraña."' },
-  momFoot: { ...KO_FIN.monstro, line: '"¡ISAAC! ¡Te dije que no jugaras aquí abajo!"' },
-  satan: { ...KO_FIN.koopa, line: '"Tu alma era mía desde el principio."' },
-  kingSlime: { ...KO_FIN.monstro, line: '"*glup glup*"' },
-  kingBoo: { ...KO_FIN.ghostKing, line: '"¡Jijiji! Nunca le des la espalda a un Boo."' },
-  mothership: { ...KO_FIN.eggman, line: '"Espécimen terrestre: capturado."' },
-  ridley: { ...KO_FIN.dragon, line: '"Ningún cazador escapa de mis garras."' },
-  wither: { ...KO_FIN.brain, line: '"Del polvo vienes, al polvo vuelves."' },
-  ganon: { ...KO_FIN.darkIsaac, line: '"El poder... ¡es todo mío!"' },
-  sans: { ...KO_FIN.eggman, line: '"Vaya... parece que lo pasaste mal, amigo."' },
+  gurdy: { ...KO_FIN.dukeFlies, line: '"Más moscas para mi colección."' }, // escupe un enjambre que lo cubre
+  ridley: { ...KO_FIN.dragon, line: '"Ningún cazador escapa de mis garras."' }, // se aleja y pasa en picada
+  peep: { // llora un charco, se le salen los ojos y se los lanza
+    line: '"¡Splash! Quedaste hecho un charco."',
+    ev: { 30: () => sfx('squish'), 60: () => { sfx('spit'); sfx('squish'); }, 100: c => { sfx('kill'); shake = 14; koBits(c, KO_I.x, KO_I.y - 70, 34, { color: ['#ffe060', '#ffffff', '#b01818'], spd: 8, g: 0.3 }); }, 140: () => sfx('laugh') },
+    tick(t) { if (t >= 20 && t < 100 && t % 12 === 0) sfx('splash'); },
+    draw(b, t) {
+      const I = KO_I, B = KO_B, popped = t >= 60;
+      const row = t < 30 ? 0 : !popped ? 1 : t < 150 ? 4 : 2;
+      softShadow(B.x, B.y + 95, 110, 24, 0.7);
+      drawKOBoss(b, B.x, B.y, row, koCyc(row === 1 || row === 4 ? 12 : 8, 8));
+      const k = koK(t, 20, 110); // charco amarillo bajo el jugador
+      if (k > 0) { ctx.fillStyle = 'rgba(150,130,10,.5)'; ell(I.x, I.y + 10, 24 + k * 120, 7 + k * 30); ctx.fill(); ctx.fillStyle = 'rgba(230,205,40,.6)'; ell(I.x, I.y + 10, 18 + k * 110, 5 + k * 26); ctx.fill(); }
+      for (let i = 0; i < 6 && t >= 20 && t < 100; i++) { // lágrimas en arco
+        const q = ((t - 20) / 26 + i / 6) % 1;
+        ctx.fillStyle = 'rgba(120,180,255,.85)'; ell(lerp(B.x - 30, I.x + (i - 3) * 12, q), lerp(B.y - 20, I.y - 10, q) - Math.sin(q * Math.PI) * 140, 6, 7); ctx.fill();
+      }
+      drawKOPlayer(I.x, I.y, t);
+      for (const s of [-1, 1]) {
+        if (t >= 60 && t < 100) { const q = easeIn(koK(t, 60, 100)); koEye(lerp(B.x + s * 30, I.x + s * 14, q), lerp(B.y - 40, I.y - 80, q) - Math.sin(q * Math.PI) * 130, 20, Math.PI + s * 0.3 + t * 0.3); }
+        else if (t >= 100) { const q = koK(t, 100, 150); koEye(I.x + s * (40 + q * 50), I.y - 6 - Math.abs(Math.sin(q * Math.PI * 2)) * 50 * (1 - q), 18, frame * 0.1 * s); }
+      }
+    },
+  },
+  widow: { // salta encima y lo envuelve en un capullo de telaraña
+    line: '"Caíste en mi telaraña."',
+    ev: { 40: () => sfx('jump'), 100: c => { sfx('stomp'); sfx('kill'); shake = 16; blood(c, KO_I.x, KO_I.y - 30, 26); koBits(c, KO_I.x, KO_I.y - 50, 24, { color: '#f0f0f8', spd: 6, g: 0.12, life: 70 }); }, 125: () => sfx('spit'), 175: () => sfx('summon') },
+    tick(t) { if (t > 110 && t < 170 && t % 14 === 0) sfx('swoosh'); },
+    draw(b, t) {
+      const I = KO_I;
+      if (t < 100) return koFall(b, t, 2, I.y - 70);
+      const k = koK(t, 110, 170);
+      drawKOPlayer(I.x, I.y, t, { alpha: 1 - k * 0.55 });
+      ctx.save(); ctx.strokeStyle = 'rgba(240,240,250,.8)'; ctx.lineWidth = 2.5; ctx.beginPath();
+      for (let i = 0; i < Math.floor(k * 16); i++) { const yy = I.y - 140 + i * 9; ctx.moveTo(I.x - 58, yy + Math.sin(i * 1.7) * 7); ctx.quadraticCurveTo(I.x, yy + 16, I.x + 58, yy - Math.sin(i * 1.3) * 7); }
+      ctx.stroke(); ctx.restore();
+      const sy = t < 112 ? I.y - 70 + (1 - koK(t, 100, 112)) * 0 : lerp(I.y - 70, I.y - 190, easeOut(koK(t, 112, 130)));
+      drawKOBoss(b, I.x + 10, sy + Math.sin(frame * 0.1) * 4, t < 130 ? 2 : 0, koCyc(10, 8), { scale: t < 130 ? 1 : 0.8 });
+    },
+  },
+  momFoot: { // su sombra cubre al jugador y el pie lo aplasta
+    line: '"¡ISAAC! ¡Te dije que no jugaras aquí abajo!"',
+    ev: { 30: () => sfx('rumble'), 70: () => sfx('whistle'), 100: c => { sfx('bigStomp'); sfx('kill'); shake = 22; blood(c, KO_I.x, KO_I.y - 10, 50); }, 190: () => sfx('jump') },
+    draw(b, t) {
+      const I = KO_I, u = koUnit(b);
+      const foot = y => { // pierna desde arriba de la pantalla + la hoja del pie
+        const g = ctx.createLinearGradient(I.x - 26 * u, 0, I.x + 26 * u, 0); g.addColorStop(0, '#9a6a58'); g.addColorStop(0.5, '#e8c0a8'); g.addColorStop(1, '#9a6a58');
+        ctx.fillStyle = g; ctx.fillRect(I.x - 25 * u, -20, 50 * u, y - 70 * u + 20);
+        drawKOBoss(b, I.x, y, 0, koCyc(6, 8));
+      };
+      if (t < 100) {
+        const k = koK(t, 20, 100);
+        softShadow(I.x, I.y + 8, 30 + k * 120, 10 + k * 32, 0.3 + k * 0.5);
+        drawKOPlayer(I.x, I.y, t);
+        if (t >= 86) foot(lerp(-260, I.y - 45, easeIn(koK(t, 86, 100))));
+      } else if (t < 190) {
+        softShadow(I.x, I.y + 8, 150, 40, 0.8);
+        const sq = Math.max(0, 1 - (t - 100) / 12) * 0.2;
+        ctx.save(); ctx.translate(I.x, I.y); ctx.scale(1 + sq, 1 - sq); ctx.translate(-I.x, -I.y); foot(I.y - 45); ctx.restore();
+      } else {
+        drawKOPlayer(I.x, I.y, t, { squash: 1 });
+        foot(lerp(I.y - 45, -400, easeIn(koK(t, 190, 225))));
+      }
+    },
+  },
+  satan: { // carga las manos y lo quema con un rayo infernal
+    line: '"Tu alma era mía desde el principio."', flash: '255,200,170',
+    ev: { 20: () => sfx('devilDoor'), 92: () => sfx('brimstone'), 100: c => { sfx('hurt'); shake = 16; koBits(c, KO_I.x, KO_I.y - 70, 34, { color: ['#ff4010', '#ffb030', '#ffe080'], spd: 7, g: 0.05, glow: true, life: 60 }); }, 170: () => sfx('roar') },
+    tick(t, c) { if (t > 140 && t % 6 === 0) koBits(c, KO_I.x + rnd(-30, 30), KO_I.y - rnd(40, 120), 1, { color: 'rgba(90,80,70,.6)', spd: 1, g: -0.04, size: 22, life: 70 }); },
+    draw(b, t) {
+      const I = KO_I, B = KO_B, u = koUnit(b), hy = Math.sin(frame * 0.06) * 6, atk = t >= 40 && t < 150;
+      softShadow(B.x, B.y + 130, 110, 22, 0.5);
+      drawKOBoss(b, B.x, B.y + hy, atk ? 1 : 0, koCyc(atk ? 12 : 8, 8));
+      const hx = B.x - 46 * u, hyy = B.y + hy + 12 * u; // mano izquierda
+      if (t >= 40 && t < 92) koGlow(hx, hyy, 20 + koK(t, 40, 92) * 60, `rgba(255,60,20,${0.3 + koK(t, 40, 92) * 0.5})`);
+      drawKOPlayer(I.x, I.y, t, { burn: koK(t, 100, 140) });
+      if (t >= 92 && t < 150) koBeam(hx, hyy, I.x, I.y - 70, koK(t, 92, 98) * (1 - koK(t, 140, 150)), 'red', 34);
+    },
+  },
+  kingSlime: { // cae encima y se lo traga dentro de la gelatina
+    line: '"*glup glup*"',
+    ev: { 40: () => sfx('jump'), 100: c => { sfx('bigStomp'); sfx('squish'); shake = 18; koBits(c, KO_I.x, KO_I.y - 40, 30, { color: ['#4a7ae8', '#9cc0ff'], spd: 8, g: 0.3 }); }, 140: () => sfx('squish'), 200: () => sfx('squish'), 250: () => sfx('drop') },
+    draw(b, t) {
+      const I = KO_I;
+      if (t < 100) return koFall(b, t, 1, I.y - 40);
+      const w = Math.sin(t * 0.25) * 0.08 * (1 - koK(t, 100, 160));
+      softShadow(I.x, I.y + 10, 150, 36, 0.7);
+      drawKOBoss(b, I.x, I.y - 40, 0, koCyc(8, 8), { sx: 1 + w, sy: 1 - w });
+      const k = koK(t, 100, 220), px = I.x + Math.sin(t * 0.06) * 10, py = I.y - 20 - k * 40;
+      drawKOPlayer(px, py, t, { alpha: 0.65 * (1 - koK(t, 220, 290)), scale: 0.75 });
+      ctx.fillStyle = 'rgba(60,120,240,.35)'; ell(px, py - 50, 60, 70); ctx.fill(); // el jugador se ve azul dentro del slime
+      for (let i = 0; i < 4; i++) { const bt = (t * 0.02 + i * 0.25) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.6 * (1 - bt)})`; ctx.lineWidth = 2; ell(px - 20 + i * 14, py - 60 - bt * 90, 4 + i, 4 + i); ctx.stroke(); }
+    },
+  },
+  kingBoo: { // se tapa, desaparece y aparece a tus espaldas para llevarse tu alma
+    line: '"¡Jijiji! Nunca le des la espalda a un Boo."', flash: '220,225,255',
+    ev: { 20: () => sfx('ghost'), 76: () => sfx('laugh'), 100: () => { sfx('screech'); shake = 10; }, 130: () => sfx('laugh'), 172: () => sfx('drop') },
+    draw(b, t) {
+      const I = KO_I, B = KO_B, fl = Math.sin(frame * 0.07) * 8;
+      let x = B.x, y = B.y + fl, row = 0, alpha = 1;
+      if (t >= 20 && t < 50) { row = 1; alpha = 1 - koK(t, 30, 50); }
+      else if (t >= 50 && t < 76) alpha = 0;
+      else if (t >= 76) { x = I.x - 190 + easeIn(koK(t, 88, 100)) * 120; y = I.y - 130 + fl; alpha = koK(t, 76, 90); row = 2; }
+      drawKOPlayer(I.x, I.y, t);
+      if (alpha > 0) { softShadow(x, y + 120, 90, 20, 0.4 * alpha); drawKOBoss(b, x, y, row, koCyc(10, 8), { alpha, scale: t >= 100 ? 1 + koK(t, 100, 170) * 0.15 : 1 }); }
+      if (t >= 100 && t < 178) { const k = easeIn(koK(t, 104, 172)); koSoul(lerp(I.x, x, k), lerp(I.y - 40, y, k), 1 - k * 0.75, 1 - koK(t, 165, 178)); }
+    },
+  },
+  mothership: { // lo abduce con el rayo tractor y se va volando
+    line: '"Espécimen terrestre: capturado."', flash: '200,255,190',
+    ev: { 20: () => sfx('teleport'), 60: () => sfx('laser'), 100: () => { sfx('surprise'); shake = 6; }, 190: () => sfx('teleport'), 205: () => sfx('engine') },
+    tick(t) { if (t >= 62 && t < 190 && t % 16 === 0) sfx('ghost'); },
+    draw(b, t) {
+      const I = KO_I, hy = Math.sin(frame * 0.08) * 5;
+      let x = lerp(KO_B.x, I.x, easeOut(koK(t, 5, 55))), y = lerp(KO_B.y, 118, easeOut(koK(t, 5, 55))) + hy;
+      if (t > 205) { const k = easeIn(koK(t, 205, 245)); x += k * 900; y -= k * 180; }
+      const a = koK(t, 60, 72) * (1 - koK(t, 188, 200));
+      if (a > 0) { // cono de luz verde
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        const g = ctx.createLinearGradient(0, y, 0, I.y + 20); g.addColorStop(0, `rgba(170,255,150,${0.55 * a})`); g.addColorStop(1, `rgba(90,255,90,${0.18 * a})`);
+        ctx.fillStyle = g; poly([[x - 26, y + 30], [x + 26, y + 30], [x + 120, I.y + 20], [x - 120, I.y + 20]]); ctx.fill();
+        ctx.strokeStyle = `rgba(220,255,210,${0.35 * a})`; ctx.lineWidth = 3;
+        for (let i = 0; i < 5; i++) { const q = ((frame * 0.015 + i / 5) % 1); const yy = lerp(I.y + 20, y + 30, q), hw = lerp(120, 26, q); ctx.beginPath(); ctx.ellipse(x, yy, hw, hw * 0.18, 0, 0, Math.PI * 2); ctx.stroke(); }
+        ctx.restore();
+      }
+      const k = easeIn(koK(t, 100, 188));
+      if (k < 1) drawKOPlayer(lerp(I.x, x, k) + Math.sin(t * 0.2) * 6 * k, lerp(I.y, y + 60, k), t, { alpha: 1 - k * 0.5, scale: 1 - k * 0.6 });
+      softShadow(x, I.y + 20, 120 * (1 - koK(t, 205, 230)), 22, 0.4);
+      drawKOBoss(b, x, y, a > 0 ? 1 : 0, koCyc(12, 8));
+    },
+  },
+  wither: { // le lanza una calavera azul que explota
+    line: '"Del polvo vienes, al polvo vuelves."',
+    ev: { 30: () => sfx('orb'), 55: () => sfx('fire'), 100: c => { sfx('boom'); sfx('kill'); shake = 18; koBits(c, KO_I.x, KO_I.y - 70, 40, { color: ['#4a7ae8', '#222222', '#ffb030', '#ff6010'], spd: 9, g: 0.2, glow: true, life: 60 }); }, 160: () => sfx('rumble') },
+    tick(t, c) { if (t > 120 && t % 7 === 0) koBits(c, KO_I.x + rnd(-40, 40), KO_I.y - rnd(30, 110), 1, { color: 'rgba(30,30,30,.6)', spd: 1, g: -0.04, size: 24, life: 70 }); },
+    draw(b, t) {
+      const I = KO_I, B = KO_B, u = koUnit(b), atk = t >= 30 && t < 100;
+      softShadow(B.x, B.y + 130, 100, 22, 0.5);
+      drawKOBoss(b, B.x, B.y + Math.sin(frame * 0.05) * 6, atk ? 1 : 0, koCyc(10, 8));
+      drawKOPlayer(I.x, I.y, t, { burn: koK(t, 100, 150) });
+      if (t >= 55 && t < 100) {
+        const k = easeIn(koK(t, 55, 100)), sx = lerp(B.x, I.x, k), sy = lerp(B.y - 52 * u, I.y - 70, k), s = 26;
+        koGlow(sx, sy, 70, 'rgba(90,140,255,.55)');
+        ctx.save(); ctx.translate(sx, sy); ctx.rotate(Math.atan2(I.y - 70 - (B.y - 52 * u), I.x - B.x));
+        ctx.fillStyle = '#4a7ae8'; ctx.fillRect(-s, -s, s * 2, s * 2); ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.strokeRect(-s, -s, s * 2, s * 2);
+        ctx.fillStyle = '#c8e0ff'; ctx.fillRect(s * 0.1, -s * 0.6, s * 0.4, s * 0.45); ctx.fillRect(s * 0.1, s * 0.15, s * 0.4, s * 0.45);
+        ctx.fillStyle = '#000'; ctx.fillRect(s * 0.6, -s * 0.4, s * 0.25, s * 0.8);
+        ctx.restore();
+      }
+      if (t >= 100 && t < 130) koGlow(I.x, I.y - 60, 200 * (1 - koK(t, 100, 130)), 'rgba(255,170,80,.85)');
+    },
+  },
+  ganon: { // lanza el tridente, se lo clava y lo recupera
+    line: '"El poder... ¡es todo mío!"',
+    ev: { 30: () => sfx('roar'), 70: () => sfx('throw'), 100: c => { sfx('sword'); sfx('kill'); shake = 14; blood(c, KO_I.x, KO_I.y - 70, 36); }, 170: () => sfx('throw'), 200: () => sfx('roar') },
+    draw(b, t) {
+      const I = KO_I, B = KO_B, hold = t >= 40 && t < 70, thrown = t >= 70 && t < 200;
+      softShadow(B.x, B.y + 110, 110, 24, 0.7);
+      drawKOBoss(b, B.x, B.y, hold || thrown ? 1 : 0, hold ? koSeq(t, 40, 10, 3) : thrown ? 3 + koCyc(10, 5) : koCyc(8, 8));
+      drawKOPlayer(I.x, I.y, t);
+      let tx, ty, rot = frame * 0.35;
+      if (t >= 70 && t < 100) { const k = koK(t, 70, 100); tx = lerp(B.x, I.x, k); ty = lerp(B.y - 20, I.y - 70, k) - Math.sin(k * Math.PI) * 60; }
+      else if (t >= 100 && t < 170) { tx = I.x + 30; ty = I.y - 90; rot = Math.PI * 0.8; } // clavado
+      else if (t >= 170 && t < 200) { const k = easeIn(koK(t, 170, 200)); tx = lerp(I.x, B.x, k); ty = lerp(I.y - 70, B.y - 20, k); }
+      if (tx !== undefined) { ctx.save(); ctx.translate(tx, ty); ctx.rotate(rot); ctx.scale(1.6, 1.6); tridentShape(-45, 1); ctx.restore(); }
+    },
+  },
+  sans: { // dos cráneos lanzarrayos le disparan a la vez
+    line: '"Vaya... parece que lo pasaste mal, amigo."', flash: '235,245,255',
+    ev: { 24: () => sfx('teleport'), 44: () => sfx('teleport'), 92: () => sfx('brimstone'), 100: c => { sfx('kill'); shake = 14; koBits(c, KO_I.x, KO_I.y - 70, 34, { color: ['#ffffff', '#cde4ff', '#60c8ff'], spd: 9, g: 0.15, glow: true, life: 50 }); }, 175: () => sfx('laugh') },
+    draw(b, t) {
+      const I = KO_I, B = KO_B, tgt = [I.x, I.y - 70];
+      softShadow(B.x, B.y + 80, 70, 18, 0.6);
+      drawKOBoss(b, B.x, B.y + Math.sin(frame * 0.1) * 3, t >= 20 && t < 150 ? 1 : 0, koCyc(8, 8));
+      drawKOPlayer(I.x, I.y, t, { zap: t >= 100 && t < 130 && Math.floor(t / 3) % 2 === 0, burn: koK(t, 110, 150) * 0.4 });
+      [[I.x - 250, I.y - 230, 24], [I.x + 240, I.y - 260, 44]].forEach(([x, y, t0]) => {
+        if (t < t0) return;
+        const ang = Math.atan2(tgt[1] - y, tgt[0] - x), s = 2.6 * easeOut(koK(t, t0, t0 + 14)), out = koK(t, 150, 170);
+        if (out >= 1) return;
+        ctx.save(); ctx.globalAlpha *= 1 - out;
+        if (t >= 92 && t < 145) koBeam(x + Math.cos(ang) * 40, y + Math.sin(ang) * 40, tgt[0], tgt[1], koK(t, 92, 97) * (1 - koK(t, 138, 145)), 'white', 30);
+        blasterSkull(x, y, ang, t >= 92 ? 9 : 3, s, t > 70);
+        ctx.restore();
+      });
+    },
+  },
 });
+
 function drawDeathCut() {
   const c = deathCut, t = c.t, b = c.boss, fin = koFin(b);
   const show = easeOut(t / 20), outK = easeIn(koK(t, KO.end - 24, KO.end));
@@ -5886,20 +6116,21 @@ function drawHazard(h) {
   ctx.fillStyle = 'rgba(255,255,255,.4)'; ell(h.x - 4, h.y - 4, 3, 3); ctx.fill();
   ctx.fillStyle = '#ffcc33'; ell(h.x + 6, h.y - 13, 3 + Math.random() * 2, 3 + Math.random() * 2); ctx.fill();
 }
+function blasterSkull(x, y, ang, op, s, eye) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(s, s);
+  ctx.fillStyle = '#f4f4f4'; ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
+  ell(-14, 0, 20, 17); ctx.fill(); ctx.stroke();
+  poly([[0, -12], [16, -op - 4], [16, -op], [2, -2]]); ctx.fill(); ctx.stroke();
+  poly([[0, 12], [16, op + 4], [16, op], [2, 2]]); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#111'; ell(-12, -7, 5, 4); ctx.fill(); ell(-12, 7, 5, 4); ctx.fill();
+  if (eye) { ctx.fillStyle = '#5af'; ell(-12, -7, 2, 2); ctx.fill(); }
+  ctx.restore();
+}
 function drawBeam(h) {
+
   const c = Math.cos(h.ang), sn = Math.sin(h.ang), x1 = h.x + c * 1400, y1 = h.y + sn * 1400;
   ctx.save(); ctx.lineCap = 'round';
-  if (h.skull) { // cráneo lanzarrayos de Sans
-    ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.ang);
-    const op = h.t > h.warn ? 8 : 3;
-    ctx.fillStyle = '#f4f4f4'; ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
-    ell(-14, 0, 20, 17); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(16, -op - 4); ctx.lineTo(16, -op); ctx.lineTo(2, -2); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, 12); ctx.lineTo(16, op + 4); ctx.lineTo(16, op); ctx.lineTo(2, 2); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#111'; ell(-12, -7, 5, 4); ctx.fill(); ell(-12, 7, 5, 4); ctx.fill();
-    if (h.t > h.warn - 15) { ctx.fillStyle = '#5af'; ell(-12, -7, 2, 2); ctx.fill(); }
-    ctx.restore();
-  }
+  if (h.skull) blasterSkull(h.x, h.y, h.ang, h.t > h.warn ? 8 : 3, 1, h.t > h.warn - 15); // cráneo lanzarrayos de Sans
   if (h.t <= h.warn) {
     ctx.strokeStyle = `rgba(${h.col},${0.25 + 0.35 * (Math.floor(h.t / 4) % 2)})`; ctx.lineWidth = 2 + h.t / h.warn * 3;
     ctx.beginPath(); ctx.moveTo(h.x, h.y); ctx.lineTo(x1, y1); ctx.stroke();
@@ -6563,11 +6794,94 @@ function draw() {
 
 // ---------- Grabar la cinemática de muerte de un jefe (la usa video/grabar_muertes.js) ----------
 let grabando = false; // en los videos no sale "ENTER para saltar"
+// ---------- Exportar la hoja de sprites de un jefe dibujado por código (la usa sprites/exportar_jefes.js) ----------
+// 8 columnas x 5 filas de 256x256 · pivote (128,140) · filas 0-2 animaciones, 3 daño, 4 extra
+// cada fila: [estado, cuadros por segundo, cambios del jefe por cuadro (i = 0..7)]
+const SHEET_ROWS = {
+  gurdy: [['idle', 8], ['fan', 10], ['flies', 10], null, ['idle', 6]],
+  peep: [['idle', 8], ['cry', 12], ['idle', 8, () => ({ popped: true })], null, ['cry', 12, () => ({ popped: true })]],
+  widow: [['idle', 12, () => ({ wt: 20 })], ['spit', 10], ['idle', 8, () => ({ wt: 0 })], null, ['idle', 8]],
+  momFoot: [['idle', 6], ['down', 6], ['idle', 6], null, ['idle', 6]],
+  satan: [['idle', 8], ['brim', 12], ['fan', 12], null, ['idle', 8]],
+  kingSlime: [['idle', 8], ['hop', 12, i => ({ timer: [0, 0, 1, 3, 4, 6, 7, 8][i], dur: 8 })], ['sink', 10, i => ({ timer: [0, 8, 16, 26, 34, 44, 56, 66][i] })], null, ['idle', 8]],
+  kingBoo: [['idle', 8], ['idle', 8, () => ({ shy: true })], ['laugh', 10], null, ['idle', 8, () => ({ shy: true, alpha: 0.5 })]],
+  mothership: [['idle', 10], ['beam', 12], ['rain', 12], null, ['idle', 10]],
+  ridley: [['idle', 10], ['swoop', 16], ['fireballs', 12], null, ['idle', 10]],
+  wither: [['idle', 8], ['skulls', 10], ['idle', 8, () => ({ armor: 0.55 })], null, ['skulls', 10, () => ({ armor: 0.55 })]],
+  ganon: [['idle', 8], ['trident', 10, i => ({ timer: i < 3 ? 10 : 40 })], ['spin', 14, () => ({ timer: 30 })], null, ['idle', 8]],
+  sans: [['idle', 8], ['bones', 8], ['tired', 4], null, ['idle', 8]],
+};
+const SHEET_SCALE = { gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6 };
+window.exportarHojaJefe = type => {
+  const F = 256, SS = 2, S = SHEET_SCALE[type], spec = SHEET_ROWS[type];
+  const sheet = mkCanvas(F * 8, F * 5), sx = sheet.getContext('2d');
+  const tmp = mkCanvas(F * SS, F * SS), tx = tmp.getContext('2d');
+  const prevCtx = ctx, prevP = p, prevFrame = frame;
+  p = { x: 0, y: 260, face: 'B' }; spriteExport = true;
+  const cell = (row, col, st, fps, extra, hit = 0, red = 0) => {
+    frame = 1000 + Math.round(col * 60 / fps);
+    const e = { ...BDEF[type], type, boss: true, x: 0, y: 0, z: 0, t: frame, hit, spawn: 0, state: st, timer: 20, dur: 8, spin: 0, wt: 0, ...(extra ? extra(col) : {}) };
+    tx.setTransform(1, 0, 0, 1, 0, 0); tx.clearRect(0, 0, F * SS, F * SS);
+    tx.setTransform(SS * S, 0, 0, SS * S, 128 * SS, 140 * SS);
+    ctx = tx;
+    try { drawBoss(e, hit > 0); } finally { ctx = prevCtx; }
+    // mismo sombreado que en el juego: luz arriba a la izquierda, borde oscuro
+    tx.setTransform(SS, 0, 0, SS, 0, 0); tx.globalCompositeOperation = 'source-atop';
+    const [cy, rr] = type === 'sans' ? [100, 95] : [140, (e.r + 12) * S]; // Sans es alto: la luz se centra en su cara
+    const g = tx.createRadialGradient(128 - rr * 0.35, cy - rr * 0.45, rr * 0.05, 128, cy, rr * 1.25);
+    g.addColorStop(0, 'rgba(255,248,232,.38)'); g.addColorStop(0.38, 'rgba(255,255,255,0)'); g.addColorStop(0.78, 'rgba(0,0,0,.32)'); g.addColorStop(1, 'rgba(0,0,0,.6)');
+    if (!hit) { tx.fillStyle = g; tx.fillRect(0, 0, F, F); }
+    if (red) { tx.fillStyle = 'rgba(230,30,30,.45)'; tx.fillRect(0, 0, F, F); }
+    tx.globalCompositeOperation = 'source-over';
+    sx.imageSmoothingQuality = 'high';
+    sx.drawImage(tmp, 0, 0, F * SS, F * SS, col * F, row * F, F, F);
+  };
+  try {
+    spec.forEach((r, row) => {
+      if (row === 3) { cell(3, 0, 'idle', 8, spec[0][2], 6); cell(3, 1, 'idle', 8, spec[0][2], 0, 1); cell(3, 2, 'idle', 8, spec[0][2]); return; }
+      for (let c = 0; c < 8; c++) cell(row, c, r[0], r[1], r[2]);
+    });
+  } finally { p = prevP; frame = prevFrame; spriteExport = false; }
+  return sheet.toDataURL('image/png');
+};
+// ---------- Exportar música y sonidos a archivos (lo usa musica/exportar_audio.js) ----------
+// Graba con el mismo sintetizador del juego, sin altavoces y más rápido que en tiempo real. Devuelve un WAV en base64.
+window.exportarAudio = async (kind, name) => {
+  const sr = 44100, m = kind === 'music' ? MUSIC[name] : null;
+  let secs = 7, steps = 0, spb = 0;
+  if (m) { spb = 60 / m.bpm / 4; const n = m.bass.length, loops = Math.max(2, Math.ceil(45 / (n * spb))); steps = n * loops; secs = steps * spb + 3; }
+  const off = new OfflineAudioContext(2, Math.ceil(sr * secs), sr);
+  const saved = [AC, master, sfxGain, musGain, noiseBuf];
+  AC = off;
+  master = off.createGain(); master.gain.value = 0.6; master.connect(off.destination);
+  sfxGain = off.createGain(); sfxGain.gain.value = 0.8; sfxGain.connect(master);
+  musGain = off.createGain(); musGain.gain.value = 0.3; musGain.connect(master);
+  noiseBuf = off.createBuffer(1, sr, sr); const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  try {
+    if (m) for (let i = 0; i < steps; i++) playStep(m, i % m.bass.length, 0.02 + i * spb);
+    else SFX[name]();
+  } finally { [AC, master, sfxGain, musGain, noiseBuf] = saved; }
+  const buf = await off.startRendering(), ch = [buf.getChannelData(0), buf.getChannelData(1)];
+  let peak = 0, end = 0;
+  for (let i = 0; i < buf.length; i++) { const v = Math.max(Math.abs(ch[0][i]), Math.abs(ch[1][i])); if (v > peak) peak = v; if (v > 0.0005) end = i; }
+  const len = m ? buf.length : Math.min(buf.length, end + Math.round(sr * 0.05)); // los sonidos se recortan donde terminan
+  const gain = peak > 0 ? 0.9 / peak : 1; // volumen parejo entre archivos
+  const wav = new DataView(new ArrayBuffer(44 + len * 4)), str = (o, s) => [...s].forEach((c, i) => wav.setUint8(o + i, c.charCodeAt(0)));
+  str(0, 'RIFF'); wav.setUint32(4, 36 + len * 4, true); str(8, 'WAVEfmt '); wav.setUint32(16, 16, true); wav.setUint16(20, 1, true); wav.setUint16(22, 2, true);
+  wav.setUint32(24, sr, true); wav.setUint32(28, sr * 4, true); wav.setUint16(32, 4, true); wav.setUint16(34, 16, true); str(36, 'data'); wav.setUint32(40, len * 4, true);
+  for (let i = 0; i < len; i++) for (let c = 0; c < 2; c++) wav.setInt16(44 + i * 4 + c * 2, clamp(ch[c][i] * gain, -1, 1) * 32767, true);
+  const bytes = new Uint8Array(wav.buffer);
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+};
 window.grabarMuerte = async type => {
+
+
   grabando = true; initAudio(); if (AC.state !== 'running') await AC.resume();
   const wait = ms => new Promise(r => setTimeout(r, ms));
   selIdx = 0; startGame(); stopMusic(); msgT = 0;
-  const b = mkEnemy(type, CX + 120, type === 'brain' ? TOP + 95 : CY - 40); b.spawn = 0; enemies = [b];
+  const b = mkEnemy(type, CX + 120, bossSpawnY(type, CY - 40)); b.spawn = 0; enemies = [b];
   p.x = CX - 160; p.y = CY + 60; p.face = 'R';
   await wait(700); // que termine el sonido de inicio
   const audio = AC.createMediaStreamDestination(); master.connect(audio);

@@ -10,7 +10,8 @@ F, COLS, FPS = 256, 12, 10
 PX, PY = 128, 140          # pivote (centro del cuerpo), igual que en las hojas de jefes
 DT = 1 / FPS
 OUT = (28, 16, 12, 255)    # color del contorno que usan los sprites
-ORDER = ['monstro', 'duque_moscas', 'isaac_oscuro', 'rey_koopa', 'dragon_fin', 'dr_huevon', 'rey_fantasma', 'cerebro_madre']
+ORDER = ['monstro', 'duque_moscas', 'isaac_oscuro', 'rey_koopa', 'dragon_fin', 'dr_huevon', 'rey_fantasma', 'cerebro_madre',
+         'gurdy', 'peep', 'viuda', 'pie_mama', 'satanas', 'rey_slime', 'rey_boo', 'nave_nodriza', 'ridley', 'wither', 'ganon', 'sans']
 
 # ------------------------------------------------------------------ utilidades de imagen
 def load(n): return Image.open(os.path.join(DIR, f'jefe_{n}.png')).convert('RGBA')
@@ -500,8 +501,365 @@ def cerebro_madre():
         frames.append(f)
     return frames, POP
 
+# ==================================================================== JEFES NUEVOS (hojas exportadas con sprites/exportar_jefes.js)
+def swell(body, i, pop, col, s=0.24):
+    """tiembla y se hincha antes de reventar (cuadros 2..pop-1)"""
+    k = (i - 2) / max(1, pop - 3)
+    b = tint(body, col, 0.15 + 0.45 * k)
+    if i == pop - 1: b = tint(b, (255, 245, 235), 0.55)
+    return xform(b, 1.03 + s * k, 1.0 + s * 0.8 * k, rot=shake(i, 2 + 3 * k), dx=shake(i, 2 + 3 * k))
+
+def gore(t, chunks, drops, chunk_col, drop_col, al=1.0):
+    """trozos y gotas que salen volando y caen al suelo"""
+    L = Layer()
+    for p in drops:
+        x, y, h, landed = ballistic(p, t)
+        L.ell(x, y, p['r'] * (1.4 if landed else 1), p['r'] * (0.8 if landed else 1), fill=drop_col + (int(255 * al),))
+    for p in chunks:
+        x, y, h, landed = ballistic(p, t); r = p['r']; sq = 0.75 if landed else 1.0
+        L.ell(x, y, r * (2 - sq), r * sq, fill=chunk_col + (int(255 * al),), outline=OUT[:3] + (int(255 * al),), w=1.5)
+    return L.get()
+
+def fly_bug(L, x, y, flap, al):
+    a = int(255 * al)
+    for s in (-1, 1): L.ell(x + s * 8, y - 7 - flap, 8, 5, fill=(220, 225, 235, int(170 * al)), outline=(60, 60, 70, a), w=1)
+    L.ell(x, y, 7.5, 6.5, fill=(25, 25, 28, a)); L.ell(x - 3, y - 1.5, 2, fill=(220, 40, 40, a)); L.ell(x + 3, y - 1.5, 2, fill=(220, 40, 40, a))
+
+def dissolve(body, nz, th, edge):
+    """se deshace como polvo: desaparece donde el ruido es menor que th, con borde brillante"""
+    a = arr(body); keep = nz > th; rim = (nz > th) & (nz < th + 0.08)
+    a[..., :3] = np.where(rim[..., None], edge, a[..., :3]); a[..., 3] *= keep
+    return img(a)
+
+def motes(L, ps, i, pop, col, up=1.5, spread=3, al=1.0):
+    for p in ps:
+        d = (i - pop + 1) * 9 * (0.5 + p['k']); x = p['x'] + p['vx'] / 70 * d * spread; y = p['y'] + p['vy'] / 70 * d * spread - d * up
+        if al > 0: L.ell(x, y, 2 + 2 * p['k'], fill=col + (int(255 * al),))
+
+def boom(f, i, pop, col=(255, 210, 160), r=95):
+    if i <= pop + 1: comp(f, glow(PX, PY, r - 25 * (i - pop), col, 0.85 - 0.35 * (i - pop)))
+
+def gurdy():
+    S = load('gurdy'); idle, white, red = fr(S, 0, 0), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 7
+    chunks = particles(101, 14, PX, PY, speed=(90, 280), vz=(140, 260), r=lambda g: g.uniform(7, 13))
+    drops = particles(102, 24, PX, PY, speed=(120, 320), vz=(80, 200), r=lambda g: g.uniform(3, 6))
+    flies = particles(103, 12, PX, PY, speed=(90, 200), vz=(0, 1))
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                   # las pústulas se inflan y empiezan a reventar
+            comp(f, swell(idle, i, POP, (220, 60, 60), 0.1))
+            if i >= 4:
+                L = Layer()
+                for j, (x, y) in enumerate([(41, 140), (210, 122), (83, 71), (188, 176), (56, 179)][:i - 3]):
+                    L.ell(x, y, 10 + 3 * (i - 4), fill=(255, 240, 150, 230)); L.ell(x, y, 5, fill=(255, 255, 220, 255))
+                comp(f, blur(L.get(), 1))
+        else:                                           # revienta en carne, pus y moscas
+            t = (i - POP) * DT + 0.03; boom(f, i, POP, (255, 220, 170), 110)
+            al = 1.0 if i < COLS - 2 else 0.55
+            comp(f, gore(t, chunks, drops, (200, 110, 100), (220, 190, 60), al))
+            L = Layer()
+            for p in flies:
+                d = 30 + t * 220; x, y = PX + p['vx'] / 200 * d, PY + p['vy'] / 200 * d - t * 40
+                fa = np.clip(1 - (math.hypot(x - PX, y - PY) - 70) / 45, 0, 1) * al
+                if fa > 0.02: fly_bug(L, x, y, 2 * ((i + p['i']) % 2), fa)
+            comp(f, L.get())
+        frames.append(f)
+    return frames, POP
+
+def peep():
+    S = load('peep'); idle, cry, white, red = fr(S, 0, 0), fr(S, 1, 3), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 7
+    drops = particles(111, 30, PX, PY, speed=(120, 320), vz=(80, 220), r=lambda g: g.uniform(3, 7))
+    eyes = particles(112, 2, PX, PY - 20, speed=(150, 170), vz=(260, 280))
+    eyes[0]['vx'], eyes[1]['vx'] = -abs(eyes[0]['vx']), abs(eyes[1]['vx'])
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                   # llora a mares y se hincha
+            comp(f, swell(cry, i, POP, (240, 200, 40)))
+            L = Layer()
+            for j in range(2 * (i - 1)):
+                a = j * 1.3 + i * 0.4; L.ell(PX + math.cos(a) * 70, PY + 30 + math.sin(a) * 20, 3.5, 4.5, fill=(120, 180, 255, 230))
+            comp(f, L.get())
+        else:                                           # ¡splash! un charco amarillo y los ojos salen rodando
+            t = (i - POP) * DT + 0.03; boom(f, i, POP, (255, 240, 170))
+            pud = min(1, t * 3); al = 1.0 if i < COLS - 2 else 0.55
+            comp(f, soft([(PX, PY + 40, 40 + 50 * pud, 14 + 14 * pud, (230, 200, 40), 0.75 * al)], 3))
+            comp(f, gore(t, [], drops, (0, 0, 0), (235, 205, 50), al))
+            L = Layer()
+            for e in eyes:
+                x, y, h, landed = ballistic(e, t)
+                if landed: x += math.copysign((t - 0.48) * 50, e['vx'])
+                L.ell(x, y, 11, fill=(250, 250, 250, int(255 * al)), outline=OUT, w=1.5); L.ell(x + math.copysign(4, e['vx']), y + 1, 5, fill=(20, 15, 15, int(255 * al)))
+            comp(f, L.get())
+        frames.append(f)
+    return frames, POP
+
+def viuda():
+    S = load('viuda'); idle, white, red = fr(S, 2, 0), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 7
+    nz = smooth_noise(121, 8)
+    spiders = particles(122, 10, PX, PY, speed=(80, 160), vz=(0, 1))
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                   # se da vuelta panza arriba y patalea
+            k = (i - 2) / (POP - 3)
+            comp(f, xform(tint(idle, (120, 60, 120), 0.3 * k), 1.0, 1.0 - 0.25 * k, rot=180 * min(1, k * 1.6) + shake(i, 6), dy=10 * k))
+        else:                                           # se hace polvo oscuro y huyen las arañitas
+            t = (i - POP) / (COLS - POP - 1)
+            body = xform(tint(idle, (90, 50, 90), 0.45), 1.0, 0.75, rot=180, dy=10)
+            comp(f, soft([(PX, PY + 10, 60 + 40 * t, 40 + 26 * t, (40, 25, 45), 0.7 * (1 - t))], 6))
+            comp(f, dissolve(body, nz, 0.1 + t * 0.95, [200, 120, 220]))
+            L = Layer(); al = 1 - t * 0.7
+            for p in spiders:
+                d = 20 + (i - POP + 1) * 22; x, y = PX + p['vx'] / 160 * d, PY + 20 + p['vy'] / 160 * d
+                if math.hypot(x - PX, y - PY - 20) > 105: continue
+                for s in (-1, 1):
+                    for q in range(3): L.line([(x, y), (x + s * 7, y - 4 + q * 4 + (i % 2) * 2), (x + s * 10, y + q * 4)], (20, 12, 20, int(255 * al)), 1.4)
+                L.ell(x, y, 5, 4, fill=(30, 20, 30, int(255 * al)))
+            comp(f, L.get())
+        frames.append(f)
+    return frames, POP
+
+def pie_mama():
+    S = load('pie_mama'); idle, white, red = fr(S, 0, 0), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 6
+    dust = particles(131, 14, PX, PY + 40, speed=(40, 140), vz=(0, 1))
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                   # los dedos se encogen de dolor y tiembla
+            k = (i - 2) / (POP - 3)
+            comp(f, xform(tint(idle, (200, 60, 60), 0.4 * k), 1.0 - 0.05 * k, 1.0 + 0.05 * k, rot=shake(i, 4), dx=shake(i, 3)))
+        else:                                           # se retira hacia arriba dejando una nube de polvo
+            t = (i - POP) / (COLS - POP - 1)
+            puffs = [(p['x'] + p['vx'] * t * 0.9, p['y'] + p['vy'] * t * 0.5, 16 + 20 * t, 10 + 12 * t, (160, 140, 120), 0.8 * (1 - t)) for p in dust]
+            comp(f, soft(puffs, 4))
+            comp(f, fade(xform(idle, 1.0 - 0.3 * t, dy=-190 * t * t - 20 * t), 1 - t ** 1.5))
+        frames.append(f)
+    return frames, POP
+
+def satanas():
+    S = load('satanas'); idle, white, red = fr(S, 0, 0), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 6
+    cracks = crack_paths(141, PX, PY - 20, 8, 95)
+    nz = smooth_noise(142, 9)
+    embers = particles(143, 34, PX, PY, speed=(10, 70), vz=(0, 1))
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                   # se agrieta con luz del infierno
+            k = (i - 1) / (POP - 2)
+            comp(f, xform(tint(idle, (255, 120, 40), 0.15 * k), 1.0, rot=shake(i, 3), dx=shake(i, 2)))
+            G = Layer(); draw_cracks(G, cracks, k, (255, 140, 40, 255), 8); comp(f, fade(G.get(3), 0.9))
+            L = Layer(); draw_cracks(L, cracks, k, (255, 240, 180, 255), 2.5); comp(f, L.get())
+        else:                                           # arde y se deshace en ceniza y brasas
+            t = (i - POP) / (COLS - POP - 1); boom(f, i, POP, (255, 150, 60), 120)
+            body = tint(idle, (60, 20, 10), 0.5 + 0.4 * t)
+            comp(f, dissolve(body, nz, 0.08 + t * 0.95, [255, 180, 60]))
+            L = Layer(); motes(L, embers, i, POP, (255, 120, 30), al=1 - t * 0.8); comp(f, L.get(1))
+        frames.append(f)
+    return frames, POP
+
+def rey_slime():
+    S = load('rey_slime'); idle, white, red = fr(S, 0, 0), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 6
+    cm = np.clip((101 - YY) / 3, 0, 1)                                     # la corona es todo lo que está sobre la gelatina
+    crown, body = masked(idle, cm), masked(idle, 1 - cm)
+    blobs = particles(151, 10, PX, PY + 20, speed=(80, 200), vz=(120, 220), r=lambda g: g.uniform(6, 11))
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                   # tiembla como gelatina
+            k = (i - 2) / (POP - 3); w = 0.12 * (1 if i % 2 else -1) * (1 - 0.3 * k)
+            comp(f, xform(idle, 1.0 + w, 1.0 - w, py=172))
+        else:                                           # se derrite en un charco; la corona cae y rebota
+            t = (i - POP) * DT; u = (i - POP) / (COLS - POP - 1)
+            comp(f, soft([(PX, PY + 32, 70 + 30 * u, 18 + 6 * u, (50, 100, 220), 0.85 * (1 - 0.4 * u))], 3))
+            comp(f, fade(xform(body,1.0 + 0.6 * u, max(0.08, 1 - 0.95 * u), py=172), 1 - 0.6 * u))
+            L = Layer(); al = 1 - 0.5 * u
+            for p in blobs:
+                x, y, h, landed = ballistic(p, t + 0.02)
+                L.ell(x, y, p['r'] * (1.4 if landed else 1), p['r'] * (0.7 if landed else 1), fill=(70, 130, 240, int(230 * al)), outline=(12, 34, 96, int(255 * al)), w=1.2)
+            comp(f, L.get())
+            T = i - POP; cy = [-20, -40, -10, 52, 40, 52][T]; cr = [0, -60, -150, -260, -250, -255][T]
+            comp(f, xform(crown, 1.0, rot=cr, dx=[0, 6, 14, 22, 26, 28][T], dy=cy, px=PX, py=84))
+        frames.append(f)
+    return frames, POP
+
+def rey_boo():
+    S = load('rey_boo'); shy = [fr(S, 1, c) for c in range(4)]; idle = fr(S, 0, 0)
+    POP = 6
+    a = arr(idle); gold = ((a[..., 0] > 180) & (a[..., 1] > 140) & (a[..., 2] < 110) & (YY < 90)).astype(np.uint8) * 255
+    crown = masked(idle, np.asarray(Image.fromarray(gold, 'L').filter(ImageFilter.MaxFilter(7))).astype(np.float32) / 255)
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i < 4: comp(f, xform(tint(shy[i], (150, 170, 255), 0.25 * (i % 2)), 1.0 + 0.03 * (i % 2), 1.0 - 0.03 * (i % 2), dx=shake(i, 3)))  # avergonzado, tiembla
+        elif i < POP: comp(f, fade(xform(shy[1], 1.0 + 0.1 * (i - 3), 1.0 - 0.12 * (i - 3)), 1 - 0.25 * (i - 3)))
+        else:                                           # se esfuma en humo; la corona cae
+            t = (i - POP) * DT
+            comp(f, soft([(PX + math.cos(j * 1.25) * 28 * (1 + t * 3), PY + math.sin(j * 1.25) * 22 * (1 + t * 3), 36 + 30 * t, 32 + 26 * t, (235, 235, 250), max(0, 0.9 - t * 1.5)) for j in range(5)]
+                         + [(PX, PY, 60, 55, (250, 250, 255), max(0, 0.9 - t * 2.2))], 5))
+            T = i - POP
+            comp(f, xform(crown, 1.0, rot=[0, -80, -190, -335, -350, -342][T], dx=[-4, -10, -18, -26, -30, -32][T], dy=[-18, -36, -6, 112, 96, 112][T], px=128, py=60))
+        frames.append(f)
+    return frames, POP
+
+def nave_nodriza():
+    S = load('nave_nodriza'); idle, white, red = fr(S, 0, 0), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 7
+    debris = particles(161, 14, PX, PY + 10, speed=(80, 260), vz=(150, 280), w=lambda g: g.uniform(6, 12))
+    rng = np.random.default_rng(162)
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                   # echa humo y chispas, se ladea
+            k = (i - 2) / (POP - 3)
+            comp(f, soft([(PX - 40 + j * 30, PY - 10 - 16 * k * j, 14 + 6 * j, 12 + 5 * j, (60, 60, 60), 0.75) for j in range(1 + i // 2)], 4))
+            body = tint(idle, (40, 30, 30), 0.25 * k)
+            if i == POP - 1: body = tint(body, (255, 245, 230), 0.6)
+            comp(f, xform(body, 1.0, rot=[0, 8, -10, 13, 18][i - 2], dx=shake(i, 3), dy=8 * k))
+            L = Layer()
+            for j in range(2 + i): star(L, PX + rng.uniform(-70, 70), PY + rng.uniform(-10, 20), rng.uniform(5, 9), 4, (160, 255, 140, 255), rot=rng.uniform(0, 3), inner=0.3)
+            comp(f, L.get())
+        else:                                           # explota; el marciano escapa volando
+            t = (i - POP) * DT + 0.04; fire = max(0, 1 - t * 2.5)
+            comp(f, soft([(PX + math.cos(j * 1.3) * 34 * (1 + t * 3), PY + math.sin(j * 1.3) * 20 * (1 + t * 3), 30 + 50 * t, 24 + 36 * t, (55, 55, 60), max(0, 0.8 - t * 1.1)) for j in range(6)], 6))
+            if fire > 0:
+                comp(f, glow(PX, PY, 120, (180, 255, 150), 0.9 * fire))
+                comp(f, soft([(PX + math.cos(j * 1.05) * 40 * (1 + t * 2), PY + math.sin(j * 1.05) * 22 * (1 + t * 2), 30 + 20 * t, 24 + 14 * t, (255, 160, 60), fire) for j in range(6)], 4))
+            L = Layer(); al = 1.0 if i < COLS - 1 else 0.5
+            for p in debris:
+                x, y, h, landed = ballistic(p, t); w = p['w']; a = math.radians(p['spin'] * min(t, 0.5))
+                L.poly([(x + math.cos(a + q) * w, y + math.sin(a + q) * w * 0.6) for q in (0, 1.4, 3.1, 4.5)], fill=(180, 180, 195, int(255 * al)), outline=OUT, w=1.2)
+            if i >= POP + 1:                            # el marciano verde huye hacia arriba
+                u = (i - POP - 1) / (COLS - POP - 2); x, y = PX + 30 * u, PY - 40 - 60 * u
+                aa = int(255 * (1 - 0.8 * u * u))
+                L.ell(x, y, 13, 11, fill=(124, 252, 0, aa), outline=OUT[:3] + (aa,), w=1.5); L.ell(x - 5, y - 1, 2.5, 4, fill=(0, 0, 0, aa)); L.ell(x + 5, y - 1, 2.5, 4, fill=(0, 0, 0, aa))
+                L.line([(x - 6, y - 9), (x - 10, y - 18)], (124, 252, 0, aa), 2); L.line([(x + 6, y - 9), (x + 10, y - 18)], (124, 252, 0, aa), 2)
+            comp(f, L.get())
+        frames.append(f)
+    return frames, POP
+
+def ridley():
+    S = load('ridley'); white, red = fr(S, 3, 0), fr(S, 3, 1); wing = [fr(S, 1, c) for c in range(8)]
+    POP = 6
+    nz = smooth_noise(171, 9)
+    ems = particles(172, 32, PX, PY, speed=(10, 70), vz=(0, 1))
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                   # aletea desesperado echando chispas de fuego
+            k = (i - 2) / (POP - 3)
+            comp(f, xform(tint(wing[(i * 3) % 8], (255, 140, 60), 0.15 + 0.35 * k), 1.0 + 0.05 * k, rot=shake(i, 6)))
+            comp(f, glow(PX + 55, PY, 40, (255, 140, 40), 0.4 + 0.4 * k))
+        else:                                           # se deshace en brasas
+            t = (i - POP) / (COLS - POP - 1)
+            comp(f, dissolve(tint(wing[i % 8], (120, 40, 20), 0.4 + 0.4 * t), nz, 0.08 + t * 0.95, [255, 170, 60]))
+            L = Layer(); motes(L, ems, i, POP, (255, 140, 40), al=1 - t * 0.8); comp(f, L.get(1))
+        frames.append(f)
+    return frames, POP
+
+def wither():
+    S = load('wither'); idle, white, red = fr(S, 1, 0), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 6
+    cracks = crack_paths(181, PX, PY - 30, 7, 85)
+    shards = make_shards(idle, 24, 182)
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                   # se raja con luz blanca
+            k = (i - 1) / (POP - 2)
+            comp(f, xform(idle, 1.0 + 0.04 * k, rot=shake(i, 2), dx=shake(i, 3)))
+            G = Layer(); draw_cracks(G, cracks, k, (200, 220, 255, 255), 7); comp(f, fade(G.get(3), 0.9))
+            L = Layer(); draw_cracks(L, cracks, k, (255, 255, 255, 255), 2.2); comp(f, L.get())
+            if i == POP - 1: comp(f, glow(PX, PY - 30, 110, (230, 240, 255), 0.6))
+        else:                                           # estalla en bloques y deja la estrella del Nether
+            t = (i - POP) * DT + 0.05; boom(f, i, POP, (230, 240, 255), 120)
+            if i < COLS - 1: draw_shards(f, shards, t, 240, al=max(0, 1 - t * 1.6), g=260)
+            comp(f, soft([(PX + math.cos(j) * 40 * (1 + t * 2), PY - 10 + math.sin(j) * 30 * (1 + t * 2), 30 + 30 * t, 26 + 20 * t, (30, 30, 30), max(0, 0.7 - t * 1.2)) for j in range(6)], 6))
+            u = (i - POP) / (COLS - POP - 1); sy = PY - 30 + 30 * u
+            comp(f, glow(PX, sy, 50 + 10 * math.sin(i), (220, 240, 255), 0.7))
+            L = Layer(); star(L, PX, sy, 16, 4, (240, 250, 255, 255), rot=i * 0.4, inner=0.35, outline=(120, 150, 200, 255), w=1); comp(f, L.get())
+        frames.append(f)
+    return frames, POP
+
+def ganon():
+    S = load('ganon'); idle, white, red = fr(S, 0, 0), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 7
+    cracks = crack_paths(191, PX, PY - 10, 7, 80)
+    stone = tint(gray(idle, 1.0), (150, 145, 135), 0.4)
+    shards = make_shards(stone, 28, 192)
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                   # se convierte en piedra de abajo hacia arriba
+            k = (i - 2) / (POP - 3)
+            line = 230 - 190 * k
+            m = np.clip((YY - line) / 12 + 0.5, 0, 1)
+            stone = tint(gray(idle, 1.0), (150, 145, 135), 0.4)
+            body = comp(masked(idle, 1 - m), masked(stone, m))
+            comp(f, xform(body, 1.0, dx=shake(i, 1.5)))
+            L = Layer(); draw_cracks(L, cracks, max(0, k - 0.4) / 0.6, (60, 55, 50, 255), 2); comp(f, L.get())
+        else:                                           # la estatua se desmorona
+            t = (i - POP) * DT + 0.03
+            if i == POP:
+                comp(f, stone); L = Layer(); draw_cracks(L, cracks, 1, (40, 35, 30, 255), 2.5); comp(f, L.get())
+            else:
+                draw_shards(f, shards, t, 90, al=1.0 if i < COLS - 1 else 0.6, g=600)
+                comp(f, soft([(PX + (j - 2) * 30, PY + 70, 30 + 30 * t, 14 + 6 * t, (170, 160, 150), max(0, 0.8 - t)) for j in range(5)], 4))
+        frames.append(f)
+    return frames, POP
+
+def sans():
+    S = load('sans'); idle, white, red = fr(S, 0, 0), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 5
+    nz = smooth_noise(201, 6)
+    dust = particles(202, 40, PX, PY - 10, speed=(10, 60), vz=(0, 1))
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP: comp(f, xform(idle, 1.0, rot=shake(i, 2)))   # se queda quieto... sonríe
+        else:                                           # se hace polvo de abajo hacia arriba, como en su juego
+            t = (i - POP) / (COLS - POP - 1)
+            body = tint(idle, (230, 230, 230), 0.4 + 0.5 * t)
+            th = np.clip((YY - (230 - 200 * t)) / 40, 0, 1) * 0.6 + nz * 0.4
+            a = arr(body); a[..., 3] *= (th < 0.55); comp(f, img(a))
+            L = Layer(); motes(L, dust, i, POP, (200, 200, 205), up=1.2, spread=2, al=1 - t * 0.6); comp(f, L.get(1))
+        frames.append(f)
+    return frames, POP
+
 BOSSES = {'monstro': monstro, 'duque_moscas': duque_moscas, 'isaac_oscuro': isaac_oscuro, 'rey_koopa': rey_koopa,
-          'dragon_fin': dragon_fin, 'dr_huevon': dr_huevon, 'rey_fantasma': rey_fantasma, 'cerebro_madre': cerebro_madre}
+          'dragon_fin': dragon_fin, 'dr_huevon': dr_huevon, 'rey_fantasma': rey_fantasma, 'cerebro_madre': cerebro_madre,
+          'gurdy': gurdy, 'peep': peep, 'viuda': viuda, 'pie_mama': pie_mama, 'satanas': satanas, 'rey_slime': rey_slime,
+          'rey_boo': rey_boo, 'nave_nodriza': nave_nodriza, 'ridley': ridley, 'wither': wither, 'ganon': ganon, 'sans': sans}
+
 
 if __name__ == '__main__':
     sheet = Image.new('RGBA', (F * COLS, F * len(ORDER)), (0, 0, 0, 0)); meta = {}

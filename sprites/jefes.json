@@ -1,13 +1,28 @@
 {
-  "note": "Todas las hojas de jefes usan el mismo formato: cuadros de 256x256, 8 columnas x 5 filas. Filas 0-2 = animaciones propias del jefe, fila 3 = daño (3 cuadros), fila 4 = muerte (8 cuadros).",
+  "note": "Todas las hojas de jefes usan el mismo formato: cuadros de 256x256, 8 columnas x 5 filas. Filas 0-2 = animaciones propias del jefe, fila 3 = daño (3 cuadros), fila 4 = muerte (8 cuadros). Los jefes nuevos (dibujados por código y exportados con exportar_jefes.js) usan la fila 4 para una animación extra.",
   "frameWidth": 256,
   "frameHeight": 256,
   "columns": 8,
   "rows": 5,
-  "pivot": { "x": 128, "y": 140, "note": "centro del cuerpo del jefe" },
+  "pivot": {
+    "x": 128,
+    "y": 140,
+    "note": "centro del cuerpo del jefe"
+  },
   "common": {
-    "hurt":  { "row": 3, "frames": 3, "fps": 14, "loop": false },
-    "death": { "row": 4, "frames": 8, "fps": 10, "loop": false, "note": "versión vieja; el juego usa jefes_muerte.png / jefes_muerte.json" }
+    "hurt": {
+      "row": 3,
+      "frames": 3,
+      "fps": 14,
+      "loop": false
+    },
+    "death": {
+      "row": 4,
+      "frames": 8,
+      "fps": 10,
+      "loop": false,
+      "note": "versión vieja; el juego usa jefes_muerte.png / jefes_muerte.json"
+    }
   },
   "deathStyles": {
     "monstro": "grita y se hincha hasta reventar en trozos de carne, dientes y sangre; un ojo sale rodando",
@@ -17,16 +32,491 @@
     "dragon_fin": "aletea sin control mientras le salen rayos de luz y se deshace en polvo morado",
     "dr_huevon": "la nave echa humo y chispas, se ladea, explota y el doctor sale volando chamuscado",
     "rey_fantasma": "se pone azul asustado y parpadea, revienta en humo, los ojos huyen y la corona cae al suelo",
-    "cerebro_madre": "el frasco se raja y gotea, estalla el vidrio, se derrama el líquido y el cerebro se marchita"
+    "cerebro_madre": "el frasco se raja y gotea, estalla el vidrio, se derrama el líquido y el cerebro se marchita",
+    "gurdy": "las pústulas se inflan, revienta en carne y pus y las moscas escapan",
+    "peep": "llora a mares, revienta en un charco amarillo y los ojos salen rodando",
+    "viuda": "se da vuelta panza arriba, se hace polvo y huyen las arañitas",
+    "pie_mama": "encoge los dedos de dolor y se retira hacia arriba dejando polvo",
+    "satanas": "se agrieta con luz del infierno y arde hasta ser ceniza",
+    "rey_slime": "tiembla, se derrite en un charco y la corona cae rebotando",
+    "rey_boo": "se tapa la cara avergonzado, se esfuma en humo y cae la corona",
+    "nave_nodriza": "echa humo y chispas, explota y el marciano escapa volando",
+    "ridley": "aletea desesperado y se deshace en brasas",
+    "wither": "se raja con luz blanca, estalla en bloques y deja la estrella del Nether",
+    "ganon": "se convierte en piedra y la estatua se desmorona",
+    "sans": "se hace polvo de abajo hacia arriba"
   },
   "bosses": {
-    "monstro":          { "image": "jefe_monstro.png",        "animations": { "idle": { "row": 0, "frames": 8, "fps": 8, "loop": true }, "escupir": { "row": 1, "frames": 8, "fps": 12, "loop": false }, "saltar": { "row": 2, "frames": 8, "fps": 12, "loop": false } } },
-    "duque_moscas":     { "image": "jefe_duque_moscas.png",   "animations": { "idle": { "row": 0, "frames": 8, "fps": 12, "loop": true }, "soplar": { "row": 1, "frames": 8, "fps": 12, "loop": false }, "invocar": { "row": 2, "frames": 8, "fps": 10, "loop": false } } },
-    "isaac_oscuro":     { "image": "jefe_isaac_oscuro.png",   "animations": { "caminar": { "row": 0, "frames": 8, "fps": 12, "loop": true }, "disparar": { "row": 1, "frames": 8, "fps": 16, "loop": false }, "anillo": { "row": 2, "frames": 8, "fps": 12, "loop": false } } },
-    "rey_koopa":        { "image": "jefe_rey_koopa.png",      "animations": { "caminar": { "row": 0, "frames": 8, "fps": 10, "loop": true }, "fuego": { "row": 1, "frames": 8, "fps": 12, "loop": false }, "caparazon": { "row": 2, "frames": 8, "fps": 20, "loop": true } } },
-    "dragon_fin":       { "image": "jefe_dragon_fin.png",     "animations": { "volar": { "row": 0, "frames": 8, "fps": 10, "loop": true }, "embestir": { "row": 1, "frames": 8, "fps": 14, "loop": true }, "orbes": { "row": 2, "frames": 8, "fps": 12, "loop": false } }, "facing": "mira a la derecha; rota el sprite para otras direcciones" },
-    "dr_huevon":        { "image": "jefe_dr_huevon.png",      "animations": { "flotar": { "row": 0, "frames": 8, "fps": 8, "loop": true }, "bombas": { "row": 1, "frames": 8, "fps": 10, "loop": false }, "laser": { "row": 2, "frames": 8, "fps": 12, "loop": false } } },
-    "rey_fantasma":     { "image": "jefe_rey_fantasma.png",   "animations": { "flotar": { "row": 0, "frames": 8, "fps": 8, "loop": true }, "desvanecer": { "row": 1, "frames": 8, "fps": 10, "loop": false }, "espiral": { "row": 2, "frames": 8, "fps": 12, "loop": false } } },
-    "cerebro_madre":    { "image": "jefe_cerebro_madre.png",  "animations": { "idle": { "row": 0, "frames": 8, "fps": 6, "loop": true }, "atacar": { "row": 1, "frames": 8, "fps": 12, "loop": false }, "danado": { "row": 2, "frames": 8, "fps": 6, "loop": true, "note": "úsalo cuando le quede poca vida (cristal roto)" } } }
+    "monstro": {
+      "image": "jefe_monstro.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "escupir": {
+          "row": 1,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        },
+        "saltar": {
+          "row": 2,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        }
+      }
+    },
+    "duque_moscas": {
+      "image": "jefe_duque_moscas.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 12,
+          "loop": true
+        },
+        "soplar": {
+          "row": 1,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        },
+        "invocar": {
+          "row": 2,
+          "frames": 8,
+          "fps": 10,
+          "loop": false
+        }
+      }
+    },
+    "isaac_oscuro": {
+      "image": "jefe_isaac_oscuro.png",
+      "animations": {
+        "caminar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 12,
+          "loop": true
+        },
+        "disparar": {
+          "row": 1,
+          "frames": 8,
+          "fps": 16,
+          "loop": false
+        },
+        "anillo": {
+          "row": 2,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        }
+      }
+    },
+    "rey_koopa": {
+      "image": "jefe_rey_koopa.png",
+      "animations": {
+        "caminar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        },
+        "fuego": {
+          "row": 1,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        },
+        "caparazon": {
+          "row": 2,
+          "frames": 8,
+          "fps": 20,
+          "loop": true
+        }
+      }
+    },
+    "dragon_fin": {
+      "image": "jefe_dragon_fin.png",
+      "animations": {
+        "volar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        },
+        "embestir": {
+          "row": 1,
+          "frames": 8,
+          "fps": 14,
+          "loop": true
+        },
+        "orbes": {
+          "row": 2,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        }
+      },
+      "facing": "mira a la derecha; rota el sprite para otras direcciones"
+    },
+    "dr_huevon": {
+      "image": "jefe_dr_huevon.png",
+      "animations": {
+        "flotar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "bombas": {
+          "row": 1,
+          "frames": 8,
+          "fps": 10,
+          "loop": false
+        },
+        "laser": {
+          "row": 2,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        }
+      }
+    },
+    "rey_fantasma": {
+      "image": "jefe_rey_fantasma.png",
+      "animations": {
+        "flotar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "desvanecer": {
+          "row": 1,
+          "frames": 8,
+          "fps": 10,
+          "loop": false
+        },
+        "espiral": {
+          "row": 2,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        }
+      }
+    },
+    "cerebro_madre": {
+      "image": "jefe_cerebro_madre.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 6,
+          "loop": true
+        },
+        "atacar": {
+          "row": 1,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        },
+        "danado": {
+          "row": 2,
+          "frames": 8,
+          "fps": 6,
+          "loop": true,
+          "note": "úsalo cuando le quede poca vida (cristal roto)"
+        }
+      }
+    },
+    "gurdy": {
+      "image": "jefe_gurdy.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "escupir": {
+          "row": 1,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        },
+        "invocar": {
+          "row": 2,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        }
+      }
+    },
+    "peep": {
+      "image": "jefe_peep.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "llorar": {
+          "row": 1,
+          "frames": 8,
+          "fps": 12,
+          "loop": true
+        },
+        "sin_ojos": {
+          "row": 2,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "llorar_sin_ojos": {
+          "row": 4,
+          "frames": 8,
+          "fps": 12,
+          "loop": true
+        }
+      }
+    },
+    "viuda": {
+      "image": "jefe_viuda.png",
+      "animations": {
+        "caminar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 12,
+          "loop": true
+        },
+        "escupir": {
+          "row": 1,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        },
+        "quieta": {
+          "row": 2,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        }
+      }
+    },
+    "pie_mama": {
+      "image": "jefe_pie_mama.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 6,
+          "loop": true
+        }
+      },
+      "note": "en la pelea se dibuja por código porque la pierna baja desde fuera del cuarto"
+    },
+    "satanas": {
+      "image": "jefe_satanas.png",
+      "animations": {
+        "flotar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "rayo": {
+          "row": 1,
+          "frames": 8,
+          "fps": 12,
+          "loop": true
+        },
+        "fuego": {
+          "row": 2,
+          "frames": 8,
+          "fps": 12,
+          "loop": true
+        }
+      }
+    },
+    "rey_slime": {
+      "image": "jefe_rey_slime.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "saltar": {
+          "row": 1,
+          "frames": 8,
+          "fps": 12,
+          "loop": false
+        },
+        "derretirse": {
+          "row": 2,
+          "frames": 8,
+          "fps": 10,
+          "loop": false
+        }
+      },
+      "note": "el juego lo escala con su vida (se encoge)"
+    },
+    "rey_boo": {
+      "image": "jefe_rey_boo.png",
+      "animations": {
+        "flotar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "timido": {
+          "row": 1,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "reir": {
+          "row": 2,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        },
+        "timido_transparente": {
+          "row": 4,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        }
+      }
+    },
+    "nave_nodriza": {
+      "image": "jefe_nave_nodriza.png",
+      "animations": {
+        "flotar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        },
+        "rayo": {
+          "row": 1,
+          "frames": 8,
+          "fps": 12,
+          "loop": true
+        },
+        "disparar": {
+          "row": 2,
+          "frames": 8,
+          "fps": 12,
+          "loop": true
+        }
+      }
+    },
+    "ridley": {
+      "image": "jefe_ridley.png",
+      "animations": {
+        "volar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        },
+        "embestir": {
+          "row": 1,
+          "frames": 8,
+          "fps": 16,
+          "loop": true
+        },
+        "fuego": {
+          "row": 2,
+          "frames": 8,
+          "fps": 12,
+          "loop": true
+        }
+      },
+      "facing": "mira a la derecha; rota el sprite para otras direcciones"
+    },
+    "wither": {
+      "image": "jefe_wither.png",
+      "animations": {
+        "flotar": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "calaveras": {
+          "row": 1,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        },
+        "blindado": {
+          "row": 2,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "blindado_ataque": {
+          "row": 4,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        }
+      }
+    },
+    "ganon": {
+      "image": "jefe_ganon.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "tridente": {
+          "row": 1,
+          "frames": 8,
+          "fps": 10,
+          "loop": false
+        },
+        "girar": {
+          "row": 2,
+          "frames": 8,
+          "fps": 14,
+          "loop": true
+        }
+      }
+    },
+    "sans": {
+      "image": "jefe_sans.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "atacar": {
+          "row": 1,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "dormido": {
+          "row": 2,
+          "frames": 8,
+          "fps": 4,
+          "loop": true
+        }
+      }
+    }
   }
 }

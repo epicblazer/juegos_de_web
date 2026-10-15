@@ -22,7 +22,8 @@
 const BOSS_COMMON = { 'daño': [3, 3, 14, 0.6] }; // las muertes están en jefes_muerte.png
 const DEATHS = { title: 'Muertes de jefes', src: 'jefes_muerte.png', size: 256, anims: {
   monstro: [0, 12, 10, 1], duque_moscas: [1, 12, 10, 1], isaac_oscuro: [2, 12, 10, 1], rey_koopa: [3, 12, 10, 1],
-  dragon_fin: [4, 12, 10, 1], dr_huevon: [5, 12, 10, 1], rey_fantasma: [6, 12, 10, 1], cerebro_madre: [7, 12, 10, 1] } };
+  dragon_fin: [4, 12, 10, 1], dr_huevon: [5, 12, 10, 1], rey_fantasma: [6, 12, 10, 1], cerebro_madre: [7, 12, 10, 1],
+  gurdy: [8, 12, 10, 1], peep: [9, 12, 10, 1], viuda: [10, 12, 10, 1], pie_mama: [11, 12, 10, 1], satanas: [12, 12, 10, 1], rey_slime: [13, 12, 10, 1], rey_boo: [14, 12, 10, 1], nave_nodriza: [15, 12, 10, 1], ridley: [16, 12, 10, 1], wither: [17, 12, 10, 1], ganon: [18, 12, 10, 1], sans: [19, 12, 10, 1] } };
 const SHEETS = [
   { title: 'Movimiento', src: 'isaac_movimiento.png', size: 160, anims: {
     idle_down: [0, 4, 6], idle_up: [1, 4, 6], idle_left: [2, 4, 6], idle_right: [3, 4, 6],
@@ -40,6 +41,18 @@ const SHEETS = [
   { title: 'Jefe secreto: Dr. Huevón', src: 'jefe_dr_huevon.png', size: 256, anims: { flotar: [0, 8, 8], bombas: [1, 8, 10, 0.4], laser: [2, 8, 12, 0.4], ...BOSS_COMMON } },
   { title: 'Jefe secreto: Rey Fantasma', src: 'jefe_rey_fantasma.png', size: 256, anims: { flotar: [0, 8, 8], desvanecer: [1, 8, 10, 0.6], espiral: [2, 8, 12, 0.4], ...BOSS_COMMON } },
   { title: 'Jefe secreto: Cerebro Madre', src: 'jefe_cerebro_madre.png', size: 256, anims: { idle: [0, 8, 6], atacar: [1, 8, 12, 0.4], 'dañado': [2, 8, 6], ...BOSS_COMMON } },
+  { title: 'Jefe: Gurdy', src: 'jefe_gurdy.png', size: 256, anims: { idle: [0, 8, 8], escupir: [1, 8, 10], invocar: [2, 8, 10], ...BOSS_COMMON } },
+  { title: 'Jefe: Peep', src: 'jefe_peep.png', size: 256, anims: { idle: [0, 8, 8], llorar: [1, 8, 12], sin_ojos: [2, 8, 8], llorar_sin_ojos: [4, 8, 12], ...BOSS_COMMON } },
+  { title: 'Jefe: La Viuda', src: 'jefe_viuda.png', size: 256, anims: { caminar: [0, 8, 12], escupir: [1, 8, 10], quieta: [2, 8, 8], ...BOSS_COMMON } },
+  { title: 'Jefe: Pie de Mamá', src: 'jefe_pie_mama.png', size: 256, anims: { idle: [0, 8, 6], ...BOSS_COMMON } },
+  { title: 'Jefe: Satanás', src: 'jefe_satanas.png', size: 256, anims: { flotar: [0, 8, 8], rayo: [1, 8, 12], fuego: [2, 8, 12], ...BOSS_COMMON } },
+  { title: 'Jefe: Rey Slime', src: 'jefe_rey_slime.png', size: 256, anims: { idle: [0, 8, 8], saltar: [1, 8, 12, 0.3], derretirse: [2, 8, 10, 0.3], ...BOSS_COMMON } },
+  { title: 'Jefe: Rey Boo', src: 'jefe_rey_boo.png', size: 256, anims: { flotar: [0, 8, 8], timido: [1, 8, 8], reir: [2, 8, 10], ...BOSS_COMMON } },
+  { title: 'Jefe: Nave Nodriza', src: 'jefe_nave_nodriza.png', size: 256, anims: { flotar: [0, 8, 10], rayo: [1, 8, 12], disparar: [2, 8, 12], ...BOSS_COMMON } },
+  { title: 'Jefe: Ridley', src: 'jefe_ridley.png', size: 256, anims: { volar: [0, 8, 10], embestir: [1, 8, 16], fuego: [2, 8, 12], ...BOSS_COMMON } },
+  { title: 'Jefe: Wither', src: 'jefe_wither.png', size: 256, anims: { flotar: [0, 8, 8], calaveras: [1, 8, 10], blindado: [2, 8, 8], blindado_ataque: [4, 8, 10], ...BOSS_COMMON } },
+  { title: 'Jefe: Ganon', src: 'jefe_ganon.png', size: 256, anims: { idle: [0, 8, 8], tridente: [1, 8, 10, 0.4], girar: [2, 8, 14], ...BOSS_COMMON } },
+  { title: 'Jefe: Sans', src: 'jefe_sans.png', size: 256, anims: { idle: [0, 8, 8], atacar: [1, 8, 8], dormido: [2, 8, 4], ...BOSS_COMMON } },
   DEATHS,
 ];
 const views = [], root = document.getElementById('root');
