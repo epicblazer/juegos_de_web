@@ -119,9 +119,9 @@ setupStick(document.getElementById('stickL'), (x, y) => {
   }
   touchMove.x = m > dead ? x : 0; touchMove.y = m > dead ? y : 0;
   const dir = x < -0.5 ? -1 : x > 0.5 ? 1 : 0;
-  if (dir !== stickMenuDir) { stickMenuDir = dir; if (dir && (state !== 'play' || ut)) onKey(dir < 0 ? 'ArrowLeft' : 'ArrowRight'); }
+  if (dir !== stickMenuDir) { stickMenuDir = dir; if (dir && (state !== 'play' || ut || bal)) onKey(dir < 0 ? 'ArrowLeft' : 'ArrowRight'); }
   const vdir = y < -0.5 ? -1 : y > 0.5 ? 1 : 0; // en la batalla de Sans también para las listas
-  if (vdir !== stickMenuV) { stickMenuV = vdir; if (vdir && ut) onKey(vdir < 0 ? 'ArrowUp' : 'ArrowDown'); }
+  if (vdir !== stickMenuV) { stickMenuV = vdir; if (vdir && (ut || bal)) onKey(vdir < 0 ? 'ArrowUp' : 'ArrowDown'); }
 });
 // joystick derecho: dispara en la dirección dominante (como las flechas)
 setupStick(document.getElementById('stickR'), (x, y) => {
@@ -332,6 +332,23 @@ const SFX = {
   utHeal() { [523, 659, 784, 1046].forEach((f, i) => tone({ f, type: 'triangle', dur: 0.1, vol: 0.12, delay: i * 0.05 })); },
   utCrack() { tone({ f: 300, f2: 120, type: 'square', dur: 0.12, vol: 0.18 }); noise({ dur: 0.1, vol: 0.25, freq: 3500 }); },
   utShatter() { for (let i = 0; i < 5; i++) tone({ f: 900 - i * 120, type: 'square', dur: 0.06, vol: 0.08, delay: i * 0.03 }); noise({ dur: 0.3, vol: 0.25, freq: 5000, f2: 800 }); },
+  // Baldi
+  balVoice() { tone({ f: 230 + Math.random() * 60, type: 'triangle', dur: 0.05, vol: 0.14 }); },
+  balPlay() { tone({ f: 600 + Math.random() * 160, type: 'square', dur: 0.04, vol: 0.05 }); },
+  balRight() { [784, 988, 1175].forEach((f, i) => tone({ f, type: 'triangle', dur: 0.12, vol: 0.14, delay: i * 0.07 })); },
+  balWrong() { tone({ f: 140, type: 'sawtooth', dur: 0.35, vol: 0.14 }); tone({ f: 147, type: 'square', dur: 0.35, vol: 0.06 }); },
+  balNote() { [1046, 1318, 1568, 2093].forEach((f, i) => tone({ f, type: 'square', dur: 0.08, vol: 0.07, delay: i * 0.05 })); },
+  balRope() { noise({ dur: 0.18, vol: 0.12, freq: 900, f2: 2400, type: 'bandpass', q: 1.5 }); },
+  balTick() { tone({ f: 1318, type: 'triangle', dur: 0.08, vol: 0.12 }); },
+  balAlarm() { for (let i = 0; i < 6; i++) tone({ f: i % 2 ? 660 : 880, type: 'square', dur: 0.2, vol: 0.09, delay: i * 0.2 }); },
+  // Dr. Fetus
+  meatJump() { tone({ f: 330, f2: 700, type: 'square', dur: 0.08, vol: 0.07 }); },
+  meatLand() { noise({ dur: 0.05, vol: 0.14, freq: 700 }); },
+  meatDie() { noise({ dur: 0.35, vol: 0.45, freq: 1500, f2: 200 }); tone({ f: 200, f2: 50, type: 'sawtooth', dur: 0.3, vol: 0.15 }); },
+  fetButton() { tone({ f: 220, type: 'square', dur: 0.06, vol: 0.15 }); tone({ f: 440, type: 'square', dur: 0.1, vol: 0.12, delay: 0.06 }); },
+  fetMissile() { noise({ dur: 0.5, vol: 0.12, freq: 600, f2: 2500, type: 'bandpass', q: 1 }); },
+  fetGlass() { for (let i = 0; i < 6; i++) tone({ f: 2400 + Math.random() * 1600, type: 'triangle', dur: 0.12, vol: 0.06, delay: i * 0.03 }); noise({ dur: 0.4, vol: 0.25, freq: 6000, type: 'highpass' }); },
+  fetPunch() { noise({ dur: 0.25, vol: 0.6, freq: 900, f2: 120 }); tone({ f: 160, f2: 40, type: 'square', dur: 0.3, vol: 0.25 }); },
   start() { [262, 330, 392, 523].forEach((f, i) => tone({ f, type: 'square', dur: 0.15, vol: 0.15, delay: i * 0.08 })); },
 };
 const lastPlay = {};
@@ -471,7 +488,7 @@ function buildTitleMusic() {
 // prog: grado del acorde de cada compás · bass: x raíz, o octava, 5 quinta · arp: grados sobre el acorde · drums: golpes separados por espacios (- = nada)
 const SCALES = {
   minor: [0, 2, 3, 5, 7, 8, 10], harm: [0, 2, 3, 5, 7, 8, 11], phryg: [0, 1, 3, 5, 7, 8, 10], dorian: [0, 2, 3, 5, 7, 9, 10],
-  mixo: [0, 2, 4, 5, 7, 9, 10], hijaz: [0, 1, 4, 5, 7, 8, 10],
+  mixo: [0, 2, 4, 5, 7, 9, 10], hijaz: [0, 1, 4, 5, 7, 8, 10], major: [0, 2, 4, 5, 7, 9, 11],
 };
 const DEG = '0123456789abcde';
 function buildSong(s) {
@@ -579,6 +596,16 @@ const BOSS_SONGS = {
     mel: ['7...6.5.6...4...', '5...4.3.4...2...', '3...4.5.6...7...', '9...8...7.......'],
     bass: 'x.....x.x.......', drums: 'kt - - - s - - - kt - kt - s - r r',
     v: { leadType: 'organ', leadVol: 0.09, leadLen: 3.5, bassType: 'organ', bassVol: 0.16, bassLen: 4, padType: 'organ' } },
+  baldi: { // escuelita: alegre, de juguete... y un poco desafinada
+    bpm: 116, key: 60, scale: 'major', prog: [0, 3, 4, 0],
+    mel: ['0.2.4.2.0...4...', '3.5.7.5.3...7...', '4.6.8.6.4.2.1...', '0.2.4.7.4.2.0...'],
+    bass: 'x...o...', drums: 'k - h - s - h - k - h - s - h -',
+    v: { leadType: 'triangle', leadVol: 0.1, leadLen: 1.5, bassType: 'triangle', bassVol: 0.28, bassLen: 2 } },
+  fetus: { // carne contra el doctor: rock rápido de plataformas
+    bpm: 168, key: 52, scale: 'minor', prog: [0, 5, 3, 4], crash: 4,
+    mel: ['0.0.3.0.5.0.3.4.', '0.0.3.0.7.6.5.4.', '0.0.3.0.5.0.3.4.', '7.7.6.6.5.5.4.3.'],
+    arp: '0.4.7.4.', bass: 'xxox', drums: 'k h s h k k s h k h s h k k s s',
+    v: { leadType: 'sawtooth', leadVol: 0.05, leadLen: 1, arpType: 'square', arpVol: 0.025, bassCut: 1200, bassLen: 0.9 } },
   sans: { // hueso duro: riff chiptune que no para
     bpm: 124, key: 50, scale: 'minor', prog: [0, 0, 6, 5],
     mel: ['0.07..6.5.4.3.4.', '0.07..6.5.4.3.4.', '6.67..6.5.4.3.4.', '5.57..6.5.4.3.4.'],
@@ -1597,10 +1624,10 @@ function genFloor() {
 const BOSS_POOLS = [
   ['monstro', 'gurdy', 'peep', 'kingSlime'],
   ['dukeFlies', 'gurdy', 'peep', 'widow', 'kingSlime'],
-  ['monstro', 'widow', 'momFoot', 'kingBoo', 'mothership'],
-  ['dukeFlies', 'momFoot', 'kingBoo', 'mothership', 'ridley', 'koopa'],
-  ['ridley', 'wither', 'ganon', 'eggman', 'koopa', 'momFoot'],
-  ['wither', 'ganon', 'sans', 'dragon', 'ghostKing', 'brain'],
+  ['monstro', 'widow', 'momFoot', 'kingBoo', 'mothership', 'baldi'],
+  ['dukeFlies', 'momFoot', 'kingBoo', 'mothership', 'ridley', 'koopa', 'baldi'],
+  ['ridley', 'wither', 'ganon', 'eggman', 'koopa', 'momFoot', 'fetus'],
+  ['wither', 'ganon', 'sans', 'dragon', 'ghostKing', 'brain', 'fetus'],
   ['satan', 'sans', 'ganon', 'wither', 'brain'],
 ];
 let runBosses = []; // jefes que ya salieron en esta partida
@@ -1651,6 +1678,8 @@ const BDEF = {
   wither: { name: 'Wither', ref: 'Minecraft', r: 44, hp: 340, fly: true, sc: 1.4 },
   ganon: { name: 'Ganon', ref: 'The Legend of Zelda', r: 40, hp: 270, sc: 1.3 },
   sans: { name: 'Sans', ref: 'Undertale', r: 22, hp: 150, sc: 1.25 },
+  baldi: { name: 'Baldi', ref: "Baldi's Basics in Education and Learning", r: 24, hp: 150, sc: 1.3 }, // se le gana con 3 minijuegos
+  fetus: { name: 'Dr. Fetus', ref: 'Super Meat Boy', r: 30, hp: 200, sc: 1.2 }, // pelea de plataformas
 };
 const GHOST_COLORS = ['#ff2a2a', '#ffb8de', '#2affff', '#ffb852'];
 function mkEnemy(type, x, y) {
@@ -1681,7 +1710,7 @@ function freeSpot(r) {
 }
 function enterRoom() {
   cur.visited = true;
-  enemies = []; tears = []; particles = []; hazards = []; spawnQ = []; fxAnims = []; bossIntro = null; ut = null; deathCut = null; endingAt = 0;
+  enemies = []; tears = []; particles = []; hazards = []; spawnQ = []; fxAnims = []; bossIntro = null; ut = null; bal = null; fet = null; deathCut = null; endingAt = 0;
   p.shield = p.shieldMax; // el Escudo Divino se recarga en cada sala
   if (cur.type === 'devil' || cur.type === 'angel') {
     if (!cur.seen) {
@@ -2792,6 +2821,8 @@ function onKey(c) {
     return;
   }
   if (ut && state === 'play') { utKey(c); return; }
+  if (bal && state === 'play') { balKey(c); return; }
+  if (fet && state === 'play') { fetKey(c); return; }
   if (bossIntro && (isConfirm(c) || c.startsWith('Arrow')) && bossIntro.t > 40 && bossIntro.t < INTRO.out) { bossIntro.t = INTRO.out; return; } // saltar
   if (state === 'win') { if (isConfirm(c)) { state = 'play'; winPending = false; nextFloor(); } else if (c === 'KeyR') enterSelect(); return; }
   if (c === 'KeyR') startGame();
@@ -2812,6 +2843,8 @@ function update() {
   if (state !== 'play' || paused) { updateParticles(); return; }
   if (endingAt > 0 && --endingAt === 0) { startEnding(); return; }
   if (ut) { utUpdate(); return; } // batalla de Sans (estilo Undertale)
+  if (bal) { balUpdate(); return; } // minijuegos de Baldi
+  if (fet) { fetUpdate(); return; } // plataformas contra Dr. Fetus
   if (bossIntro) { updateBossIntro(); updateParticles(); return; } // el juego se congela durante la presentación
 
   let ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), iy = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
@@ -2918,7 +2951,7 @@ function update() {
   const bossDown = enemies.some(e => e.boss && e.hp <= 0);
   for (const e of enemies) if (e.hp <= 0) {
     const col = { fly: '#222', ghost: e.color, slime: '#5c5', slimeMini: '#5c5', creeper: '#4caf50', skeleton: '#ddd', invader: '#7cfc00', goomba: '#8a4a1e',
-      spider: '#222', widow: '#2a1a2a', peep: '#e8c838', kingSlime: '#3a6ae0', kingBoo: '#eef', sans: '#fff', mothership: '#aaa', wither: '#333', ridley: '#6a3a8a' }[e.type] || (e.boss ? '#a03030' : '#8a1a1a');
+      spider: '#222', widow: '#2a1a2a', peep: '#e8c838', kingSlime: '#3a6ae0', kingBoo: '#eef', sans: '#fff', baldi: '#4caf50', fetus: '#f4a8b4', mothership: '#aaa', wither: '#333', ridley: '#6a3a8a' }[e.type] || (e.boss ? '#a03030' : '#8a1a1a');
     const blood = { slime: '#3aa02a', slimeMini: '#3aa02a', fly: '#5a0a0a', dragon: '#4a0a5a', brain: '#a83060', goomba: '#6a3a10', peep: '#c8a820', kingSlime: '#2a5ad0', ridley: '#4a0a5a', spider: '#2a1010' }[e.type];
     const x = e.x, y = e.y, z = e.z, r = e.r, boss = e.boss, type = e.type;
     const splat = () => { // reventón: partículas, mancha en el suelo y, si es jefe, sacudida y sonido
@@ -3630,7 +3663,11 @@ function updateBossIntro() {
   if (t === INTRO.stamp) { sfx('stamp'); shake = Math.max(shake, 4); }
   if (t === INTRO.roar) { sfx(I.boss.type === 'dragon' ? 'screech' : 'roar'); shake = 8; }
   if (t === INTRO.out) sfx('swoosh');
-  if (t >= INTRO.end) bossIntro = null;
+  if (t >= INTRO.end) {
+    bossIntro = null;
+    if (I.boss.type === 'baldi') balStart(I.boss); // contra Baldi se juegan sus 3 minijuegos
+    else if (I.boss.type === 'fetus') fetStart(I.boss); // contra Dr. Fetus, plataformas como en Super Meat Boy
+  }
 }
 function hazardTape(x0, y0, x1, y1, h) { // cinta amarilla y negra de advertencia
   ctx.save();
@@ -4315,11 +4352,11 @@ const CREDITS = [
   ['cast', 'gurdy', 'Gurdy', 'Sótano'], ['cast', 'peep', 'Peep', 'Sótano'], ['cast', 'widow', 'La Viuda', 'Cuevas'],
   ['cast', 'momFoot', 'Pie de Mamá', 'Cuevas'], ['cast', 'kingSlime', 'Rey Slime', 'Sótano'], ['cast', 'kingBoo', 'Rey Boo', 'Cuevas'],
   ['cast', 'mothership', 'Nave Nodriza', 'Cuevas'], ['cast', 'ridley', 'Ridley', 'Profundidades'], ['cast', 'wither', 'Wither', 'Profundidades'],
-  ['cast', 'ganon', 'Ganon', 'Profundidades'], ['cast', 'sans', 'Sans', 'Útero'], ['cast', 'satan', 'Satanás', 'Útero'],
+  ['cast', 'ganon', 'Ganon', 'Profundidades'], ['cast', 'sans', 'Sans', 'Útero'], ['cast', 'baldi', 'Baldi', 'Su escuela'], ['cast', 'fetus', 'Dr. Fetus', 'Su laboratorio'], ['cast', 'satan', 'Satanás', 'Útero'],
   ['cast', 'darkIsaac', '???', '¿eres tú?'],
   ['cast', 'officer', 'El Coronel', 'como él mismo'], ['gap', 50],
   ['h', 'HOMENAJE A'], ['n', 'The Binding of Isaac'], ['n', 'Super Mario'], ['n', 'The Legend of Zelda'], ['n', 'Sonic the Hedgehog'],
-  ['n', 'Minecraft'], ['n', 'Metroid'], ['n', 'Pac-Man'], ['n', 'Terraria'], ['n', 'Space Invaders'], ['n', 'Undertale'], ['gap', 70],
+  ['n', 'Minecraft'], ['n', 'Metroid'], ['n', 'Pac-Man'], ['n', 'Terraria'], ['n', 'Space Invaders'], ['n', 'Undertale'], ['n', "Baldi's Basics"], ['n', 'Super Meat Boy'], ['gap', 70],
   ['n', 'Ningún soldado verde fue herido'], ['n', 'durante la creación de este juego.'], ['gap', 90],
   ['big', 'GRACIAS POR JUGAR'],
 ];
@@ -5954,6 +5991,8 @@ function drawBoss(e, flash) {
       ctx.strokeStyle = '#06140a'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-16, -42); ctx.lineTo(-5, -37); ctx.moveTo(16, -42); ctx.lineTo(5, -37); ctx.stroke();
       break;
     }
+    case 'baldi': { ctx.translate(e.x, y); drawBaldiFig(0, e.r + 8, 0.5, { mood: e.state === 'idle' ? 'smile' : 'angry', slap: e.state === 'idle' ? 0 : Math.max(0, Math.sin(frame * 0.25)) }); break; }
+    case 'fetus': { ctx.translate(e.x, y); drawFetusSuit(0, e.r + 8, 0.42, { laugh: e.state !== 'idle' }); break; }
     case 'sans': { // esqueleto bajito con chamarra azul y pantuflas
       ctx.translate(e.x, y);
       const tired = e.state === 'tired', bob = tired ? 0 : Math.sin(frame * 0.1) * 1.5;
@@ -6775,6 +6814,8 @@ function draw() {
   if (state === 'select') { drawSelect(); drawPost(0.45); drawUnlockToasts(); return; }
   if (state === 'ending') { drawEnding(); drawPost(0.55); return; }
   if (ut && state === 'play') { utDraw(); return; }
+  if (bal && state === 'play') { balDraw(); return; }
+  if (fet && state === 'play') { fetDraw(); return; }
   ctx.save();
   if (shake) ctx.translate(rnd(-shake, shake), rnd(-shake, shake));
   drawRoom();
@@ -7380,6 +7421,988 @@ function utDraw() {
     ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 40px "Courier New", monospace'; ctx.fillText('PAUSA', CX, CY);
   }
 }
+
+// =====================================================================
+// BALDI (Baldi's Basics in Education and Learning): a Baldi no se le pega.
+// Para ganarle hay que superar sus 3 minijuegos: 1) problemas de matemáticas,
+// 2) saltar la cuerda con Playtime y 3) juntar los cuadernos y escapar de su escuela (en 3D)
+// =====================================================================
+let bal = null;
+const BAL_FONT = 'bold 21px "Comic Sans MS", "Comic Neue", cursive';
+const BAL_TAU = Math.PI * 2;
+const DIR4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const BAL_GLYPHS = '¥§Ʃ¤ж₪ʘ¿Ω∂ξ#@%&ДЖ';
+// flechas/WASD/joystick izquierdo, para los modos especiales (Baldi y Dr. Fetus)
+const modeInput = () => ({ l: !!(keys.ArrowLeft || keys.KeyA || touchMove.x < -0.3), r: !!(keys.ArrowRight || keys.KeyD || touchMove.x > 0.3),
+  u: !!(keys.ArrowUp || keys.KeyW || touchMove.y < -0.3), d: !!(keys.ArrowDown || keys.KeyS || touchMove.y > 0.3) });
+function modeHearts() { for (let i = 0; i < p.maxHp / 2; i++) drawHeart(28 + (i % 10) * 24, 22 + Math.floor(i / 10) * 20, clamp(p.hp - i * 2, 0, 2)); }
+function modePause() {
+  if (!paused) return;
+  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 40px "Courier New", monospace'; ctx.fillText('PAUSA', CX, CY);
+}
+function modeKeyPause(c) { if (c === 'KeyP') { paused = !paused; if (AC) { if (paused) AC.suspend(); else AC.resume(); } return true; } return paused; }
+function wrapText(text, maxW) { // corta el texto en renglones (con la fuente actual)
+  const out = []; let l = '';
+  for (const w of text.split(' ')) { const t = l ? l + ' ' + w : w; if (ctx.measureText(t).width > maxW && l) { out.push(l); l = w; } else l = t; }
+  out.push(l); return out;
+}
+
+// ---------- dibujos (pies en (x, feet), s = escala) ----------
+function drawBaldiFig(x, feet, s, o = {}) { // Baldi: pelón, camisa verde, jeans y su regla
+  const mood = o.mood || 'smile', talk = o.talk && Math.floor(frame / 5) % 2, slap = o.slap || 0;
+  ctx.save(); ctx.translate(x, feet); ctx.scale(s, s); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const OL = '#2a1a10', SK = '#f2c9a0';
+  ctx.strokeStyle = OL; ctx.lineWidth = 2;
+  ctx.fillStyle = '#3a2a1a'; ctx.beginPath(); ctx.roundRect(-17, -7, 15, 7, 2); ctx.roundRect(2, -7, 15, 7, 2); ctx.fill();
+  ctx.fillStyle = '#3a5aa8'; ctx.beginPath(); ctx.roundRect(-14, -42, 12, 36, 2); ctx.roundRect(2, -42, 12, 36, 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.roundRect(-18, -84, 36, 46, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#3a8a3e'; ctx.fillRect(-1, -80, 2, 40);
+  ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.roundRect(-27, -80, 10, 30, 4); ctx.fill(); ctx.stroke(); // brazo izquierdo
+  ctx.fillStyle = SK; ell(-22, -48, 5.5, 5.5); ctx.fill(); ctx.stroke();
+  ctx.save(); ctx.translate(21, -78); ctx.rotate(lerp(-2.5, 0.55, slap)); // brazo derecho con la regla
+  ctx.fillStyle = '#d8b070'; ctx.fillRect(-3.5, 22, 7, 52); ctx.strokeStyle = '#7a5a20'; ctx.lineWidth = 1.2; ctx.strokeRect(-3.5, 22, 7, 52);
+  ctx.beginPath(); for (let i = 28; i < 74; i += 6) { ctx.moveTo(-3.5, i); ctx.lineTo(-0.5, i); } ctx.stroke();
+  ctx.strokeStyle = OL; ctx.lineWidth = 2;
+  ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.roundRect(-5, -2, 10, 28, 4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = SK; ell(0, 27, 5.5, 5.5); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  // cabeza
+  const hy = -106;
+  ctx.fillStyle = SK; ell(-21, hy + 2, 4, 6); ctx.fill(); ctx.stroke(); ell(21, hy + 2, 4, 6); ctx.fill(); ctx.stroke();
+  ell(0, hy, 21, 24); ctx.fill(); ctx.stroke();
+  if (mood === 'angry') { ctx.fillStyle = 'rgba(220,40,30,.28)'; ell(0, hy, 21, 24); ctx.fill(); }
+  ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = 1.6; // tres pelitos
+  ctx.beginPath(); ctx.moveTo(-2, hy - 23); ctx.quadraticCurveTo(-6, hy - 34, 2, hy - 33); ctx.moveTo(-17, hy - 8); ctx.lineTo(-20, hy - 14); ctx.moveTo(17, hy - 8); ctx.lineTo(20, hy - 14); ctx.stroke();
+  ctx.fillStyle = '#fff'; ell(-8, hy - 4, 6, 7); ctx.fill(); ell(8, hy - 4, 6, 7); ctx.fill();
+  ctx.strokeStyle = OL; ctx.lineWidth = 1.4; ell(-8, hy - 4, 6, 7); ctx.stroke(); ell(8, hy - 4, 6, 7); ctx.stroke();
+  const lk = o.look || 0;
+  ctx.fillStyle = '#111'; ell(-8 + lk * 2, hy - 3, 2.3, 2.7); ctx.fill(); ell(8 + lk * 2, hy - 3, 2.3, 2.7); ctx.fill();
+  ctx.strokeStyle = '#4a2a10'; ctx.lineWidth = 2.2; ctx.beginPath();
+  if (mood === 'angry') { ctx.moveTo(-14, hy - 16); ctx.lineTo(-3, hy - 11); ctx.moveTo(14, hy - 16); ctx.lineTo(3, hy - 11); }
+  else { ctx.moveTo(-14, hy - 13); ctx.quadraticCurveTo(-8, hy - 18, -3, hy - 14); ctx.moveTo(14, hy - 13); ctx.quadraticCurveTo(8, hy - 18, 3, hy - 14); }
+  ctx.stroke();
+  ctx.fillStyle = '#d8a07a'; ell(0, hy + 4, 3, 2.6); ctx.fill();
+  ctx.strokeStyle = OL; ctx.lineWidth = 1.6;
+  if (mood === 'angry') {
+    ctx.fillStyle = '#5a0a0a'; ctx.beginPath(); ctx.moveTo(-9, hy + 16); ctx.quadraticCurveTo(0, hy + 9 - (talk ? 4 : 0), 9, hy + 16); ctx.quadraticCurveTo(0, hy + 13, -9, hy + 16); ctx.fill(); ctx.stroke();
+  } else {
+    const op = (mood === 'happy' ? 12 : 9) + (talk ? 3 : 0);
+    ctx.fillStyle = '#7a1010'; ctx.beginPath(); ctx.moveTo(-11, hy + 9); ctx.quadraticCurveTo(0, hy + 9 + op * 1.6, 11, hy + 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.fillRect(-8, hy + 9, 16, 2.5);
+  }
+  ctx.restore();
+}
+function drawPlaytimeFig(x, feet, s, o = {}) { // Playtime: vestido rosa, coletas y una sonrisa enorme
+  ctx.save(); ctx.translate(x, feet); ctx.scale(s, s); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const OL = '#2a1a10', SK = '#f2c9a0';
+  ctx.fillStyle = SK; ctx.fillRect(-9, -26, 5, 22); ctx.fillRect(4, -26, 5, 22);
+  ctx.fillStyle = '#c03060'; ell(-7, -3, 7, 4); ctx.fill(); ell(7, -3, 7, 4); ctx.fill();
+  ctx.fillStyle = '#ff7ab8'; ctx.strokeStyle = OL; ctx.lineWidth = 2; poly([[-9, -64], [9, -64], [21, -22], [-21, -22]]); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff'; for (let i = -2; i <= 2; i++) { ell(i * 7, -36 + Math.abs(i) * 2, 2, 2); ctx.fill(); }
+  ctx.strokeStyle = SK; ctx.lineWidth = 5;
+  const h = o.hand || [20, -46];
+  ctx.beginPath(); ctx.moveTo(-8, -58); ctx.lineTo(-17, -40); ctx.moveTo(8, -58); ctx.lineTo(h[0], h[1]); ctx.stroke();
+  const hy = -80;
+  ctx.fillStyle = '#1a1a1a'; ell(-17, hy - 2, 6, 10); ctx.fill(); ell(17, hy - 2, 6, 10); ctx.fill();
+  ctx.fillStyle = SK; ctx.strokeStyle = OL; ctx.lineWidth = 2; ell(0, hy, 15, 16); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.ellipse(0, hy - 6, 15, 11, 0, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#111'; ell(-5, hy + 1, 2.4, 3); ctx.fill(); ell(5, hy + 1, 2.4, 3); ctx.fill();
+  ctx.fillStyle = 'rgba(255,90,120,.45)'; ell(-9, hy + 7, 3.5, 2); ctx.fill(); ell(9, hy + 7, 3.5, 2); ctx.fill();
+  ctx.strokeStyle = '#c01020'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-9, hy + 6); ctx.quadraticCurveTo(0, hy + 15 + (o.talk && Math.floor(frame / 5) % 2 ? 3 : 0), 9, hy + 6); ctx.stroke();
+  ctx.restore();
+}
+function balNoteImg() { // cuaderno azul (se dibuja una sola vez)
+  if (balNoteImg.c) return balNoteImg.c;
+  const c = mkCanvas(60, 76), x = c.getContext('2d'), prev = ctx; ctx = x;
+  ctx.fillStyle = '#1e5ad0'; ctx.beginPath(); ctx.roundRect(4, 2, 52, 72, 5); ctx.fill(); ctx.strokeStyle = '#0a2a70'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.fillStyle = '#0a2a70'; ctx.fillRect(4, 2, 8, 72);
+  ctx.fillStyle = '#fff'; ctx.fillRect(18, 14, 32, 18); ctx.fillStyle = '#1e5ad0'; ctx.fillRect(21, 19, 26, 2.5); ctx.fillRect(21, 25, 18, 2.5);
+  ctx.fillStyle = '#ffd34a'; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', 34, 52);
+  ctx = prev; balNoteImg.c = c; return c;
+}
+function balBubble(x, y, w, text, n, tail) { // globo de diálogo; tail: 'right' | 'left' | 'down'
+  ctx.font = BAL_FONT;
+  const full = wrapText(text, w - 30), shown = wrapText(text.slice(0, Math.floor(n)), w - 30), h = full.length * 28 + 26;
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 14); ctx.fill(); ctx.stroke();
+  if (tail === 'right') poly([[x + w - 2, y + h * 0.45], [x + w + 26, y + h * 0.65], [x + w - 2, y + h * 0.7]]);
+  else if (tail === 'left') poly([[x + 2, y + h * 0.45], [x - 26, y + h * 0.65], [x + 2, y + h * 0.7]]);
+  else poly([[x + w * 0.3, y + h - 2], [x + w * 0.24, y + h + 26], [x + w * 0.42, y + h - 2]]);
+  ctx.fill(); ctx.stroke(); ctx.fillStyle = '#fff'; ctx.fillRect(tail === 'right' ? x + w - 6 : tail === 'left' ? x + 2 : x + w * 0.3, tail === 'down' ? y + h - 6 : y + h * 0.46, tail === 'down' ? w * 0.12 : 5, tail === 'down' ? 5 : h * 0.23);
+  ctx.fillStyle = '#111'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  shown.forEach((l, i) => ctx.fillText(l, x + 15, y + 14 + i * 28));
+}
+
+// ---------- flujo de la pelea ----------
+const BAL_INTRO = ['¡Hola! ¡Bienvenido a mi escuela!', 'Si quieres salir de aquí, vas a tener que superar mis 3 minijuegos.', 'Primero... ¡las matemáticas! ¿Listo para aprender?'];
+function balStart(boss) {
+  bal = { boss, t: 0, pt: 0, phase: 'talk', scene: 'class', who: 'baldi', bub: null, mood: 'smile', anger: 0, flash: 0, slapN: 0, slapC: 0, noDie: false, botIn: null };
+  playMusic('baldi', 0.3);
+  balTalk(BAL_INTRO, balMathStart);
+}
+const balPhase = ph => { bal.phase = ph; bal.pt = 0; };
+function balTalk(lines, next, who = 'baldi', mood) { balPhase('talk'); bal.who = who; if (mood) bal.mood = mood; bal.bub = { lines, i: 0, n: 0, next }; }
+function balNextLine() {
+  const b = bal.bub; if (!b) return;
+  if (b.n < b.lines[b.i].length) { b.n = b.lines[b.i].length; return; }
+  if (++b.i >= b.lines.length) { bal.bub = null; b.next(); } else b.n = 0;
+}
+function balSlaps(n) { bal.slapN = n; bal.slapC = 0; }
+function balSlapSnd(v) { if (!AC) return; noise({ dur: 0.07, vol: v, freq: 4200, type: 'highpass' }); tone({ f: 900, f2: 300, type: 'square', dur: 0.05, vol: v * 0.25 }); }
+function balHurt(n) { // la regla de Baldi
+  bal.flash = 22; balSlapSnd(0.7);
+  if (bal.noDie) return;
+  p.inv = 0; hurt(n);
+}
+function balWin() { const b = bal.boss; bal = null; b.hp = 0; b.spawn = 0; p.x = CX - 170; p.y = CY + 70; p.vx = p.vy = 0; p.inv = 60; }
+
+// 1) matemáticas: 3 problemas; el tercero es imposible (como en el juego)
+function balMathQ(i) {
+  if (i === 2) return { glitch: true, opts: [ri(10, 40), ri(41, 70), ri(71, 99), ri(100, 999)].sort(() => Math.random() - 0.5) };
+  let a, b, op, ans;
+  if (i === 0) { a = ri(2, 9); b = ri(2, 9); op = '+'; ans = a + b; }
+  else if (Math.random() < 0.5) { a = ri(3, 9); b = ri(2, 7); op = '×'; ans = a * b; }
+  else { b = ri(2, 9); ans = ri(2, 12); a = ans + b; op = '−'; }
+  const opts = [ans];
+  while (opts.length < 4) { const v = ans + pick([-3, -2, -1, 1, 2, 3, 10, -10]); if (v >= 0 && !opts.includes(v)) opts.push(v); }
+  return { text: `${a} ${op} ${b} = ?`, ans, opts: opts.sort(() => Math.random() - 0.5) };
+}
+function balMathStart() { bal.scene = 'class'; bal.m = { qi: 0, q: balMathQ(0), sel: 0, res: null, rt: 0, marks: [] }; bal.mood = 'smile'; balPhase('math'); }
+function balAnswer() {
+  const u = bal, m = u.m; if (m.res) return;
+  const ok = !m.q.glitch && m.q.opts[m.sel] === m.q.ans;
+  m.res = ok ? 'ok' : 'bad'; m.rt = 0; m.marks.push(ok);
+  if (ok) { sfx('balRight'); u.mood = 'happy'; } else { sfx('balWrong'); u.anger++; u.mood = 'angry'; balSlaps(3); }
+}
+function balMathUpdate() {
+  const u = bal, m = u.m;
+  if (!m.res || ++m.rt < 100) return;
+  if (++m.qi < 3) { m.q = balMathQ(m.qi); m.res = null; m.sel = 0; u.mood = u.anger > 1 ? 'angry' : 'smile'; return; }
+  const calm = u.anger <= 1;
+  balTalk(calm ? ['¡Muy bien! ...Bueno, casi.', '¿Ese último problema? Sí... era un poquito difícil. Je je.', '¡Segundo minijuego! Playtime quiere saltar la cuerda contigo.']
+    : ['...', 'Te equivocaste. Y más de una vez.', 'Ve con Playtime. Y no me hagas enojar más.'], balRopeIntro, 'baldi', calm ? 'smile' : 'angry');
+}
+
+// 2) saltar la cuerda con Playtime: 5 saltos seguidos; si fallas, Baldi se acerca...
+function balRopeIntro() {
+  bal.scene = 'rope';
+  bal.r = { ang: 2.2, spd: 0.07, jumps: 0, need: 5, jy: 0, jv: 0, miss: 0, baldiD: 0, wait: 0, say: '', sayT: 0, slapT: 0 };
+  balTalk(['¡Hola! ¡Juguemos!', '¡Salta la cuerda 5 veces seguidas! (ESPACIO o toca la pantalla para saltar)'], () => balPhase('rope'), 'playtime');
+}
+function balJump() { const r = bal.r; if (r && r.jy === 0 && r.jv === 0) { r.jv = -7.6; sfx('jump'); } }
+function balRopeUpdate() {
+  const u = bal, r = u.r;
+  if (r.jy < 0 || r.jv < 0) { r.jv += 0.42; r.jy += r.jv; if (r.jy >= 0) { r.jy = 0; r.jv = 0; } }
+  if (r.sayT > 0) r.sayT--;
+  if (r.slapT > 0 && --r.slapT === 0) { balHurt(2); r.baldiD = 0; if (!bal) return; }
+  if (u.phase !== 'rope') return;
+  if (r.wait > 0) { if (--r.wait === 0) r.ang = 2.2; return; }
+  const prev = r.ang; r.ang += r.spd;
+  if (Math.floor(prev / BAL_TAU + 0.5) < Math.floor(r.ang / BAL_TAU + 0.5)) sfx('balRope', 0.1); // la cuerda zumba arriba
+  if (Math.floor(prev / BAL_TAU) < Math.floor(r.ang / BAL_TAU)) { // la cuerda pasa por los pies
+    if (r.jy < -12) {
+      r.jumps++; sfx('balTick'); r.spd = Math.min(0.115, r.spd + 0.006);
+      if (r.jumps >= r.need) balTalk(['¡Lo hiciste genial!', '¡Gracias por jugar conmigo!'], balMazeIntro, 'playtime');
+    } else {
+      r.jumps = 0; r.miss++; r.baldiD++; r.wait = 90; r.spd = 0.07; sfx('balWrong');
+      r.say = pick(['¡Uy! ¡Te equivocaste! ¡Otra vez!', '¡Ay no! ¡Empieza de nuevo!']); r.sayT = 90;
+      if (r.baldiD >= 3) { r.slapT = 40; balSlaps(2); }
+    }
+  }
+}
+
+// 3) la escuela en 3D: junta los 4 cuadernos y escapa por la SALIDA mientras Baldi te persigue
+function balMazeIntro() {
+  bal.scene = 'class';
+  balTalk(['¡Último minijuego!', 'Escondí 4 cuadernos en mi escuela. Encuéntralos todos...', '...y luego busca la SALIDA.', 'Yo iré a buscarte. ¡Je je je!'], () => {
+    bal.scene = 'maze'; bal.z = balMazeBuild(); balPhase('maze'); stopMusic();
+  }, 'baldi', bal.anger > 1 ? 'angry' : 'smile');
+}
+function balBfs(z, sx, sy) { // distancias (en celdas) desde (sx, sy) a toda la escuela
+  const w = z.w, d = new Int16Array(w * z.h).fill(-1), q = [sy * w + sx]; d[q[0]] = 0;
+  for (let i = 0; i < q.length; i++) {
+    const c = q[i], x = c % w, y = (c / w) | 0;
+    for (const [dx, dy] of DIR4) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= w || ny >= z.h) continue;
+      const v = z.g[ny][nx];
+      if ((v === 0 || v === 3) && d[ny * w + nx] < 0) { d[ny * w + nx] = d[c] + 1; q.push(ny * w + nx); }
+    }
+  }
+  return d;
+}
+function balMazeBuild() {
+  const CW = 9, CH = 6, w = CW * 2 + 1, h = CH * 2 + 1;
+  const g = Array.from({ length: h }, () => Array(w).fill(1));
+  const seen = new Set(['0,0']), st = [[0, 0]]; g[1][1] = 0;
+  while (st.length) { // laberinto (backtracking)
+    const [cx, cy] = st[st.length - 1];
+    const nb = DIR4.map(([dx, dy]) => [cx + dx, cy + dy, dx, dy]).filter(([x, y]) => x >= 0 && y >= 0 && x < CW && y < CH && !seen.has(x + ',' + y));
+    if (!nb.length) { st.pop(); continue; }
+    const [nx, ny, dx, dy] = pick(nb);
+    g[cy * 2 + 1 + dy][cx * 2 + 1 + dx] = 0; g[ny * 2 + 1][nx * 2 + 1] = 0; seen.add(nx + ',' + ny); st.push([nx, ny]);
+  }
+  for (let i = 0; i < 18; i++) { // atajos: así hay vueltas por donde huir de Baldi
+    const x = ri(1, w - 2), y = ri(1, h - 2);
+    if ((x % 2 === 0) !== (y % 2 === 0)) g[y][x] = 0;
+  }
+  const z = { g, w, h, x: 1.5, y: 1.5, a: g[1][2] === 0 ? 0 : Math.PI / 2, notes: [], got: 0, open: false, t: 0, bob: 0, msg: '¡Encuentra los 4 cuadernos!', msgT: 200,
+    zb: new Float32Array(BAL_COLS), slapT: 150, move: 0, dmap: null, catchT: 0, hbT: 0, slapAt: -99 };
+  const cells = []; for (let y = 1; y < h; y += 2) for (let x = 1; x < w; x += 2) cells.push([x, y]);
+  const d0 = balBfs(z, 1, 1), picked = [[1, 1]];
+  for (let i = 0; i < 4; i++) { // cuadernos repartidos: cada uno lo más lejos posible de los demás
+    let best = null, bd = -1;
+    for (const c of cells) { const md = Math.min(...picked.map(q => Math.abs(q[0] - c[0]) + Math.abs(q[1] - c[1]))) + Math.random() * 0.5; if (md > bd) { bd = md; best = c; } }
+    picked.push(best); z.notes.push({ x: best[0] + 0.5, y: best[1] + 0.5, got: false });
+  }
+  let ey = 1; // la salida: en la pared derecha, lo más lejos posible del inicio
+  for (let y = 1; y < h; y += 2) if (d0[y * w + w - 2] > d0[ey * w + w - 2]) ey = y;
+  z.exit = { x: w - 1, y: ey }; g[ey][w - 1] = 2;
+  let bc = cells[cells.length - 1]; // Baldi sale de un salón a media distancia del inicio
+  for (const [x, y] of cells) if (Math.abs(d0[y * w + x] - 10) < Math.abs(d0[bc[1] * w + bc[0]] - 10)) bc = [x, y];
+  z.bx = bc[0] + 0.5; z.by = bc[1] + 0.5;
+  return z;
+}
+const balWalk = v => v === 0 || v === 3;
+function balFree(z, x, y) {
+  const r = 0.22;
+  for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) {
+    const gx = Math.floor(x + ox), gy = Math.floor(y + oy);
+    if (gx < 0 || gy < 0 || gx >= z.w || gy >= z.h || !balWalk(z.g[gy][gx])) return false;
+  }
+  return true;
+}
+function balFarCell(z) { // la celda más lejos del jugador (ahí reaparece Baldi después de pegarte)
+  const d = balBfs(z, Math.floor(z.x), Math.floor(z.y)); let best = [1, 1], bd = -1;
+  for (let y = 1; y < z.h; y += 2) for (let x = 1; x < z.w; x += 2) if (d[y * z.w + x] > bd) { bd = d[y * z.w + x]; best = [x, y]; }
+  return best;
+}
+function balMazeUpdate() {
+  const u = bal, z = u.z; z.t++;
+  if (z.msgT > 0) z.msgT--;
+  const inp = u.botIn || modeInput();
+  const turn = (inp.r ? 1 : 0) - (inp.l ? 1 : 0), mv = (inp.u ? 1 : 0) - (inp.d ? 1 : 0);
+  z.a += turn * 0.052;
+  const sp = 0.062 * mv, nx = z.x + Math.cos(z.a) * sp, ny = z.y + Math.sin(z.a) * sp;
+  if (balFree(z, nx, z.y)) z.x = nx;
+  if (balFree(z, z.x, ny)) z.y = ny;
+  if (mv) z.bob += 0.2;
+  for (const n of z.notes) if (!n.got && Math.hypot(n.x - z.x, n.y - z.y) < 0.5) {
+    n.got = true; z.got++; sfx('balNote');
+    z.msg = `¡Cuaderno ${z.got} de ${z.notes.length}!`; z.msgT = 120;
+    if (z.got === z.notes.length) { z.open = true; z.g[z.exit.y][z.exit.x] = 3; sfx('balAlarm'); z.msg = '¡Ya tienes todos! ¡Corre a la SALIDA!'; z.msgT = 260; }
+  }
+  if (z.open && Math.floor(z.x) === z.exit.x && Math.floor(z.y) === z.exit.y) { balMazeWin(); return; }
+  if (z.t < 150) return; // Baldi tarda un poco en salir a buscarte
+  if (z.catchT > 0) z.catchT--;
+  const dd = Math.hypot(z.bx - z.x, z.by - z.y);
+  if (--z.slapT <= 0) { // ¡ZAS! cada reglazo lo acerca una celda (más rápido si está enojado y con cada cuaderno)
+    z.slapT = Math.max(24, 64 - u.anger * 7 - z.got * 8 - (z.open ? 10 : 0));
+    balSlapSnd(clamp(1.1 - dd / 8, 0.06, 0.6)); z.slapAt = z.t;
+    z.move = 1; z.dmap = balBfs(z, Math.floor(z.x), Math.floor(z.y));
+  }
+  if (dd < 4 && ++z.hbT % 40 === 0) sfx('heartbeat');
+  if (z.move > 0 && z.dmap) {
+    const w = z.w, cx = Math.floor(z.bx), cy = Math.floor(z.by), here = z.dmap[cy * w + cx];
+    let tx = z.x, ty = z.y;
+    if (here > 0) {
+      for (const [dx, dy] of DIR4) { const qx = cx + dx, qy = cy + dy; if (qx >= 0 && qy >= 0 && qx < w && qy < z.h && z.dmap[qy * w + qx] === here - 1) { tx = qx + 0.5; ty = qy + 0.5; break; } }
+      const ccx = cx + 0.5, ccy = cy + 0.5; // primero al centro de su celda, para no atravesar esquinas
+      if ((Math.abs(tx - ccx) > 0.01 && Math.abs(z.by - ccy) > 0.02) || (Math.abs(ty - ccy) > 0.01 && Math.abs(z.bx - ccx) > 0.02)) { tx = ccx; ty = ccy; }
+    }
+    const dx = tx - z.bx, dy = ty - z.by, dl = Math.hypot(dx, dy);
+    if (dl > 0.001) { const k = Math.min(0.12, z.move, dl); z.bx += dx / dl * k; z.by += dy / dl * k; z.move -= k; } else z.move = 0;
+  }
+  if (dd < 0.45 && z.catchT <= 0) { // ¡te atrapó!
+    z.msg = '¡TE ATRAPÉ!'; z.msgT = 90; z.catchT = 150; z.slapT = 150; z.move = 0;
+    const c = balFarCell(z); z.bx = c[0] + 0.5; z.by = c[1] + 0.5;
+    balHurt(2);
+  }
+}
+function balMazeWin() {
+  bal.scene = 'class'; playMusic('baldi', 0.4);
+  balTalk(['¡¿QUÉ?!', '...¡Lo lograste! Pasaste mis 3 minijuegos.', 'Está bien... puedes irte.', '¡Pero no olvides estudiar! ¡Je je je!'], () => balPhase('out'), 'baldi', 'happy');
+}
+
+function balKey(c) {
+  if (modeKeyPause(c)) return;
+  const u = bal, ok = isConfirm(c) || c === 'KeyZ';
+  if (u.phase === 'talk') { if (ok) balNextLine(); return; }
+  if (u.phase === 'math') {
+    const m = u.m; if (m.res) return;
+    const d = /^(Digit|Numpad)[1-4]$/.test(c) ? +c.slice(-1) - 1 : -1;
+    if (d >= 0) { m.sel = d; balAnswer(); }
+    else if (['ArrowLeft', 'KeyA', 'ArrowRight', 'KeyD'].includes(c)) { m.sel ^= 1; sfx('utMove'); }
+    else if (['ArrowUp', 'KeyW', 'ArrowDown', 'KeyS'].includes(c)) { m.sel ^= 2; sfx('utMove'); }
+    else if (ok) balAnswer();
+    return;
+  }
+  if (u.phase === 'rope' && (ok || c === 'ArrowUp' || c === 'KeyW')) balJump();
+}
+function balUpdate() {
+  const u = bal; u.t++; u.pt++;
+  if (p.inv > 0) p.inv--;
+  if (u.flash > 0) u.flash--;
+  if (window.__balBot) window.__balBot(u); // lo usa video/grabar_jefes_nuevos.js para jugar solo
+  if (!bal) return;
+  if (u.slapN > 0 && ++u.slapC >= 20) { u.slapC = 0; u.slapN--; }
+  if (u.slapN > 0 && u.slapC === 10) balSlapSnd(0.45);
+  const b = u.bub;
+  if (b && b.n < b.lines[b.i].length) { const a = Math.floor(b.n); b.n = Math.min(b.lines[b.i].length, b.n + 0.55); if (Math.floor(b.n) > a && /\S/.test(b.lines[b.i][a])) sfx(u.who === 'playtime' ? 'balPlay' : 'balVoice', 0.06); }
+  if (u.phase === 'math') balMathUpdate();
+  else if (u.scene === 'rope') balRopeUpdate();
+  else if (u.phase === 'maze') balMazeUpdate();
+  else if (u.phase === 'out' && u.pt >= 70) balWin();
+}
+
+// ---------- dibujo ----------
+const BAL_COLS = 240, BAL_FOV = 0.66;
+const balSlapK = () => bal.slapN > 0 ? Math.sin(bal.slapC / 20 * Math.PI) : 0;
+function balDrawClass() {
+  const u = bal;
+  ctx.fillStyle = '#e9e2c0'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#4a8a5a'; ctx.fillRect(0, 286, W, 10);
+  ctx.fillStyle = '#9a6a3a'; ctx.fillRect(0, 470, W, H - 470);
+  ctx.strokeStyle = '#7a4a22'; ctx.lineWidth = 2; ctx.beginPath(); for (let y = 488; y < H; y += 22) { ctx.moveTo(0, y); ctx.lineTo(W, y); } ctx.stroke();
+  ctx.fillStyle = '#6a4a2a'; ctx.fillRect(30, 26, 600, 190); ctx.fillStyle = '#2f5a3a'; ctx.fillRect(40, 36, 580, 170); // pizarrón
+  ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = 'bold 30px "Comic Sans MS", cursive'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('ESCUELA DE BALDI', 330, 80); ctx.font = '24px "Comic Sans MS", cursive'; ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.fillText('1 + 1 = 2      2 + 2 = 4      5 × 2 = 10', 330, 140); ctx.fillText('¡APRENDER ES DIVERTIDO!', 330, 180);
+  ctx.fillStyle = '#e8e8e8'; ctx.fillRect(60, 206, 40, 6);
+  // reloj
+  ctx.fillStyle = '#fff'; ell(820, 70, 30, 30); ctx.fill(); ctx.strokeStyle = '#222'; ctx.lineWidth = 4; ctx.stroke();
+  ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(820, 70); ctx.lineTo(820 + Math.cos(frame * 0.01) * 20, 70 + Math.sin(frame * 0.01) * 20); ctx.moveTo(820, 70); ctx.lineTo(832, 60); ctx.stroke();
+  const talking = u.phase === 'talk' && u.who === 'baldi' && u.bub && u.bub.n < u.bub.lines[u.bub.i].length;
+  const react = u.phase === 'math' && u.m.res === 'ok' && u.m.rt < 60;
+  softShadow(770, 556, 120, 20, 0.5);
+  drawBaldiFig(770, 560, 3.0, { mood: u.mood, talk: talking || react, slap: balSlapK(), look: u.phase === 'math' ? -1 : 0 });
+  if (u.phase === 'math') balDrawMath();
+  if (react) balBubble(420, 40, 270, '¡Fantástico! ¡Eres increíble!', 99, 'right');
+  if (u.phase === 'talk' && u.who === 'baldi' && u.bub) balBubble(330, 40, 340, u.bub.lines[u.bub.i], u.bub.n, 'right');
+}
+function balDrawMath() {
+  const m = bal.m, q = m.q;
+  ctx.save(); ctx.translate(0, 0);
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(70, 236, 540, 316);
+  ctx.fillStyle = '#fbfbf2'; ctx.fillRect(60, 226, 540, 316);
+  ctx.strokeStyle = '#a8c8f0'; ctx.lineWidth = 1.5; ctx.beginPath(); for (let y = 290; y < 540; y += 30) { ctx.moveTo(60, y); ctx.lineTo(600, y); } ctx.stroke();
+  ctx.strokeStyle = '#f08080'; ctx.beginPath(); ctx.moveTo(110, 226); ctx.lineTo(110, 542); ctx.stroke();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#1a3a8a'; ctx.font = 'bold 18px "Comic Sans MS", cursive';
+  ctx.fillText(`MINIJUEGO 1 · MATEMÁTICAS · Problema ${Math.min(3, m.qi + 1)} de 3`, 124, 252);
+  m.marks.forEach((ok, i) => { ctx.font = 'bold 26px Arial'; ctx.fillStyle = ok ? '#1a9a2a' : '#d01818'; ctx.fillText(ok ? '✔' : '✘', 124 + i * 30, 288); });
+  ctx.textAlign = 'center'; ctx.font = 'bold 50px "Comic Sans MS", cursive';
+  if (q.glitch) { // el problema imposible: símbolos que cambian y tiemblan
+    const s = Array.from({ length: 9 }, (_, i) => i === 3 || i === 7 ? (i === 3 ? '+' : '=') : BAL_GLYPHS[(i * 7 + Math.floor(frame / 4)) % BAL_GLYPHS.length]).join('');
+    ctx.fillStyle = Math.floor(frame / 6) % 2 ? '#d01818' : '#111';
+    ctx.fillText(s, 355 + rnd(-3, 3), 330 + rnd(-3, 3));
+  } else { ctx.fillStyle = '#111'; ctx.fillText(q.text, 355, 330); }
+  q.opts.forEach((v, i) => {
+    const x = 130 + (i % 2) * 240, y = 386 + (i >> 1) * 72, sel = m.sel === i;
+    let bg = sel ? '#ffe680' : '#fff';
+    if (m.res) { if (!q.glitch && v === q.ans) bg = '#8ae08a'; else if (sel) bg = '#ff9090'; }
+    ctx.fillStyle = bg; ctx.strokeStyle = sel ? '#c08000' : '#555'; ctx.lineWidth = sel ? 4 : 2;
+    ctx.beginPath(); ctx.roundRect(x, y, 210, 56, 12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#111'; ctx.font = 'bold 30px "Comic Sans MS", cursive'; ctx.fillText(q.glitch && !m.res && frame % 40 < 4 ? '¿?' : String(v), x + 115, y + 29);
+    ctx.font = 'bold 15px Arial'; ctx.fillStyle = '#888'; ctx.fillText(i + 1, x + 18, y + 18);
+  });
+  ctx.font = '14px monospace'; ctx.fillStyle = '#666';
+  ctx.fillText('flechas para elegir · ENTER para responder · o las teclas 1 a 4', 330, 528);
+  ctx.restore();
+}
+function balDrawPlayerAt(x, feet, k) { // el jugador de cuerpo entero, más chico
+  ctx.save(); ctx.translate(x, feet); ctx.scale(k, k);
+  if (p.char === CHARS[0] && sprOK('move')) {
+    const col = Math.floor(frame / 60 * 6) % 4, s = 300 / 160;
+    ctx.drawImage(SPR.move, col * 160, 0, 160, 160, -80 * s, -150 * s, 300, 300);
+  } else drawCharShaded(p.char, 0, 0, 3.4, 'B', 0, 0);
+  ctx.restore();
+}
+function balDrawRope() {
+  const u = bal, r = u.r, gy = 470;
+  ctx.fillStyle = '#e8e2c4'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#d8d8d0'; ctx.fillRect(0, 0, W, 60);
+  for (let x = 0; x < W; x += 120) { ctx.fillStyle = '#fffbe0'; ctx.fillRect(x + 30, 18, 60, 16); }
+  for (let x = 40; x < W - 40; x += 70) { ctx.fillStyle = '#3a6ab8'; ctx.fillRect(x, 170, 60, 250); ctx.fillStyle = '#2a4a88'; ctx.fillRect(x + 6, 190, 48, 4); ctx.fillRect(x + 6, 200, 48, 4); ctx.fillRect(x + 44, 290, 6, 20); } // casilleros
+  ctx.fillStyle = '#4a8a5a'; ctx.fillRect(0, 150, W, 10);
+  ctx.fillStyle = '#8a9aa8'; ctx.fillRect(0, 420, W, H - 420);
+  ctx.strokeStyle = 'rgba(0,0,0,.12)'; ctx.lineWidth = 2; ctx.beginPath(); for (let x = -400; x < W; x += 60) { ctx.moveTo(x, H); ctx.lineTo(x + 300, 420); } ctx.stroke();
+  // Baldi se acerca por el pasillo cada vez que fallas
+  if (r.baldiD > 0 || r.slapT > 0) {
+    const k = r.slapT > 0 ? 3 : r.baldiD, s = 0.9 + k * 0.6;
+    softShadow(870, 430 + k * 14, 40 * s, 8 * s, 0.4);
+    drawBaldiFig(870, 430 + k * 14, s, { mood: 'angry', slap: balSlapK() || Math.max(0, Math.sin(frame * 0.12)) * 0.6 });
+  }
+  const A = [230 + 20 * 2.2 + Math.sin(r.ang) * 8, gy - 100 + Math.cos(r.ang) * 10], B = [760, gy - 100];
+  ctx.fillStyle = '#7a5a3a'; ctx.fillRect(754, gy - 104, 12, 104); ctx.fillStyle = '#5a3a1a'; ctx.fillRect(746, gy - 4, 28, 8); // poste
+  const rope = front => {
+    const dep = Math.sin(r.wait > 0 ? 0 : r.ang);
+    if ((dep >= 0) !== front) return;
+    ctx.strokeStyle = front ? '#e83030' : '#a82020'; ctx.lineWidth = front ? 5 : 4; ctx.beginPath();
+    for (let i = 0; i <= 24; i++) { const s = i / 24, sag = Math.sin(Math.PI * s) * 104; const x = lerp(A[0], B[0], s), y = lerp(A[1], B[1], s) + Math.cos(r.wait > 0 ? 0 : r.ang) * sag; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke();
+  };
+  rope(false);
+  softShadow(230, gy + 4, 40, 9, 0.5);
+  drawPlaytimeFig(230, gy, 2.2, { hand: [20 + Math.sin(r.ang) * 4, -46 + Math.cos(r.ang) * 5], talk: u.phase === 'talk' && u.bub && u.bub.n < u.bub.lines[u.bub.i].length });
+  softShadow(500, gy + 4, 34 * (1 + r.jy / 200), 9, 0.55);
+  balDrawPlayerAt(500, gy + r.jy, 0.5);
+  rope(true);
+  // marcador
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 22px "Comic Sans MS", cursive'; ctx.fillStyle = '#1a3a8a';
+  ctx.fillText('MINIJUEGO 2 · SALTAR LA CUERDA', CX, 92);
+  for (let i = 0; i < r.need; i++) { ctx.fillStyle = i < r.jumps ? '#ffd34a' : 'rgba(0,0,0,.2)'; ell(CX - 80 + i * 40, 128, 14, 14); ctx.fill(); ctx.strokeStyle = '#7a5a10'; ctx.lineWidth = 2; ctx.stroke(); }
+  if (u.phase === 'rope' && r.jumps === 0 && r.miss === 0 && r.wait === 0) { ctx.font = '15px monospace'; ctx.fillStyle = '#333'; ctx.fillText('ESPACIO / ↑ / toca la pantalla = saltar · salta cuando la cuerda llegue al piso', CX, 548); }
+  if (u.phase === 'talk' && u.who === 'playtime' && u.bub) balBubble(110, 170, 330, u.bub.lines[u.bub.i], u.bub.n, 'down');
+  else if (r.sayT > 0) balBubble(110, 200, 300, r.say, 99, 'down');
+  if (r.baldiD > 0 && u.phase === 'rope') { ctx.font = 'bold 16px "Comic Sans MS", cursive'; ctx.fillStyle = '#c01818'; ctx.fillText(r.baldiD >= 2 ? '¡Baldi está muy cerca!' : 'Baldi se acerca...', 860, 150); }
+}
+function balRender3D() { // la escuela en 3D (rayos, como Wolfenstein)
+  const z = bal.z, hz = H / 2 + Math.sin(z.bob) * 5;
+  ctx.fillStyle = lin(0, 0, 0, hz, '#c8c8c0', '#8a8a82'); ctx.fillRect(0, 0, W, hz);
+  ctx.fillStyle = lin(0, hz, 0, H, '#4a5868', '#8a9aa8'); ctx.fillRect(0, hz, W, H - hz);
+  const dx = Math.cos(z.a), dy = Math.sin(z.a), plx = -dy * BAL_FOV, ply = dx * BAL_FOV, cw = W / BAL_COLS;
+  for (let c = 0; c < BAL_COLS; c++) {
+    const cam = 2 * (c + 0.5) / BAL_COLS - 1, rx = dx + plx * cam, ry = dy + ply * cam;
+    let mx = Math.floor(z.x), my = Math.floor(z.y), side = 0, v = 0;
+    const ddx = Math.abs(1 / rx), ddy = Math.abs(1 / ry), sx = rx < 0 ? -1 : 1, sy = ry < 0 ? -1 : 1;
+    let sdx = rx < 0 ? (z.x - mx) * ddx : (mx + 1 - z.x) * ddx, sdy = ry < 0 ? (z.y - my) * ddy : (my + 1 - z.y) * ddy;
+    for (let i = 0; i < 64; i++) {
+      if (sdx < sdy) { sdx += ddx; mx += sx; side = 0; } else { sdy += ddy; my += sy; side = 1; }
+      if (mx < 0 || my < 0 || mx >= z.w || my >= z.h) { v = 9; break; }
+      v = z.g[my][mx]; if (v === 1 || v === 2) break;
+    }
+    const d = Math.max(0.05, side ? sdy - ddy : sdx - ddx); z.zb[c] = d;
+    let wx = side ? z.x + d * rx : z.y + d * ry; wx -= Math.floor(wx);
+    const lh = H / d, y0 = hz - lh / 2, x = c * cw, f = clamp(1 - d / 12, 0.18, 1) * (side ? 0.8 : 1);
+    if (v === 9) { ctx.fillStyle = '#fffbe8'; ctx.fillRect(x, y0, cw + 0.6, lh); continue; } // la luz de afuera (salida abierta)
+    balWallCol(x, cw + 0.6, y0, lh, wx, v, mx, my, f);
+  }
+  // cuadernos y Baldi (recortados por las paredes)
+  const spr = z.notes.filter(n => !n.got).map(n => ({ x: n.x, y: n.y, img: balNoteImg(), hw: 0.3, lift: 0.25 + Math.sin(frame * 0.06 + n.x) * 0.04 }));
+  if (z.t >= 150) {
+    const bc = balBaldiImg(z.t - z.slapAt < 12 ? 1 - (z.t - z.slapAt) / 12 : 0);
+    spr.push({ x: z.bx, y: z.by, img: bc, hw: 0.92, lift: 0 });
+  }
+  const inv = 1 / (plx * dy - dx * ply);
+  spr.map(s => { const rx = s.x - z.x, ry = s.y - z.y; return { ...s, tx: inv * (dy * rx - dx * ry), ty: inv * (-ply * rx + plx * ry) }; })
+    .filter(s => s.ty > 0.12).sort((a, b) => b.ty - a.ty).forEach(s => {
+      const scx = W / 2 * (1 + s.tx / s.ty), hh = H / s.ty, sh = hh * s.hw, sw = sh * s.img.width / s.img.height;
+      const bottom = hz + hh / 2 - hh * s.lift, x0 = scx - sw / 2, f = clamp(1 - s.ty / 12, 0.25, 1);
+      ctx.save(); ctx.filter = f < 0.98 ? `brightness(${f})` : 'none';
+      for (let c = Math.max(0, Math.floor(x0 / cw)); c <= Math.min(BAL_COLS - 1, Math.floor((x0 + sw) / cw)); c++) {
+        if (s.ty >= z.zb[c]) continue;
+        const cx0 = Math.max(c * cw, x0), cx1 = Math.min((c + 1) * cw, x0 + sw); if (cx1 <= cx0) continue;
+        const u0 = (cx0 - x0) / sw * s.img.width, uw = (cx1 - cx0) / sw * s.img.width;
+        ctx.drawImage(s.img, u0, 0, Math.max(0.5, uw), s.img.height, cx0, bottom - sh, cx1 - cx0 + 0.4, sh);
+      }
+      ctx.restore();
+    });
+}
+function balWallCol(x, cw, y0, lh, wx, v, mx, my, f) {
+  const sh = (r, g, b) => `rgb(${r * f | 0},${g * f | 0},${b * f | 0})`;
+  if (v === 2) { // la SALIDA, cerrada
+    ctx.fillStyle = sh(150, 150, 165); ctx.fillRect(x, y0, cw, lh);
+    if (Math.abs(wx - 0.5) < 0.025) { ctx.fillStyle = sh(60, 60, 70); ctx.fillRect(x, y0 + lh * 0.25, cw, lh * 0.75); }
+    if (wx > 0.15 && wx < 0.85) { ctx.fillStyle = sh(210, 30, 30); ctx.fillRect(x, y0 + lh * 0.05, cw, lh * 0.14); }
+    return;
+  }
+  ctx.fillStyle = sh(232, 226, 196); ctx.fillRect(x, y0, cw, lh);
+  ctx.fillStyle = sh(70, 140, 90); ctx.fillRect(x, y0 + lh * 0.52, cw, lh * 0.05);
+  ctx.fillStyle = sh(120, 80, 50); ctx.fillRect(x, y0 + lh * 0.9, cw, lh * 0.1);
+  if ((mx * 7 + my * 3) % 5 === 0 && wx > 0.25 && wx < 0.75) { // puerta de un salón
+    ctx.fillStyle = sh(150, 95, 55); ctx.fillRect(x, y0 + lh * 0.22, cw, lh * 0.68);
+    if (wx > 0.38 && wx < 0.62) { ctx.fillStyle = sh(150, 200, 230); ctx.fillRect(x, y0 + lh * 0.3, cw, lh * 0.16); }
+  } else if ((mx * 5 + my * 11) % 7 === 0 && wx > 0.3 && wx < 0.7) { ctx.fillStyle = sh(240, 200, 60); ctx.fillRect(x, y0 + lh * 0.2, cw, lh * 0.22); } // cartel
+  if (wx < 0.02 || wx > 0.98) { ctx.fillStyle = sh(180, 174, 150); ctx.fillRect(x, y0, cw, lh); }
+}
+const balBaldiCv = typeof document !== 'undefined' ? mkCanvas(150, 300) : null;
+function balBaldiImg(slap) { // Baldi enojado en un lienzo aparte para el 3D
+  const x = balBaldiCv.getContext('2d'), prev = ctx; ctx = x;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, 150, 300);
+  try { drawBaldiFig(75, 298, 2.2, { mood: 'angry', slap }); } finally { ctx = prev; }
+  return balBaldiCv;
+}
+function balDrawMaze() {
+  const z = bal.z;
+  balRender3D();
+  if (z.open) { ctx.fillStyle = `rgba(255,0,0,${0.1 + Math.sin(frame * 0.15) * 0.06})`; ctx.fillRect(0, 0, W, H); }
+  // mapa
+  const cs = 7, mx0 = W - z.w * cs - 16, my0 = 16;
+  ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(mx0 - 6, my0 - 6, z.w * cs + 12, z.h * cs + 12);
+  for (let y = 0; y < z.h; y++) for (let x = 0; x < z.w; x++) {
+    const v = z.g[y][x]; if (v === 0) continue;
+    ctx.fillStyle = v === 1 ? '#c8c2a8' : v === 2 ? '#c03030' : '#40ff60'; ctx.fillRect(mx0 + x * cs, my0 + y * cs, cs, cs);
+  }
+  for (const n of z.notes) if (!n.got) { ctx.fillStyle = '#3a8aff'; ctx.fillRect(mx0 + n.x * cs - 2.5, my0 + n.y * cs - 2.5, 5, 5); }
+  if (z.t >= 150) { ctx.fillStyle = '#ff3030'; ell(mx0 + z.bx * cs, my0 + z.by * cs, 3.5, 3.5); ctx.fill(); }
+  ctx.save(); ctx.translate(mx0 + z.x * cs, my0 + z.y * cs); ctx.rotate(z.a); ctx.fillStyle = '#ffe040'; poly([[5, 0], [-3, -3.5], [-3, 3.5]]); ctx.fill(); ctx.restore();
+  // cuadernos
+  ctx.drawImage(balNoteImg(), CX - 70, 12, 26, 33);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = 'bold 24px "Comic Sans MS", cursive'; ctx.lineWidth = 5; ctx.strokeStyle = '#000';
+  const txt = `${z.got} / ${z.notes.length} cuadernos`; ctx.strokeText(txt, CX - 36, 29); ctx.fillStyle = '#fff'; ctx.fillText(txt, CX - 36, 29);
+  if (z.msgT > 0) {
+    ctx.textAlign = 'center'; ctx.font = 'bold 30px "Comic Sans MS", cursive'; ctx.globalAlpha = Math.min(1, z.msgT / 30);
+    ctx.strokeText(z.msg, CX, 110); ctx.fillStyle = z.msg.startsWith('¡TE') ? '#ff4040' : '#ffe680'; ctx.fillText(z.msg, CX, 110); ctx.globalAlpha = 1;
+  }
+  ctx.textAlign = 'center'; ctx.font = '14px monospace'; ctx.fillStyle = 'rgba(255,255,255,.75)';
+  ctx.fillText('MINIJUEGO 3 · ↑↓ caminar · ←→ girar · ¡que no te atrape Baldi!', CX, H - 18);
+}
+function balDraw() {
+  const u = bal;
+  ctx.save();
+  if (u.scene === 'maze') balDrawMaze(); else if (u.scene === 'rope') balDrawRope(); else balDrawClass();
+  ctx.restore();
+  modeHearts();
+  if (u.flash > 0) { ctx.fillStyle = `rgba(255,0,0,${u.flash / 40})`; ctx.fillRect(0, 0, W, H); }
+  if (u.phase === 'talk' && u.bub && u.bub.n >= u.bub.lines[u.bub.i].length && Math.floor(frame / 30) % 2) {
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.font = '14px monospace'; ctx.fillStyle = '#333'; ctx.fillText('ENTER ▶', W - 20, H - 16);
+  }
+  if (u.phase === 'out') { ctx.fillStyle = `rgba(0,0,0,${clamp(u.pt / 60, 0, 1)})`; ctx.fillRect(0, 0, W, H); }
+  modePause();
+}
+
+// =====================================================================
+// DR. FETUS (Super Meat Boy): la pelea es de plataformas, como en el juego original.
+// 1) escapa trepando la torre mientras el robot gigante de Dr. Fetus sube destrozando todo
+// 2) en su laboratorio aprieta los 3 botones (cada uno dispara un cohete a su frasco) y, cuando caiga... ¡dale un golpe!
+// Morir te regresa al último punto de control y cuesta medio corazón.
+// =====================================================================
+let fet = null;
+const FT = 32; // tamaño de un bloque
+const FET_TOWER = { name: 'LA TORRE', h: 64, start: [4, 62],
+  plats: [[63, 1, 28], [60, 3, 9], [57, 12, 17], [54, 21, 26], [51, 14, 18], [48, 5, 10], [45, 1, 4], [35, 5, 12], [32, 15, 20], [29, 23, 27], [26, 16, 20],
+    [23, 8, 13], [20, 2, 6], [17, 9, 14], [14, 17, 22], [11, 24, 28], [8, 17, 21], [5, 9, 14]],
+  walls: [[5, 36, 41]], // la chimenea: se sube rebotando entre las paredes
+  saws: [{ x: 14.5, y: 57, r: 15 }, { x: 18, y: 30.4, r: 15, ax: 3, sp: 0.03 }, { x: 10.5, y: 23, r: 15 }, { x: 15.5, y: 14.5, r: 15, ay: 2.6, sp: 0.04 }, { x: 24.5, y: 11, r: 13 }],
+  cps: [[4, 62], [2, 44], [8, 22]] };
+const FET_LAB = { name: 'EL LABORATORIO', h: 18, start: [14, 16],
+  plats: [[17, 0, 29], [0, 0, 29], [14, 3, 8], [14, 21, 26], [11, 11, 18], [8, 2, 6], [8, 23, 27]], walls: [], saws: [], cps: [[14, 16]],
+  btns: [[4.5, 8], [25.5, 8], [14.5, 11]] };
+const FET_JAR = { x: 480, y: 96 }; // el frasco del robot del laboratorio
+function fetBuild(def) {
+  const g = new Uint8Array(30 * def.h);
+  for (let y = 0; y < def.h; y++) { g[y * 30] = 1; g[y * 30 + 29] = 1; }
+  for (const [y, a, b] of def.plats) for (let x = a; x <= b; x++) g[y * 30 + x] = 1;
+  for (const [x, a, b] of def.walls) for (let y = a; y <= b; y++) g[y * 30 + x] = 1;
+  return { ...def, g };
+}
+const fetMeat = ([cx, cy]) => ({ x: cx * FT + FT / 2 - 11, y: cy * FT + FT - 22, w: 22, h: 22, vx: 0, vy: 0, ground: true, wall: 0, coy: 0, buf: 0, jh: false, lock: 0, lockDir: 0, face: 1, dead: 0, sq: 0 });
+function fetSolidAt(L, x, y) {
+  const tx = Math.floor(x / FT), ty = Math.floor(y / FT);
+  if (tx < 0 || tx >= 30) return true;
+  if (ty < 0) return false;
+  if (ty >= L.h) return true;
+  return L.g[ty * 30 + tx] === 1;
+}
+const fetHit = (L, m) => fetSolidAt(L, m.x, m.y) || fetSolidAt(L, m.x + m.w, m.y) || fetSolidAt(L, m.x, m.y + m.h) || fetSolidAt(L, m.x + m.w, m.y + m.h);
+// un paso de física de Meat Boy (lo usa también el bot del video para planear)
+function fetStep(m, inp, L) {
+  const ev = {}, jp = inp.j && !m.jh; m.jh = inp.j;
+  if (jp) m.buf = 7;
+  let ix = inp.x;
+  if (m.lock > 0) { m.lock--; if (ix === m.lockDir) ix = 0; }
+  if (ix) m.face = ix;
+  const acc = m.ground ? 0.95 : 0.6;
+  if (ix) m.vx = clamp(m.vx + ix * acc, -6.4, 6.4); else m.vx *= m.ground ? 0.7 : 0.95;
+  if (m.buf > 0) {
+    if (m.coy > 0) { m.vy = -11.6; m.coy = 0; m.buf = 0; ev.jump = 1; }
+    else if (m.wall) { m.vy = -10.8; m.vx = -m.wall * 7.6; m.lock = 9; m.lockDir = m.wall; m.buf = 0; ev.jump = 2; }
+    else m.buf--;
+  }
+  m.vy += inp.j && m.vy < 0 ? 0.5 : 0.95;
+  if (m.wall && !m.ground && m.vy > 2.6) m.vy = 2.6; // se resbala por la pared
+  m.vy = Math.min(m.vy, 13);
+  m.x += m.vx;
+  if (fetHit(L, m)) { m.x = m.vx > 0 ? Math.floor((m.x + m.w) / FT) * FT - m.w - 0.01 : Math.floor(m.x / FT) * FT + FT + 0.01; m.vx = 0; }
+  m.y += m.vy;
+  const wasG = m.ground; m.ground = false;
+  if (fetHit(L, m)) {
+    if (m.vy > 0) { m.y = Math.floor((m.y + m.h) / FT) * FT - m.h - 0.01; m.ground = true; if (!wasG && m.vy > 5) ev.land = 1; }
+    else m.y = Math.floor(m.y / FT) * FT + FT + 0.01;
+    m.vy = 0;
+  }
+  m.wall = 0;
+  if (!m.ground) {
+    if (fetSolidAt(L, m.x + m.w + 1, m.y + 3) || fetSolidAt(L, m.x + m.w + 1, m.y + m.h - 3)) m.wall = 1;
+    else if (fetSolidAt(L, m.x - 1, m.y + 3) || fetSolidAt(L, m.x - 1, m.y + m.h - 3)) m.wall = -1;
+  }
+  m.coy = m.ground ? 6 : Math.max(0, m.coy - 1);
+  return ev;
+}
+const fetSawPos = (s, t) => [(s.x + (s.ax ? Math.sin(t * s.sp) * s.ax : 0)) * FT, (s.y + (s.ay ? Math.sin(t * s.sp) * s.ay : 0)) * FT];
+function fetDanger(f, m, k = 0) { // ¿Meat Boy muere en este cuadro (o dentro de k cuadros)?
+  const t = f.t + k;
+  const hitC = (x, y, r) => Math.hypot(clamp(x, m.x, m.x + m.w) - x, clamp(y, m.y, m.y + m.h) - y) < r;
+  for (const s of f.L.saws) { const [x, y] = fetSawPos(s, t); if (hitC(x, y, s.r - 2)) return true; }
+  if (f.phase === 'tower' && m.y + m.h > f.rob - k * f.robV + 6) return true;
+  if (f.lab) {
+    for (const q of f.lab.mis) if (hitC(q.x + q.vx * k, q.y + q.vy * k, 9)) return true;
+    for (const q of f.lab.saws) if (hitC(q.x + q.vx * k, q.y + q.vy * k, q.r - 3)) return true;
+  }
+  return false;
+}
+function fetStart(boss) {
+  fet = { boss, t: 0, pt: 0, phase: 'card', deaths: 0, noDie: false, botIn: null, shake: 0, parts: [], smears: [], cp: 0, msg: '', msgT: 0, lab: null, robV: 0, robHold: 0 };
+  fetLevel(FET_TOWER);
+  playMusic('fetus', 0.3); sfx('vsSlam');
+}
+function fetLevel(def) {
+  const f = fet; f.L = fetBuild(def); f.cp = 0; f.smears = []; f.m = fetMeat(def.start);
+  f.camY = def.h * FT - H; f.rob = f.m.y + f.m.h + 420; f.robV = 0; f.robHold = 60;
+  f.phase = 'card'; f.pt = 0;
+}
+function fetLabStart() {
+  fetLevel(FET_LAB);
+  fet.lab = { btn: [false, false, false], next: 0, nextT: 0, stage: 0, jar: 0, misT: 170, sawT: 300, side: 0, mis: [], saws: [], rockets: [], fetus: null };
+}
+function fetDie() {
+  const f = fet, m = f.m; if (m.dead) return;
+  m.dead = 1; f.deaths++; f.shake = 9; sfx('meatDie');
+  for (let i = 0; i < 26; i++) { const a = rnd(0, BAL_TAU), s = rnd(1, 7); f.parts.push({ x: m.x + 11, y: m.y + 11, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 3, life: ri(30, 70), r: rnd(2, 5), col: pick(['#c81e1e', '#8a0a0a', '#e84040']) }); }
+  for (let i = 0; i < 6; i++) f.smears.push({ x: m.x + 11 + rnd(-30, 30), y: m.y + 11 + rnd(-30, 30), r: rnd(3, 8) });
+  if (f.noDie) return;
+  p.inv = 0; hurt(1);
+}
+function fetRespawn() {
+  const f = fet, c = f.L.cps[f.cp];
+  f.m = fetMeat(c); f.robHold = 60;
+  if (f.phase === 'tower') f.rob = f.m.y + f.m.h + 380;
+  if (f.lab) { f.lab.mis = []; f.lab.saws = []; f.lab.misT = 120; }
+}
+function fetWin() { const b = fet.boss; fet = null; b.hp = 0; b.spawn = 0; p.x = CX - 170; p.y = CY + 70; p.vx = p.vy = 0; p.inv = 60; }
+const fetInput = () => { const i = modeInput(); return { x: (i.r ? 1 : 0) - (i.l ? 1 : 0), j: !!(keys.Space || keys.KeyW || keys.ArrowUp || keys.KeyZ || keys.KeyK || touchMove.y < -0.5) }; };
+function fetKey(c) {
+  if (modeKeyPause(c)) return;
+  if (fet.phase === 'card' && isConfirm(c) && fet.pt > 30) fet.pt = 999;
+}
+function fetUpdate() {
+  const f = fet; f.t++; f.pt++;
+  if (p.inv > 0) p.inv--;
+  if (f.shake > 0.3) f.shake *= 0.86; else f.shake = 0;
+  if (f.msgT > 0) f.msgT--;
+  if (window.__fetBot) window.__fetBot(f); // lo usa video/grabar_jefes_nuevos.js para jugar solo
+  if (!fet) return;
+  f.parts = f.parts.filter(q => { q.vy += 0.35; q.x += q.vx; q.y += q.vy; return --q.life > 0; });
+  if (f.phase === 'card') { if (f.pt >= 210) { f.phase = f.lab ? 'lab' : 'tower'; f.pt = 0; } return; }
+  if (f.phase === 'trans') { if (f.pt >= 70) fetLabStart(); return; }
+  if (f.phase === 'punch') { fetPunchUpdate(); return; }
+  if (f.phase === 'out') { if (f.pt >= 80) fetWin(); return; }
+  const m = f.m;
+  if (m.dead) { if (++m.dead > 42) fetRespawn(); }
+  else {
+    const ev = fetStep(m, f.botIn || fetInput(), f.L);
+    if (ev.jump) { sfx('meatJump'); m.sq = -0.25; }
+    if (ev.land) { sfx('meatLand'); m.sq = 0.3; }
+    m.sq *= 0.8;
+    if ((m.ground || m.wall) && f.t % 3 === 0 && (Math.abs(m.vx) > 1 || m.wall)) { // deja su rastro de carne
+      const sx = m.wall ? (m.wall > 0 ? m.x + m.w : m.x) : m.x + m.w / 2 + rnd(-6, 6), sy = m.wall ? m.y + m.h / 2 : m.y + m.h;
+      if (!f.smears.some(s => Math.abs(s.x - sx) < 5 && Math.abs(s.y - sy) < 5)) { f.smears.push({ x: sx, y: sy, r: rnd(3, 6) }); if (f.smears.length > 700) f.smears.shift(); }
+    }
+    if (fetDanger(f, m)) { fetDie(); if (!fet || state !== 'play') return; }
+    f.L.cps.forEach((c, i) => { if (i > f.cp && m.ground && m.y + m.h <= (c[1] + 1) * FT + 2) { f.cp = i; f.msg = '¡PUNTO DE CONTROL!'; f.msgT = 100; sfx('item'); } });
+  }
+  if (f.phase === 'tower') {
+    const gap = f.rob - (m.y + m.h);
+    f.robV = m.dead || f.robHold > 0 ? 0 : gap > 470 ? 2.4 : gap < 170 ? 0.45 : 0.68; // nunca se queda muy lejos
+    if (f.robHold > 0) f.robHold--;
+    f.rob -= f.robV;
+    if (f.t % 50 === 0) sfx('rumble', 0.5);
+    f.camY = clamp(lerp(f.camY, m.y - 330, 0.12), 0, f.L.h * FT - H);
+    if (!m.dead && m.y < 3 * FT) { f.phase = 'trans'; f.pt = 0; sfx('win'); }
+  } else fetLabUpdate();
+}
+function fetLabUpdate() {
+  const f = fet, lb = f.lab, m = f.m, pc = [m.x + 11, m.y + 11];
+  if (f.phase === 'lab' && !m.dead) {
+    if (--lb.misT <= 0) { // misil teledirigido desde un hombro del robot
+      lb.misT = [150, 120, 95, 80][lb.stage]; lb.side ^= 1;
+      const x = lb.side ? 590 : 370, y = 200, a = Math.atan2(pc[1] - y, pc[0] - x);
+      lb.mis.push({ x, y, a, vx: 0, vy: 0, sp: 3.2 + lb.stage * 0.35, life: 420 }); sfx('fetMissile');
+    }
+    if (lb.stage >= 1 && --lb.sawT <= 0) { lb.sawT = lb.stage >= 2 ? 170 : 250; lb.saws.push({ x: 480, y: 230, vx: (Math.random() < 0.5 ? -1 : 1) * rnd(2, 3.2), vy: -4, r: 17, life: 560, rot: 0 }); sfx('throw'); }
+    if (lb.nextT > 0 && --lb.nextT === 0) { f.msg = '¡Se encendió otro botón!'; f.msgT = 90; sfx('fetButton'); }
+    f.L.btns.forEach(([bx, by], i) => {
+      if (lb.btn[i] || i !== lb.next || lb.nextT > 0 || lb.rockets.length) return; // se encienden de uno en uno
+      const x = bx * FT, y = by * FT;
+      if (m.x + m.w > x - 20 && m.x < x + 20 && m.y + m.h > y - 12 && m.y < y) {
+        lb.btn[i] = true; sfx('fetButton'); f.shake = 4;
+        lb.rockets.push({ sx: x, sy: y - 10, x, y: y - 10, t: 0 }); f.msg = '¡Cohete al frasco!'; f.msgT = 80;
+      }
+    });
+  }
+  for (const q of lb.mis) {
+    const want = Math.atan2(pc[1] - q.y, pc[0] - q.x); let d = want - q.a; d = Math.atan2(Math.sin(d), Math.cos(d));
+    q.a += clamp(d, -0.035, 0.035); q.vx = Math.cos(q.a) * q.sp; q.vy = Math.sin(q.a) * q.sp; q.x += q.vx; q.y += q.vy;
+    if (--q.life <= 0 || fetSolidAt(f.L, q.x, q.y)) { q.dead = true; fetBoom(q.x, q.y, 14); }
+    if (f.t % 3 === 0) f.parts.push({ x: q.x - q.vx * 3, y: q.y - q.vy * 3, vx: rnd(-0.5, 0.5), vy: rnd(-1, 0), life: 18, r: rnd(2, 4), col: 'rgba(200,200,200,.7)', nog: true });
+  }
+  lb.mis = lb.mis.filter(q => !q.dead);
+  for (const q of lb.saws) {
+    q.vy += 0.3; q.x += q.vx; q.y += q.vy; q.rot += q.vx * 0.08;
+    if (fetSolidAt(f.L, q.x, q.y + q.r)) { q.y = Math.floor((q.y + q.r) / FT) * FT - q.r; q.vy = -9; sfx('clink', 0.15); }
+    if (fetSolidAt(f.L, q.x + Math.sign(q.vx) * q.r, q.y)) q.vx = -q.vx;
+    if (--q.life <= 0) q.dead = true;
+  }
+  lb.saws = lb.saws.filter(q => !q.dead);
+  for (const r of lb.rockets) {
+    const k = ++r.t / 50; r.x = lerp(r.sx, FET_JAR.x, k); r.y = lerp(r.sy, FET_JAR.y, k) - Math.sin(k * Math.PI) * 90;
+    if (f.t % 2 === 0) f.parts.push({ x: r.x, y: r.y + 8, vx: rnd(-1, 1), vy: rnd(0, 1), life: 16, r: rnd(2, 5), col: pick(['#ffb030', '#ff6010', '#ffe080']), nog: true });
+    if (r.t >= 50) {
+      r.dead = true; lb.jar++; lb.stage++; lb.next++; lb.nextT = 70; fetBoom(FET_JAR.x, FET_JAR.y, 30); f.shake = 16; sfx('fetGlass');
+      if (lb.jar >= 3) fetFree();
+    }
+  }
+  lb.rockets = lb.rockets.filter(r => !r.dead);
+  const fe = lb.fetus;
+  if (fe) { // Dr. Fetus fuera del frasco: da saltitos hacia ti
+    fe.vy += 0.4; fe.x += fe.vx; fe.y += fe.vy; fe.rot += fe.vx * 0.05;
+    if (fetSolidAt(f.L, fe.x, fe.y + 12)) { fe.y = Math.floor((fe.y + 12) / FT) * FT - 12; fe.vy = 0; fe.vx *= 0.8; fe.rot *= 0.8;
+      if (--fe.hop <= 0) { fe.hop = ri(40, 70); fe.vx = Math.sign(pc[0] - fe.x || 1) * 1.8; fe.vy = -5.5; } }
+    if (fetSolidAt(f.L, fe.x + Math.sign(fe.vx) * 12, fe.y)) fe.vx = -fe.vx;
+    if (!m.dead && Math.hypot(fe.x - pc[0], fe.y - pc[1]) < 26) { // ¡PUM!
+      f.phase = 'punch'; f.pt = 0; sfx('fetPunch'); f.shake = 20;
+      fe.vx = (fe.x > pc[0] ? 1 : -1) * 13; fe.vy = -10;
+    }
+  }
+}
+function fetBoom(x, y, n) {
+  const f = fet; sfx('boom', 0.08);
+  for (let i = 0; i < n; i++) { const a = rnd(0, BAL_TAU), s = rnd(1, 6); f.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: ri(15, 35), r: rnd(3, 7), col: pick(['#ffb030', '#ff6010', '#ffe080', '#888']), nog: true }); }
+}
+function fetFree() { // el frasco revienta y Dr. Fetus cae al piso
+  const f = fet, lb = f.lab;
+  f.phase = 'free'; lb.mis = []; lb.saws = [];
+  lb.fetus = { x: FET_JAR.x, y: FET_JAR.y, vx: 0, vy: -3, rot: 0, hop: 90 };
+  for (let i = 0; i < 30; i++) { const a = rnd(0, BAL_TAU), s = rnd(2, 8); f.parts.push({ x: FET_JAR.x, y: FET_JAR.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, life: ri(40, 80), r: rnd(2, 5), col: pick(['rgba(200,240,255,.8)', 'rgba(120,220,140,.8)']) }); }
+  f.msg = '¡Dr. Fetus cayó! ¡Dale un golpe!'; f.msgT = 240;
+}
+function fetPunchUpdate() {
+  const f = fet, fe = f.lab.fetus;
+  if (f.pt > 30) { fe.vy += 0.35; fe.x += fe.vx; fe.y += fe.vy; fe.rot += 0.5; } // pausa del golpe y sale volando
+  if (f.pt === 30) sfx('roar');
+  if (f.pt >= 150) { f.phase = 'out'; f.pt = 0; }
+}
+
+// ---------- dibujo ----------
+function drawMeatBoy(x, y, o = {}) { // (x, y) = esquina de arriba a la izquierda de su caja de 22x22
+  const sq = o.sq || 0, f = o.face || 1;
+  ctx.save(); ctx.translate(x + 11, y + 22); ctx.scale(1 + sq * 0.5, 1 - sq);
+  ctx.fillStyle = '#c81e1e'; ctx.strokeStyle = '#4a0606'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(-12, -23, 24, 24, 6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,140,140,.55)'; ctx.fillRect(-8, -19, 6, 4);
+  ctx.fillStyle = '#fff'; ell(f * 3 - 4, -14, 3.5, 4.2); ctx.fill(); ell(f * 3 + 5, -14, 3.5, 4.2); ctx.fill();
+  ctx.fillStyle = '#111'; ell(f * 4 - 4, -13.5, 1.6, 2.2); ctx.fill(); ell(f * 4 + 5, -13.5, 1.6, 2.2); ctx.fill();
+  ctx.strokeStyle = '#3a0404'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(f * 3 - 4, -6); ctx.quadraticCurveTo(f * 3 + 1, -3, f * 3 + 6, -6); ctx.stroke();
+  ctx.restore();
+}
+function drawFetusBaby(x, y, s, o = {}) { // Dr. Fetus: feto cabezón con monóculo y cara de malo
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s); if (o.rot) ctx.rotate(o.rot);
+  ctx.fillStyle = '#f4a8b4'; ctx.strokeStyle = '#8a3a4a'; ctx.lineWidth = 1.6;
+  ell(5, 9, 9, 8); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#d06070'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(8, 14); ctx.quadraticCurveTo(15, 22, 6, 27); ctx.stroke();
+  ctx.strokeStyle = '#8a3a4a'; ctx.lineWidth = 1.6; ell(-2, -3, 13, 12); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff'; ell(-7, -4, 3.6, 3); ctx.fill(); ell(3, -4, 3.6, 3); ctx.fill();
+  ctx.fillStyle = '#111'; ell(-6, -3.6, 1.6, 1.8); ctx.fill(); ell(4, -3.6, 1.6, 1.8); ctx.fill();
+  ctx.strokeStyle = '#5a1a2a'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(-11, -10); ctx.lineTo(-4, -7); ctx.moveTo(7, -10); ctx.lineTo(0, -7); ctx.stroke();
+  ctx.strokeStyle = '#d8b040'; ctx.lineWidth = 1.2; ell(3, -4, 5, 5); ctx.stroke(); ctx.beginPath(); ctx.moveTo(7.5, -1); ctx.lineTo(9, 8); ctx.stroke();
+  if (o.laugh) { ctx.fillStyle = '#5a1a2a'; ell(-2, 4, 3.2, 1.6 + Math.abs(Math.sin(frame * 0.4)) * 1.8); ctx.fill(); }
+  else { ctx.strokeStyle = '#5a1a2a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-6, 6); ctx.quadraticCurveTo(-2, 2.5, 2, 6); ctx.stroke(); }
+  ctx.restore();
+}
+function drawFetusJar(x, y, s, o = {}) { // frasco con líquido verde; o.crack = 0..3 grietas
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  if (o.broken) { // frasco reventado: sólo quedan la base y unos vidrios
+    ctx.fillStyle = 'rgba(110,210,130,.5)'; ctx.fillRect(-22, 18, 44, 8);
+    ctx.fillStyle = 'rgba(230,250,255,.8)'; poly([[-22, 26], [-22, 4], [-16, 14], [-10, 0], [-4, 16], [4, 8], [10, 18], [16, -2], [22, 12], [22, 26]]); ctx.fill();
+    ctx.fillStyle = '#5a5a66'; ctx.fillRect(-27, 26, 54, 6);
+    ctx.restore(); return;
+  }
+  ctx.fillStyle = 'rgba(110,210,130,.5)'; ctx.beginPath(); ctx.roundRect(-22, -28, 44, 56, 8); ctx.fill();
+  for (let i = 0; i < 3; i++) { const k = (frame * 0.01 + i / 3) % 1; ctx.fillStyle = 'rgba(220,255,230,.6)'; ell(-12 + i * 11, 24 - k * 48, 2 + i * 0.6, 2 + i * 0.6); ctx.fill(); }
+  drawFetusBaby(0, -2 + Math.sin(frame * 0.05) * 2, 1, o);
+  ctx.strokeStyle = 'rgba(230,250,255,.9)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.roundRect(-22, -28, 44, 56, 8); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(-17, -22, 4, 34);
+  const cracks = [[[-8, -26], [-2, -12], [-10, -2], [-4, 8]], [[20, -10], [8, -4], [14, 6], [4, 14], [10, 26]], [[-20, 10], [-8, 14], [-14, 22], [0, 26]]];
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6;
+  for (let i = 0; i < Math.min(3, o.crack || 0); i++) { ctx.beginPath(); cracks[i].forEach(([a, b], j) => j ? ctx.lineTo(a, b) : ctx.moveTo(a, b)); ctx.stroke(); }
+  ctx.fillStyle = '#8a8a96'; ctx.fillRect(-25, -38, 50, 11); ctx.fillStyle = '#5a5a66'; ctx.fillRect(-27, -30, 54, 4); ctx.fillRect(-27, 26, 54, 6);
+  ctx.restore();
+}
+function drawFetusSuit(x, feet, s, o = {}) { // su cuerpo robot de esmoquin, con el frasco por cabeza
+  ctx.save(); ctx.translate(x, feet); ctx.scale(s, s); ctx.lineJoin = 'round';
+  const arm = o.laugh ? Math.sin(frame * 0.3) * 0.3 : 0;
+  ctx.fillStyle = '#1a1a22'; ctx.fillRect(-15, -42, 11, 38); ctx.fillRect(4, -42, 11, 38);
+  ctx.fillStyle = '#0a0a0e'; ctx.beginPath(); ctx.roundRect(-19, -7, 17, 7, 3); ctx.roundRect(2, -7, 17, 7, 3); ctx.fill();
+  ctx.fillStyle = '#1a1a22'; poly([[-26, -94], [26, -94], [20, -40], [-20, -40]]); ctx.fill();
+  ctx.fillStyle = '#f4f4f0'; poly([[-9, -94], [9, -94], [0, -52]]); ctx.fill();
+  ctx.fillStyle = '#c01818'; poly([[-8, -92], [0, -88], [-8, -84]]); ctx.fill(); poly([[8, -92], [0, -88], [8, -84]]); ctx.fill();
+  ctx.fillStyle = '#e8c040'; ell(0, -70, 1.6, 1.6); ctx.fill(); ell(0, -60, 1.6, 1.6); ctx.fill();
+  for (const sd of [-1, 1]) {
+    ctx.save(); ctx.translate(sd * 26, -90); ctx.rotate(sd * (0.25 + arm) - (o.laugh ? sd * 1.6 : 0));
+    ctx.fillStyle = '#1a1a22'; ctx.fillRect(-5, 0, 10, 36); ctx.fillStyle = '#fff'; ell(0, 40, 7, 7); ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = '#5a5a66'; ctx.fillRect(-10, -100, 20, 8);
+  drawFetusJar(0, -128, 0.9, o);
+  ctx.restore();
+}
+function fetSawDraw(x, y, r, rot) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  ctx.fillStyle = '#c8ccd4'; ctx.beginPath();
+  for (let i = 0; i < 24; i++) { const a = i / 24 * BAL_TAU, rr = i % 2 ? r * 0.76 : r; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+  ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#4a4e56'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = 'rgba(160,20,20,.55)'; ell(r * 0.3, r * 0.2, r * 0.35, r * 0.2); ctx.fill();
+  ctx.fillStyle = '#7a7e86'; ell(0, 0, r * 0.32, r * 0.32); ctx.fill();
+  ctx.restore();
+}
+function fetMissileDraw(x, y, a) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+  ctx.fillStyle = `rgba(255,${150 + Math.random() * 80 | 0},40,.9)`; poly([[-10, -4], [-20 - Math.random() * 8, 0], [-10, 4]]); ctx.fill();
+  ctx.fillStyle = '#9aa0aa'; ctx.beginPath(); ctx.roundRect(-11, -5, 18, 10, 4); ctx.fill(); ctx.strokeStyle = '#3a3e46'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = '#d02020'; poly([[7, -5], [14, 0], [7, 5]]); ctx.fill();
+  ctx.restore();
+}
+function fetDrawRobot(top) { // el robot gigante que sube por la torre
+  const f = fet;
+  drawFetusSuit(480 + Math.sin(frame * 0.05) * 6, top + 158 * 3.2 - 30, 3.2, { laugh: f.m.dead > 0 });
+  for (const sd of [-1, 1]) { // manos gigantes agarradas a las paredes
+    const hx = 480 + sd * 380, hy = top - 26 + Math.sin(frame * 0.08 + sd) * 8;
+    ctx.fillStyle = '#e8e8e8'; ctx.strokeStyle = '#555'; ctx.lineWidth = 3;
+    ell(hx, hy, 46, 34); ctx.fill(); ctx.stroke();
+    for (let i = -1; i <= 2; i++) { ell(hx + i * 18 - sd * 6, hy - 30, 9, 16); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = '#1a1a22'; ctx.fillRect(hx - 30, hy + 20, 60, H);
+  }
+  // barra de sierras que destroza todo a su paso
+  ctx.fillStyle = '#3a3a44'; ctx.fillRect(32, top + 10, W - 64, 14);
+  for (let x = 54; x < W - 32; x += 44) fetSawDraw(x, top + 10, 22, frame * 0.3 + x);
+  const g = ctx.createLinearGradient(0, top + 20, 0, top + 300); g.addColorStop(0, 'rgba(10,8,12,.0)'); g.addColorStop(1, 'rgba(10,8,12,.85)');
+  ctx.fillStyle = g; ctx.fillRect(32, top + 20, W - 64, H + 400);
+}
+function fetDrawTiles(L, camY) {
+  const y0 = Math.max(0, Math.floor(camY / FT)), y1 = Math.min(L.h - 1, Math.floor((camY + H) / FT));
+  for (let ty = y0; ty <= y1; ty++) for (let tx = 0; tx < 30; tx++) {
+    if (L.g[ty * 30 + tx] !== 1) continue;
+    const x = tx * FT, y = ty * FT - camY, up = ty > 0 && L.g[(ty - 1) * 30 + tx] !== 1;
+    ctx.fillStyle = (tx + ty) % 2 ? '#5e5a66' : '#56525e'; ctx.fillRect(x, y, FT, FT);
+    if (up) { ctx.fillStyle = '#9a96a6'; ctx.fillRect(x, y, FT, 5); }
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x, y + FT - 3, FT, 3); ctx.fillRect(x + FT - 2, y, 2, FT);
+    ctx.fillStyle = '#7a7684'; ctx.fillRect(x + 6, y + 10, 3, 3); ctx.fillRect(x + FT - 9, y + 10, 3, 3);
+  }
+}
+function fetDrawCard() {
+  const f = fet, k = clamp(f.pt / 20, 0, 1), out = clamp((f.pt - 180) / 30, 0, 1);
+  ctx.fillStyle = '#120404'; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalAlpha = k * (1 - out); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#c81e1e'; ctx.fillRect(0, 170, W, 150);
+  ctx.font = '900 64px Impact, "Arial Black", sans-serif'; ctx.lineWidth = 8; ctx.strokeStyle = '#000';
+  const t = f.lab ? 'DR. FETUS · 2' : 'DR. FETUS · 1';
+  ctx.strokeText(t, CX + (1 - easeOut(k)) * 300, 225); ctx.fillStyle = '#fff'; ctx.fillText(t, CX + (1 - easeOut(k)) * 300, 225);
+  ctx.font = '900 34px Impact, "Arial Black", sans-serif'; ctx.fillStyle = '#ffe0a0'; ctx.fillText(f.L.name, CX - (1 - easeOut(k)) * 300, 285);
+  ctx.font = 'bold 18px monospace'; ctx.fillStyle = '#e8c8b8';
+  ctx.fillText(f.lab ? 'Aprieta los 3 botones para romper su frasco... y luego dale su merecido.' : '¡Trepa la torre antes de que el robot de Dr. Fetus te alcance!', CX, 370);
+  ctx.font = '15px monospace'; ctx.fillStyle = '#a89888';
+  ctx.fillText('← → correr · ESPACIO / ↑ saltar (también en las paredes) · mantén para saltar más alto', CX, 410);
+  drawMeatBoy(CX - 220 - 11, 470 - 22, { face: 1 }); drawFetusSuit(CX + 220, 520, 0.6, { laugh: true });
+  ctx.restore();
+}
+function fetDraw() {
+  const f = fet;
+  if (f.phase === 'card') { fetDrawCard(); modeHearts(); modePause(); return; }
+  const lab = !!f.lab, camY = lab ? 0 : Math.round(f.camY), lb = f.lab;
+  ctx.save();
+  if (f.shake) ctx.translate(rnd(-f.shake, f.shake), rnd(-f.shake, f.shake));
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, lab ? '#2a0e10' : '#1e1218'); g.addColorStop(1, lab ? '#100406' : '#3a1a14');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; // tubos al fondo
+  for (let i = 0; i < 6; i++) { const x = 80 + i * 160; ctx.fillRect(x, 0, 18, H); ctx.fillRect(x - 6, ((i * 200 - camY * 0.5) % 300 + 300) % 300, 30, 10); }
+  if (lab) { // el robot de Dr. Fetus al fondo, con su frasco
+    const laugh = f.m.dead > 0 || f.phase === 'free';
+    ctx.save(); ctx.globalAlpha = 0.95;
+    drawFetusSuit(480, 352, 2, { laugh, crack: lb.jar, broken: !!lb.fetus });
+    ctx.restore();
+  }
+  fetDrawTiles(f.L, camY);
+  ctx.fillStyle = 'rgba(150,10,10,.8)';
+  for (const s of f.smears) if (s.y - camY > -10 && s.y - camY < H + 10) { ell(s.x, s.y - camY, s.r, s.r * 0.6); ctx.fill(); }
+  if (lab) f.L.btns.forEach(([bx, by], i) => {
+    const x = bx * FT, y = by * FT, on = lb.btn[i], live = !on && i === lb.next && lb.nextT === 0 && !lb.rockets.length;
+    ctx.fillStyle = '#3a3a44'; ctx.fillRect(x - 22, y - 6, 44, 6);
+    ctx.fillStyle = on ? '#5a8a5a' : live ? '#e02020' : '#6a3a3a'; ctx.beginPath(); ctx.roundRect(x - 16, y - (on ? 9 : 15), 32, on ? 4 : 10, 3); ctx.fill();
+    if (live && Math.floor(frame / 20) % 2) { ctx.fillStyle = '#ffe080'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center'; ctx.fillText('▼', x, y - 30); }
+  });
+  for (const s of f.L.saws) { const [x, y] = fetSawPos(s, f.t); fetSawDraw(x, y - camY, s.r, f.t * 0.25); }
+  if (lab) {
+    for (const r of lb.rockets) fetMissileDraw(r.x, r.y, Math.atan2(FET_JAR.y - r.y, FET_JAR.x - r.x) - 0.3);
+    for (const q of lb.mis) fetMissileDraw(q.x, q.y, q.a);
+    for (const q of lb.saws) fetSawDraw(q.x, q.y, q.r, q.rot);
+    if (lb.fetus) drawFetusBaby(lb.fetus.x, lb.fetus.y, 1.3, { rot: lb.fetus.rot, laugh: f.phase === 'free' });
+  }
+  const m = f.m;
+  if (!m.dead && f.phase !== 'trans') drawMeatBoy(m.x, m.y - camY, { face: m.face, sq: m.sq });
+  for (const q of f.parts) { ctx.fillStyle = q.col; ell(q.x, q.y - camY, q.r, q.r); ctx.fill(); }
+  if (!lab) fetDrawRobot(f.rob - camY);
+  ctx.restore();
+  // HUD
+  modeHearts();
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.font = 'bold 18px Impact, "Arial Black", sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#000';
+  ctx.strokeText(`MUERTES: ${f.deaths}`, W - 20, 24); ctx.fillStyle = '#ff6a5a'; ctx.fillText(`MUERTES: ${f.deaths}`, W - 20, 24);
+  if (!lab) { // qué tan arriba vas
+    const k = clamp(1 - (m.y - 3 * FT) / ((f.L.h - 4) * FT), 0, 1);
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(W - 26, 50, 10, 200); ctx.fillStyle = '#c81e1e'; ctx.fillRect(W - 26, 250 - 200 * k, 10, 200 * k);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.fillText('META', W - 21, 42);
+  } else {
+    ctx.textAlign = 'left'; ctx.font = 'bold 15px monospace'; ctx.fillStyle = '#ffe0a0';
+    ctx.fillText(f.phase === 'free' ? '¡Atrapa a Dr. Fetus!' : `Botones: ${lb.btn.filter(b => b).length} / 3`, 110, 24);
+  }
+  if (f.msgT > 0) {
+    ctx.textAlign = 'center'; ctx.font = '900 30px Impact, "Arial Black", sans-serif'; ctx.globalAlpha = Math.min(1, f.msgT / 25); ctx.lineWidth = 6;
+    ctx.strokeText(f.msg, CX, 90); ctx.fillStyle = '#fff'; ctx.fillText(f.msg, CX, 90); ctx.globalAlpha = 1;
+  }
+  if (f.phase === 'punch') {
+    const k = easeOut(clamp(f.pt / 12, 0, 1)), s = 1 + (1 - k) * 2;
+    ctx.save(); ctx.translate(CX, CY - 40); ctx.rotate(-0.12); ctx.scale(s, s); ctx.textAlign = 'center';
+    ctx.font = '900 110px Impact, "Arial Black", sans-serif'; ctx.lineWidth = 12; ctx.strokeStyle = '#000'; ctx.strokeText('¡PUM!', 0, 0);
+    ctx.fillStyle = '#ffd030'; ctx.fillText('¡PUM!', 0, 0); ctx.restore();
+    if (f.pt < 8) { ctx.fillStyle = `rgba(255,255,255,${0.8 - f.pt / 10})`; ctx.fillRect(0, 0, W, H); }
+  }
+  if (f.phase === 'trans') { ctx.fillStyle = `rgba(0,0,0,${clamp(f.pt / 60, 0, 1)})`; ctx.fillRect(0, 0, W, H); }
+  if (f.phase === 'out') {
+    ctx.fillStyle = `rgba(0,0,0,${clamp(f.pt / 70, 0, 1)})`; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center'; ctx.font = '900 32px Impact, "Arial Black", sans-serif'; ctx.fillStyle = '#ff9a8a'; ctx.fillText('¡Bandage Girl está a salvo!', CX, CY);
+  }
+  modePause();
+}
+
+// cinemáticas de muerte de Baldi y Dr. Fetus
+Object.assign(KO_FIN, {
+  baldi: { // se acerca a reglazos y... ¡ZAS!
+    line: '"¡Debiste estudiar más!"', flash: '255,255,255',
+    ev: { 100: c => { balSlapSnd(0.9); sfx('hit'); shake = 16; koBits(c, KO_I.x + 30, KO_I.y - 90, 18, { color: ['#d8b070', '#ffffff'], spd: 7, g: 0.3 }); } },
+    tick(t) { if (t < 90 && t % 30 === 20) balSlapSnd(0.5); },
+    draw(b, t) {
+      const I = KO_I, prog = t >= 90 ? 1 : (Math.floor(t / 30) + easeOut(clamp((t % 30) / 12, 0, 1))) / 3, x = lerp(KO_B.x + 60, I.x + 215, prog);
+      const sk = t >= 92 ? (t < 100 ? (t - 92) / 8 : t < 112 ? 1 : 0) : Math.max(0, Math.sin(((t % 30) - 10) / 20 * Math.PI));
+      softShadow(x, I.y + 12, 90, 18, 0.6);
+      drawKOPlayer(I.x, I.y, t);
+      drawBaldiFig(x, I.y + 14, 2.6, { mood: 'angry', slap: sk });
+    },
+  },
+  fetus: { // le dispara un misil desde su robot
+    line: '"(Dr. Fetus se ríe dentro de su frasco)"', flash: '255,200,140',
+    ev: { 40: () => sfx('fetMissile'), 100: c => { sfx('boom'); sfx('meatDie'); shake = 18; koBits(c, KO_I.x, KO_I.y - 70, 44, { color: ['#c81e1e', '#ffb030', '#ff6010', '#7a0a0a'], spd: 10, g: 0.3 }); } },
+    draw(b, t) {
+      const I = KO_I, B = KO_B;
+      softShadow(B.x, B.y + 150, 90, 20, 0.6);
+      drawFetusSuit(B.x, B.y + 150, 1.6, { laugh: t >= 100 });
+      drawKOPlayer(I.x, I.y, t, { burn: koK(t, 100, 140) });
+      if (t >= 40 && t < 100) {
+        const k = easeIn(koK(t, 40, 100)), x = lerp(B.x - 50, I.x, k), y = lerp(B.y - 20, I.y - 70, k) - Math.sin(k * Math.PI) * 120;
+        ctx.save(); ctx.translate(x, y); ctx.scale(2.2, 2.2); fetMissileDraw(0, 0, Math.atan2(I.y - 70 - y, I.x - x)); ctx.restore();
+      }
+    },
+  },
+});
 
 // ---------- Grabar la cinemática de muerte de un jefe (la usa video/grabar_muertes.js) ----------
 let grabando = false; // en los videos no sale "ENTER para saltar"
