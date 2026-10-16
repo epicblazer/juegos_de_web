@@ -1590,14 +1590,10 @@ function genFloor() {
   const tr = cand.find(r => r !== boss && neighbors(r) === 1) || cand.find(r => r !== boss);
   if (tr) { tr.type = 'treasure'; tr.rocks = []; tr.cleared = true; tr.pickups.push({ type: 'item', x: CX, y: CY, item: randItem() }); }
   floorBoss = pickFloorBoss();
-  // jefes sorpresa: algunos cuartos normales tienen un jefe en vez de enemigos
-  const extra = BOSS_POOLS[Math.min(depth(), BOSS_POOLS.length - 1)].filter(t => t !== floorBoss && t !== 'sans');
-  for (const r of Object.values(rooms)) if (r.type === 'normal' && extra.length && Math.random() < MINI_BOSS_CHANCE) { r.miniBoss = pick(extra); r.rocks = []; }
   cur = rooms['0,0'];
   floorDeal = null;
 }
 // Jefes que pueden salir en cada piso de Isaac (según la profundidad); no se repiten en la misma partida si hay otros
-const MINI_BOSS_CHANCE = 0.2; // 20% de que un cuarto normal tenga un jefe sorpresa
 const BOSS_POOLS = [
   ['monstro', 'gurdy', 'peep', 'kingSlime'],
   ['dukeFlies', 'gurdy', 'peep', 'widow', 'kingSlime'],
@@ -1652,7 +1648,7 @@ const BDEF = {
   kingBoo: { name: 'Rey Boo', ref: 'Super Mario', r: 44, hp: 200, fly: true, sc: 1.15 },
   mothership: { name: 'Nave Nodriza', ref: 'Space Invaders', r: 52, hp: 210, fly: true, sc: 1.15 },
   ridley: { name: 'Ridley', ref: 'Metroid', r: 42, hp: 240, fly: true, sc: 1.15 },
-  wither: { name: 'Wither', ref: 'Minecraft', r: 44, hp: 260, fly: true, sc: 1.4 },
+  wither: { name: 'Wither', ref: 'Minecraft', r: 44, hp: 340, fly: true, sc: 1.4 },
   ganon: { name: 'Ganon', ref: 'The Legend of Zelda', r: 40, hp: 270, sc: 1.3 },
   sans: { name: 'Sans', ref: 'Undertale', r: 22, hp: 150, sc: 1.25 },
 };
@@ -1704,12 +1700,6 @@ function enterRoom() {
     if (retro.on) { showMsg(b.name, b.noHomage ? b.ref : 'Jefe · homenaje a ' + b.ref); sfx(floorBoss === 'dragon' ? 'screech' : 'roar'); }
     else if (floorBoss === 'sans') utStart(b); // contra Sans la pelea es como en Undertale
     else bossIntro = { t: 0, boss: b }; // presentación del jefe (ver drawBossIntro)
-  } else if (cur.miniBoss) { // jefe sorpresa en un cuarto normal
-    const b = mkEnemy(cur.miniBoss, CX, bossSpawnY(cur.miniBoss, CY - 40));
-    enemies.push(b);
-    sfx('doorClose');
-    playMusic(bossMusic(cur.miniBoss), 0.9);
-    if (retro.on) showMsg('¡Jefe sorpresa!', b.name); else bossIntro = { t: 0, boss: b };
   } else {
     sfx('doorClose');
     playMusic(LV().music);
@@ -2347,27 +2337,50 @@ const BOSS_AI = {
       if (updateHop(e, 70)) { shake = 7; sfx('stomp'); ring(e, 6, 3, 'fire'); if (--e.hops > 0) startHop(e, 26); else toIdle(e, 40, 70); }
     }
   },
-  wither(e, ang) { // tres cabezas que disparan calaveras; a media vida se blinda y embiste explotando
+  wither(e, ang) { // tres cabezas que disparan calaveras; a media vida se blinda, embiste explotando y llama esqueletos
+    // muy difícil: ráfagas en abanico que persiguen, calaveras azules que explotan, tormenta en espiral y embestidas seguidas
     const fast = e.hp < e.maxHp / 2;
     e.armor = fast ? 0.55 : 0;
     if (fast && !e.armored) { e.armored = true; sfx('shield'); showMsg('¡El Wither se blinda!', 'Ahora resiste tus disparos'); for (const s of [-1, 1]) minion('skeleton', e.x + s * 60, e.y + 40, 8); }
     const heads = [[e.x, e.y - 38], [e.x - 34, e.y - 30], [e.x + 34, e.y - 30]];
     if (e.state === 'idle') {
-      const d = dist(e, p), sp = d > 260 ? 1.2 : d < 180 ? -1 : 0;
-      moveEnemy(e, Math.cos(ang) * sp + Math.cos(e.t * 0.02) * 0.8, Math.sin(ang) * sp + Math.sin(e.t * 0.031) * 0.6);
-      if (--e.timer <= 0) { const r = Math.random(); e.timer = 0; e.state = fast && r < 0.35 ? 'charge' : r < 0.6 ? 'skulls' : 'blue'; }
+      const d = dist(e, p), sp = d > 240 ? 1.8 : d < 160 ? -1.2 : 0;
+      moveEnemy(e, Math.cos(ang) * sp + Math.cos(e.t * 0.03) * 1.1, Math.sin(ang) * sp + Math.sin(e.t * 0.041) * 0.8);
+      if (e.t % 50 === 0) for (const [hx, hy] of heads.slice(1)) enemyShot(hx, hy, Math.atan2(p.y - hy, p.x - hx), 3.4, 'skull', { r: 8, life: 160 }); // ni descansando deja de disparar
+      if (--e.timer <= 0) {
+        const r = Math.random(); e.timer = 0;
+        e.state = r < (fast ? 0.3 : 0.18) ? 'charge' : r < 0.5 ? 'skulls' : r < 0.72 ? 'blue' : r < 0.9 ? 'storm' : 'summon';
+        e.charges = fast ? 3 : 1;
+      }
       return;
     }
     e.timer++;
-    if (e.state === 'skulls') {
-      if (e.timer % 14 === 0 && e.timer <= 42) { for (const [hx, hy] of heads) enemyShot(hx, hy, Math.atan2(p.y - hy, p.x - hx), 3.8, 'skull', { r: 9, home: 0.012, life: 170 }); sfx('fire'); }
-      if (e.timer >= 60) toIdle(e, 40, 70);
-    } else if (e.state === 'blue') {
-      if (e.timer === 20) { enemyShot(e.x, e.y - 38, ang, 2.2, 'skull', { r: 14, home: 0.03, life: 200, big: true }); sfx('orb'); }
-      if (e.timer >= 45) toIdle(e, 30, 50);
-    } else if (e.state === 'charge') {
-      if (e.timer < 30) { e.sa = ang; e.x += rnd(-3, 3); }
-      else if (moveEnemy(e, Math.cos(e.sa) * 8, Math.sin(e.sa) * 8) || e.timer >= 70) { explode(e.x, e.y, 95, 1); toIdle(e, 40, 70); }
+    if (e.state === 'skulls') { // ráfagas en abanico desde las tres cabezas
+      if (e.timer % 10 === 0 && e.timer <= 60) {
+        for (const [hx, hy] of heads) { const a = Math.atan2(p.y - hy, p.x - hx); for (let i = -1; i <= 1; i += fast ? 1 : 2) enemyShot(hx, hy, a + i * 0.22, 4.6, 'skull', { r: 9, home: 0.016, life: 170 }); }
+        sfx('fire');
+      }
+      if (e.timer >= 75) toIdle(e, 20, 40);
+    } else if (e.state === 'blue') { // calaveras azules que persiguen y explotan
+      if (e.timer === 16 || e.timer === 36 || (fast && e.timer === 56)) { for (const [hx, hy] of e.timer === 36 ? heads.slice(1) : heads.slice(0, 1)) enemyShot(hx, hy, Math.atan2(p.y - hy, p.x - hx), 2.8, 'skull', { r: 14, home: 0.04, life: 200, big: true }); sfx('orb'); }
+      if (e.timer >= (fast ? 80 : 60)) toIdle(e, 20, 35);
+    } else if (e.state === 'storm') { // tormenta de calaveras en espiral
+      if (e.timer < 25) { e.x += rnd(-2, 2); if (e.timer === 1) sfx('roar'); }
+      else if (e.timer % 5 === 0 && e.timer <= 125) {
+        const n = fast ? 4 : 3, base = e.timer * 0.13;
+        for (let i = 0; i < n; i++) enemyShot(e.x, e.y - 30, base + i / n * Math.PI * 2, 3, 'skull', { r: 8, life: 200 });
+        sfx('fire', 0.1);
+      }
+      if (e.timer >= 140) toIdle(e, 25, 40);
+    } else if (e.state === 'summon') { // llama esqueletos que disparan flechas
+      if (e.timer === 20) { sfx('summon'); for (const s of [-1, 1]) minion('skeleton', e.x + s * 70, e.y + 30, 7); }
+      if (e.timer >= 40) toIdle(e, 20, 35);
+    } else if (e.state === 'charge') { // embestida que explota (seguidas a media vida)
+      if (e.timer < 24) { e.sa = Math.atan2(p.y + p.vy * 10 - e.y, p.x + p.vx * 10 - e.x); e.x += rnd(-3, 3); }
+      else if (moveEnemy(e, Math.cos(e.sa) * 10, Math.sin(e.sa) * 10) || e.timer >= 64) {
+        explode(e.x, e.y, 105, 1); ring(e, fast ? 12 : 8, 3, 'skull');
+        if (--e.charges > 0) { e.timer = 8; } else toIdle(e, 30, 50);
+      }
     }
   },
   ganon(e, ang) { // tridente bumerán, murciélagos de fuego, se teletransporta y gira embistiendo
@@ -2553,10 +2566,6 @@ function onClear() {
     cur.pickups.push({ type: 'trapdoor', x: CX, y: CY, armed: false });
     cur.pickups.push({ type: 'item', x: CX, y: CY + 130, item: randItem() });
     showMsg('¡Jefe derrotado!', 'Baja por la trampilla'); trySpawnDeal();
-  } else if (cur.miniBoss) { // premio por vencer al jefe sorpresa
-    stopMusic(); playMusic(LV().music, 2.5);
-    cur.pickups.push({ type: 'item', x: CX, y: CY, item: randItem() });
-    showMsg('¡Jefe sorpresa derrotado!', 'Te dejó un objeto');
   } else if (Math.random() < 0.4) {
     cur.pickups.push({ type: Math.random() < 0.6 ? 'half' : 'heart', x: CX, y: CY });
   }
