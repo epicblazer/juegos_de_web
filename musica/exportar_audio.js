@@ -28,6 +28,10 @@ const SONIDOS = {
   vsSlam: 'presentacion_vs', swoosh: 'barrido', stamp: 'sello', whistle: 'silbido_artilleria', rumble: 'temblor', knock: 'tocan_la_puerta', heartbeat: 'latido',
   thud: 'golpe_seco', sitDown: 'sentarse', chirp: 'pajaritos', drone: 'zumbido_grave', glitch: 'interferencia', question: 'pregunta', surprise: 'sorpresa',
   blip: 'texto', blipLow: 'texto_grave', clink: 'esposas', engine: 'motor',
+  // pelea de Sans (estilo Undertale)
+  utVoice: 'sans_voz', utText: 'sans_texto', utMove: 'sans_menu_mover', utOk: 'sans_menu_elegir', utEnc: 'sans_encuentro',
+  utHurt: 'sans_alma_herida', utDing: 'sans_alma_azul', utSlam: 'sans_golpe_pared', utBone: 'sans_huesos_salen', gbCharge: 'sans_blaster_carga',
+  gbFire: 'sans_blaster_dispara', utHit: 'sans_golpe_final', utHeal: 'sans_curarse', utCrack: 'sans_corazon_se_rompe', utShatter: 'sans_corazon_en_pedazos',
 };
 
 function findBrowser() {
