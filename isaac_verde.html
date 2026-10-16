@@ -1347,23 +1347,31 @@ function floorName() {
 // =====================================================================
 // OBJETOS
 // =====================================================================
+// cada objeto tiene lo bueno (desc) y lo malo (bad): nada es gratis en la guerra
+const pSpd = (p, d) => p.speed = clamp(p.speed + d, 1.8, 6);
+const pDmg = (p, d) => p.dmg = Math.max(1, p.dmg + d);
+const pFast = (p, n) => p.delay = Math.max(Math.min(6, p.delay), p.delay - n); // dispara más seguido
+const pSlow = (p, n) => p.delay = Math.max(p.delay, Math.min(60, p.delay + n)); // dispara menos seguido
+const pRange = (p, d) => p.range = Math.max(Math.min(p.range, 20), p.range + d);
+const pShot = (p, d) => p.shotSpeed = Math.max(Math.min(p.shotSpeed, 4), p.shotSpeed + d);
+const pHurt = p => p.hp = Math.max(1, p.hp - 1);
 const ITEMS = [
-  { name: 'Cebolla de Isaac', desc: '¡Cadencia y daño arriba!', color: '#e8c070', f: p => { p.delay = Math.max(Math.min(6, p.delay), p.delay - 3); p.dmg += 0.4; } },
-  { name: 'Ración de Combate', desc: '+1 contenedor de corazón', color: '#c33', f: p => { p.maxHp += 2; p.hp += 2; } },
-  { name: 'Granada de Mano', desc: '¡Daño arriba!', color: '#55602a', f: p => p.dmg += 1.2 },
-  { name: 'Ametralladora', desc: '¡Cadencia arriba!', color: '#666', f: p => p.delay = Math.max(Math.min(6, p.delay), p.delay - 5) },
-  { name: 'Botas de Combate', desc: '¡Velocidad arriba!', color: '#6a4320', f: p => p.speed = Math.min(6, p.speed + 0.6) },
-  { name: 'Mira Telescópica', desc: '¡Alcance y velocidad de disparo!', color: '#88c', f: p => { p.range += 15; p.shotSpeed += 1.5; } },
-  { name: 'Triple Cañón', desc: '¡Disparo triple!', color: '#d90', f: p => { p.triple = true; p.dmg += 0.3; } },
-  { name: 'Champiñón Rojo', desc: '+1 corazón y curación (Mario)', color: '#e22', f: p => { p.maxHp += 2; p.hp = p.maxHp; } },
-  { name: 'Flor de Fuego', desc: 'Lágrimas de fuego que rebotan (Mario)', color: '#f80', f: p => { p.fireKind = 'fire'; p.bounce += 1; p.dmg += 0.5; } },
-  { name: 'Súper Estrella', desc: '¡Invencible 10 segundos! (Mario)', color: '#ff0', f: p => { p.star = 600; sfx('star'); } },
-  { name: 'Espada Maestra', desc: 'Daño arriba + atraviesa (Zelda)', color: '#9cf', f: p => { p.dmg += 1.5; p.pierce = true; } },
-  { name: 'Anillos Dorados', desc: 'Velocidad y cadencia (Sonic)', color: '#fc0', f: p => { p.speed = Math.min(6, p.speed + 0.5); p.delay = Math.max(Math.min(6, p.delay), p.delay - 3); } },
-  { name: 'Pico de Diamante', desc: '¡Gran daño arriba! (Minecraft)', color: '#3ee', f: p => p.dmg += 2 },
-  { name: 'Tanque de Energía', desc: '+2 contenedores (Metroid)', color: '#c3c', f: p => { p.maxHp += 4; p.hp += 4; } },
-  { name: 'Misiles', desc: 'Disparos teledirigidos (Metroid)', color: '#f55', f: p => { p.homing = true; } },
-  { name: 'Cereza Power', desc: 'Vida llena y cadencia (Pac-Man)', color: '#d00', f: p => { p.hp = p.maxHp; p.delay = Math.max(Math.min(6, p.delay), p.delay - 2); } },
+  { name: 'Cebolla de Isaac', desc: '¡Cadencia y daño arriba!', bad: 'Alcance abajo', color: '#e8c070', f: p => { pFast(p, 3); pDmg(p, 0.4); pRange(p, -8); } },
+  { name: 'Ración de Combate', desc: '+1 contenedor de corazón', bad: 'Comiste mucho: velocidad abajo', color: '#c33', f: p => { p.maxHp += 2; p.hp += 2; pSpd(p, -0.3); } },
+  { name: 'Granada de Mano', desc: '¡Daño arriba!', bad: 'Cadencia abajo', color: '#55602a', f: p => { pDmg(p, 1.2); pSlow(p, 3); } },
+  { name: 'Ametralladora', desc: '¡Cadencia MUY arriba!', bad: 'Pesa mucho: velocidad abajo', color: '#666', f: p => { pFast(p, 5); pSpd(p, -0.7); } },
+  { name: 'Botas de Combate', desc: '¡Velocidad arriba!', bad: 'Daño abajo', color: '#6a4320', f: p => { pSpd(p, 0.6); pDmg(p, -0.4); } },
+  { name: 'Mira Telescópica', desc: '¡Alcance y velocidad de disparo!', bad: 'Apuntar tarda: cadencia abajo', color: '#88c', f: p => { pRange(p, 15); pShot(p, 1.5); pSlow(p, 4); } },
+  { name: 'Triple Cañón', desc: '¡Disparo triple!', bad: 'Recarga lenta: cadencia abajo', color: '#d90', f: p => { p.triple = true; pDmg(p, 0.3); pSlow(p, 6); } },
+  { name: 'Champiñón Rojo', desc: '+1 corazón y curación (Mario)', bad: 'Más grande: velocidad abajo', color: '#e22', f: p => { p.maxHp += 2; p.hp = p.maxHp; pSpd(p, -0.3); } },
+  { name: 'Flor de Fuego', desc: 'Lágrimas de fuego que rebotan (Mario)', bad: 'Alcance abajo', color: '#f80', f: p => { p.fireKind = 'fire'; p.bounce += 1; pDmg(p, 0.5); pRange(p, -10); } },
+  { name: 'Súper Estrella', desc: '¡Invencible 10 segundos! (Mario)', bad: 'Te quema: pierdes medio corazón', color: '#ff0', f: p => { p.star = 600; pHurt(p); sfx('star'); } },
+  { name: 'Espada Maestra', desc: 'Daño arriba + atraviesa (Zelda)', bad: 'Pesada: disparos más lentos', color: '#9cf', f: p => { pDmg(p, 1.5); p.pierce = true; pShot(p, -2); } },
+  { name: 'Anillos Dorados', desc: 'Velocidad y cadencia (Sonic)', bad: 'Daño abajo', color: '#fc0', f: p => { pSpd(p, 0.5); pFast(p, 3); pDmg(p, -0.5); } },
+  { name: 'Pico de Diamante', desc: '¡Gran daño arriba! (Minecraft)', bad: 'Cadencia abajo', color: '#3ee', f: p => { pDmg(p, 2); pSlow(p, 5); } },
+  { name: 'Tanque de Energía', desc: '+2 contenedores (Metroid)', bad: 'Pesado: velocidad abajo', color: '#c3c', f: p => { p.maxHp += 4; p.hp += 4; pSpd(p, -0.6); } },
+  { name: 'Misiles', desc: 'Disparos teledirigidos (Metroid)', bad: 'Disparos más lentos', color: '#f55', f: p => { p.homing = true; pShot(p, -2); } },
+  { name: 'Cereza Power', desc: 'Vida llena y cadencia (Pac-Man)', bad: 'Alcance abajo', color: '#d00', f: p => { p.hp = p.maxHp; pFast(p, 2); pRange(p, -8); } },
 ];
 ITEMS.forEach(i => { i.retro = /\((Mario|Zelda|Sonic|Minecraft|Metroid|Pac-Man)\)/.test(i.desc); });
 function randItem() {
@@ -1389,14 +1397,14 @@ const DEVIL_ITEMS = [
   { name: 'Ala de Murciélago', desc: 'Velocidad y cadencia arriba', color: '#2a1a2a', price: 1, f: p => { p.speed = Math.min(6, p.speed + 0.5); p.delay = Math.max(Math.min(6, p.delay), p.delay - 3); } },
   { name: 'Cáliz Maldito', desc: 'Disparo triple + daño', color: '#7a1010', price: 2, f: p => { p.triple = true; p.dmg += 0.7; } },
 ];
-const ANGEL_ITEMS = [
-  { name: 'Aureola', desc: '¡Todo arriba!', color: '#ffe680', f: p => { p.dmg += 0.7; p.speed = Math.min(6, p.speed + 0.3); p.delay = Math.max(Math.min(6, p.delay), p.delay - 2); p.range += 8; p.maxHp += 2; p.hp += 2; } },
-  { name: 'Alas de Serafín', desc: 'Velocidad y cadencia arriba', color: '#f4f4ff', f: p => { p.speed = Math.min(6, p.speed + 0.6); p.delay = Math.max(Math.min(6, p.delay), p.delay - 4); } },
-  { name: 'Lágrima Sagrada', desc: 'Lágrimas de luz que atraviesan', color: '#fff6c0', f: p => { p.fireKind = 'holy'; p.pierce = true; p.dmg += 1; } },
-  { name: 'Manto Celestial', desc: '+2 contenedores y vida llena', color: '#a8d8ff', f: p => { p.maxHp += 4; p.hp = p.maxHp; } },
-  { name: 'Escudo Divino', desc: 'Bloquea el primer golpe de cada sala', color: '#ffd700', f: p => { p.shieldMax = 1; p.shield = 1; } },
-  { name: 'Rosario', desc: 'Cadencia arriba y vida llena', color: '#d0c0a0', f: p => { p.delay = Math.max(Math.min(6, p.delay), p.delay - 3); p.hp = p.maxHp; } },
-  { name: 'Pluma de Ángel', desc: 'Alcance y velocidad de disparo arriba', color: '#ffffff', f: p => { p.range += 15; p.shotSpeed += 2; } },
+const ANGEL_ITEMS = [ // los regalos del Ángel también tienen su precio, pero pequeño
+  { name: 'Aureola', desc: '¡Todo arriba!', bad: 'Disparos un poco más lentos', color: '#ffe680', f: p => { pDmg(p, 0.7); pSpd(p, 0.3); pFast(p, 2); p.range += 8; p.maxHp += 2; p.hp += 2; pShot(p, -1); } },
+  { name: 'Alas de Serafín', desc: 'Velocidad y cadencia arriba', bad: 'Daño abajo', color: '#f4f4ff', f: p => { pSpd(p, 0.6); pFast(p, 4); pDmg(p, -0.5); } },
+  { name: 'Lágrima Sagrada', desc: 'Lágrimas de luz que atraviesan', bad: 'Cadencia abajo', color: '#fff6c0', f: p => { p.fireKind = 'holy'; p.pierce = true; pDmg(p, 1); pSlow(p, 3); } },
+  { name: 'Manto Celestial', desc: '+2 contenedores y vida llena', bad: 'Velocidad abajo', color: '#a8d8ff', f: p => { p.maxHp += 4; p.hp = p.maxHp; pSpd(p, -0.4); } },
+  { name: 'Escudo Divino', desc: 'Bloquea el primer golpe de cada sala', bad: 'Pesado: velocidad abajo', color: '#ffd700', f: p => { p.shieldMax = 1; p.shield = 1; pSpd(p, -0.3); } },
+  { name: 'Rosario', desc: 'Cadencia arriba y vida llena', bad: 'Daño abajo', color: '#d0c0a0', f: p => { pFast(p, 3); p.hp = p.maxHp; pDmg(p, -0.4); } },
+  { name: 'Pluma de Ángel', desc: 'Alcance y velocidad de disparo arriba', bad: 'Daño abajo', color: '#ffffff', f: p => { pRange(p, 15); pShot(p, 2); pDmg(p, -0.4); } },
 ];
 const DEAL_LOOK = {
   devil: { fa: '#3a0f0f', fb: '#300b0b', wall: '#120404', wall2: '#2a0808', rock: '#444', rockStyle: 'stone', dark: 0.5, tint: '255,40,20', music: 'eerie' },
@@ -2512,8 +2520,8 @@ function burst(x, y, color, n, sp = 4) {
     particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: ri(20, 40), color, size: rnd(2, 5) });
   }
 }
-let msgIcon = null;
-function showMsg(t, s = '', icon = null) { msg = t; msgSub = s; msgT = 170; msgIcon = icon; }
+let msgIcon = null, msgBad = '';
+function showMsg(t, s = '', icon = null, bad = '') { msg = t; msgSub = s; msgT = bad ? 230 : 170; msgIcon = icon; msgBad = bad; }
 
 function onClear() {
   cur.cleared = true;
@@ -2921,7 +2929,7 @@ function update() {
         p.deal.tookDevil = true; addStat('devil');
         showMsg(k.item.name, `${k.item.desc}  (−${k.price} ❤)`, k.item.name); sfx('devilBuy'); burst(k.x, k.y - 30, '#ff2a10', 30);
       } else {
-        showMsg(k.item.name, k.item.desc, k.item.name); sfx(k.deal === 'angel' ? 'angelEnter' : 'item'); burst(k.x, k.y - 30, k.item.color, 25);
+        showMsg(k.item.name, k.item.desc, k.item.name, k.item.bad || ''); sfx(k.deal === 'angel' ? 'angelEnter' : 'item'); burst(k.x, k.y - 30, k.item.color, 25);
         // en el cuarto del Ángel sólo puedes elegir uno: los demás desaparecen
         if (k.deal === 'angel') for (const o of cur.pickups) if (o !== k && o.deal === 'angel' && o.type === 'item') { o.type = 'pedestal'; burst(o.x, o.y - 30, '#fff6c0', 15); }
       }
@@ -6221,7 +6229,11 @@ function drawMsg() {
     const tw = ctx.measureText(msg).width;
     for (const sx of [-1, 1]) drawItemIcon(msgIcon, CX + sx * (tw / 2 + 34), 192, 1.5);
   }
-  ctx.fillStyle = '#bfae94'; ctx.font = '16px monospace'; ctx.fillText(msgSub, CX, 220);
+  ctx.font = '16px monospace';
+  if (msgBad) { // objeto: lo bueno y lo malo
+    const a = '▲ ' + msgSub, b = '▼ ' + msgBad, gap = 40, wa = ctx.measureText(a).width, wb = ctx.measureText(b).width, x0 = CX - (wa + gap + wb) / 2;
+    ctx.textAlign = 'left'; ctx.fillStyle = '#7ee07e'; ctx.fillText(a, x0, 220); ctx.fillStyle = '#ff6a5a'; ctx.fillText(b, x0 + wa + gap, 220);
+  } else { ctx.fillStyle = '#bfae94'; ctx.fillText(msgSub, CX, 220); }
   ctx.globalAlpha = 1;
 }
 function bgGradient() {
