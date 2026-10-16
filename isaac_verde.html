@@ -1646,7 +1646,7 @@ const BDEF = {
   gurdy: { name: 'Gurdy', ref: 'The Binding of Isaac', r: 58, hp: 190 },
   peep: { name: 'Peep', ref: 'The Binding of Isaac', r: 38, hp: 150, sc: 1.15 },
   widow: { name: 'La Viuda', ref: 'The Binding of Isaac', r: 36, hp: 165, sc: 1.2 },
-  momFoot: { name: 'Pie de Mamá', ref: 'The Binding of Isaac', r: 50, hp: 230, drawHigh: true },
+  momFoot: { name: 'Pie de Mamá', ref: 'The Binding of Isaac', r: 50, hp: 300, drawHigh: true },
   satan: { name: 'Satanás', ref: 'The Binding of Isaac', r: 46, hp: 300, fly: true, sc: 1.2 },
   kingSlime: { name: 'Rey Slime', ref: 'Terraria', r: 50, hp: 190 },
   kingBoo: { name: 'Rey Boo', ref: 'Super Mario', r: 44, hp: 200, fly: true, sc: 1.15 },
@@ -2178,28 +2178,38 @@ const BOSS_AI = {
     }
   },
   momFoot(e) { // sube, su sombra te persigue y ¡PISA! sólo se le puede pegar cuando está abajo
+    // muy difícil: apunta hacia donde vas, pisa 2-3 veces seguidas, cada pisada suelta ondas de balas y charcos,
+    // y a media vida también caen pisotones del cielo mientras te persigue
     const fast = e.hp < e.maxHp / 2;
-    if (e.state === 'idle') { if (--e.timer <= 0) e.state = 'rise'; return; } // al empezar está apoyado en el suelo
+    if (e.state === 'idle') { if (--e.timer <= 0) { e.state = 'rise'; e.combo = 0; } return; } // al empezar está apoyado en el suelo
     if (e.state === 'rise') {
-      e.z = Math.min(700, e.z + 22);
+      e.z = Math.min(700, e.z + (e.combo ? 40 : 26));
       if (e.z >= 700) {
-        e.state = 'aim'; e.timer = ri(fast ? 40 : 60, fast ? 70 : 100);
-        if (Math.random() < 0.35) for (let i = 0; i < 2; i++) { const s = pick([[L + 30, CY], [R - 30, CY], [CX, TOP + 30], [CX, BOT - 30]]); minion('gaper', s[0], s[1], 7); }
+        e.state = 'aim'; e.timer = e.combo ? ri(16, 24) : ri(fast ? 26 : 36, fast ? 44 : 56);
+        if (!e.combo && Math.random() < 0.45) for (let i = 0; i < 2; i++) { const s = pick([[L + 30, CY], [R - 30, CY], [CX, TOP + 30], [CX, BOT - 30]]); minion(fast ? 'charger' : 'gaper', s[0], s[1], 8); }
       }
     } else if (e.state === 'aim') {
-      e.x += (clamp(p.x, L + e.r, R - e.r) - e.x) * 0.09; e.y += (clamp(p.y, TOP + e.r, BOT - e.r) - e.y) * 0.09;
-      if (--e.timer <= 0) { e.state = 'lock'; e.timer = fast ? 16 : 24; sfx('whistle'); }
+      const k = e.combo ? 0.2 : 0.14, tx = p.x + p.vx * 14, ty = p.y + p.vy * 14; // adelanta: pisa donde vas a estar
+      e.x += (clamp(tx, L + e.r, R - e.r) - e.x) * k; e.y += (clamp(ty, TOP + e.r, BOT - e.r) - e.y) * k;
+      if (fast && e.timer % 30 === 0) hazards.push({ x: clamp(p.x + rnd(-70, 70), L + 30, R - 30), y: clamp(p.y + rnd(-50, 50), TOP + 30, BOT - 30), t: 70, arty: true }); // pisotones del cielo
+      if (--e.timer <= 0) { e.state = 'lock'; e.timer = fast ? 18 : 24; sfx('whistle'); } // aviso: tiempo justo para escapar de la sombra
     } else if (e.state === 'lock') {
       if (--e.timer <= 0) e.state = 'fall';
     } else if (e.state === 'fall') {
-      e.z -= 75;
+      e.z -= 95;
       if (e.z <= 0) {
-        e.z = 0; shake = 18; sfx('bigStomp'); addDecal('scorch', e.x, e.y + 10, 45);
-        if (fast || floorNum >= 4) ring(e, fast ? 12 : 8, 3);
-        e.state = 'down'; e.timer = fast ? 45 : 70;
+        e.z = 0; shake = 20; sfx('bigStomp'); addDecal('scorch', e.x, e.y + 10, 45);
+        if (state === 'play' && Math.hypot(p.x - e.x, p.y - e.y) < e.r + 8) hurt(2); // aplastado: duele el doble
+        ring(e, fast ? 12 : 10, 3.1); // onda de choque
+        e.wave = fast ? 14 : 0; // a media vida, una segunda onda desfasada
+        for (let i = 0; i < (fast ? 4 : 3); i++) { const a = i / (fast ? 4 : 3) * Math.PI * 2 + rnd(0, 1); creep(e.x + Math.cos(a) * 70, e.y + Math.sin(a) * 45, 24, 180); } // charcos que queman
+        e.combo = (e.combo || 0) + 1;
+        const more = e.combo < (fast ? 3 : 2);
+        e.state = 'down'; e.timer = more ? 18 : fast ? 34 : 46;
       }
     } else if (e.state === 'down') {
-      if (--e.timer <= 0) e.state = 'rise';
+      if (e.wave && --e.wave === 0) ring(e, 10, 2.5);
+      if (--e.timer <= 0) { if (e.combo >= (fast ? 3 : 2)) e.combo = 0; e.state = 'rise'; }
     }
   },
   satan(e, ang) { // rayos infernales desde las manos, rayo que barre el cuarto y cruz giratoria a media vida
