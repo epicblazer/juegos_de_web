@@ -1,0 +1,46 @@
+{
+  "image": "lazaro_dano_muerte.png",
+  "character": "Lázaro",
+  "homenaje": "Lazarus",
+  "frameWidth": 160,
+  "frameHeight": 160,
+  "columns": 10,
+  "rows": 5,
+  "pivot": {
+    "x": 80,
+    "y": 150,
+    "note": "punto de los pies dentro de cada cuadro"
+  },
+  "animations": {
+    "hurt_down": {
+      "row": 0,
+      "frames": 4,
+      "fps": 14,
+      "loop": false
+    },
+    "hurt_up": {
+      "row": 1,
+      "frames": 4,
+      "fps": 14,
+      "loop": false
+    },
+    "hurt_left": {
+      "row": 2,
+      "frames": 4,
+      "fps": 14,
+      "loop": false
+    },
+    "hurt_right": {
+      "row": 3,
+      "frames": 4,
+      "fps": 14,
+      "loop": false
+    },
+    "death": {
+      "row": 4,
+      "frames": 10,
+      "fps": 8,
+      "loop": false
+    }
+  }
+}

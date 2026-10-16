@@ -1590,10 +1590,14 @@ function genFloor() {
   const tr = cand.find(r => r !== boss && neighbors(r) === 1) || cand.find(r => r !== boss);
   if (tr) { tr.type = 'treasure'; tr.rocks = []; tr.cleared = true; tr.pickups.push({ type: 'item', x: CX, y: CY, item: randItem() }); }
   floorBoss = pickFloorBoss();
+  // jefes sorpresa: algunos cuartos normales tienen un jefe en vez de enemigos
+  const extra = BOSS_POOLS[Math.min(depth(), BOSS_POOLS.length - 1)].filter(t => t !== floorBoss && t !== 'sans');
+  for (const r of Object.values(rooms)) if (r.type === 'normal' && extra.length && Math.random() < MINI_BOSS_CHANCE) { r.miniBoss = pick(extra); r.rocks = []; }
   cur = rooms['0,0'];
   floorDeal = null;
 }
 // Jefes que pueden salir en cada piso de Isaac (según la profundidad); no se repiten en la misma partida si hay otros
+const MINI_BOSS_CHANCE = 0.2; // 20% de que un cuarto normal tenga un jefe sorpresa
 const BOSS_POOLS = [
   ['monstro', 'gurdy', 'peep', 'kingSlime'],
   ['dukeFlies', 'gurdy', 'peep', 'widow', 'kingSlime'],
@@ -1700,6 +1704,12 @@ function enterRoom() {
     if (retro.on) { showMsg(b.name, b.noHomage ? b.ref : 'Jefe · homenaje a ' + b.ref); sfx(floorBoss === 'dragon' ? 'screech' : 'roar'); }
     else if (floorBoss === 'sans') utStart(b); // contra Sans la pelea es como en Undertale
     else bossIntro = { t: 0, boss: b }; // presentación del jefe (ver drawBossIntro)
+  } else if (cur.miniBoss) { // jefe sorpresa en un cuarto normal
+    const b = mkEnemy(cur.miniBoss, CX, bossSpawnY(cur.miniBoss, CY - 40));
+    enemies.push(b);
+    sfx('doorClose');
+    playMusic(bossMusic(cur.miniBoss), 0.9);
+    if (retro.on) showMsg('¡Jefe sorpresa!', b.name); else bossIntro = { t: 0, boss: b };
   } else {
     sfx('doorClose');
     playMusic(LV().music);
@@ -2533,6 +2543,10 @@ function onClear() {
     cur.pickups.push({ type: 'trapdoor', x: CX, y: CY, armed: false });
     cur.pickups.push({ type: 'item', x: CX, y: CY + 130, item: randItem() });
     showMsg('¡Jefe derrotado!', 'Baja por la trampilla'); trySpawnDeal();
+  } else if (cur.miniBoss) { // premio por vencer al jefe sorpresa
+    stopMusic(); playMusic(LV().music, 2.5);
+    cur.pickups.push({ type: 'item', x: CX, y: CY, item: randItem() });
+    showMsg('¡Jefe sorpresa derrotado!', 'Te dejó un objeto');
   } else if (Math.random() < 0.4) {
     cur.pickups.push({ type: Math.random() < 0.6 ? 'half' : 'heart', x: CX, y: CY });
   }
@@ -7399,6 +7413,110 @@ window.exportarHojaJefe = type => {
     });
   } finally { p = prevP; frame = prevFrame; spriteExport = false; }
   return sheet.toDataURL('image/png');
+};
+// ---------- Exportar las hojas de sprites de los personajes elegibles (la usa sprites/exportar_personajes.js) ----------
+// mismo formato que las hojas de Isaac: cuadros de 160x160, pivote en los pies (80, 150)
+// movimiento 8x8 (quieto y caminando en 4 direcciones) · disparo 6x6 (+ proyectil y su impacto) · daño y muerte 10x5
+const TEAR_COLOR = { tear: '#9fd3ff', fire: '#ff8a1a', ring: '#ffd700', bullet: '#ffd070', slash: '#eef', grenade: '#9aba5a', flame: '#ff7a1a',
+  holy: '#fff6c0', hell: '#ff3010', red: '#e02a2a', arrow: '#eee8d8', orb: '#c040ff', bolt: '#b080ff', dark: '#8a1030' };
+window.exportarHojasPersonaje = idx => {
+  const c = CHARS[idx], F = 160, SS = 2, S = 2.2, AX = 80, AY = 110;
+  const prevCtx = ctx, prevP = p, prevFrame = frame, prevParticles = particles;
+  const tmp = mkCanvas(F * SS, F * SS), tx = tmp.getContext('2d');
+  const aux = mkCanvas(F * SS, F * SS), ax = aux.getContext('2d');
+  const sheet = (cols, rows) => { const cv = mkCanvas(F * cols, F * rows); return [cv, cv.getContext('2d')]; };
+  const draw = (cx2, fn) => { // dibuja en un lienzo de un cuadro con supermuestreo
+    cx2.setTransform(1, 0, 0, 1, 0, 0); cx2.clearRect(0, 0, F * SS, F * SS); cx2.globalAlpha = 1; cx2.globalCompositeOperation = 'source-over';
+    cx2.setTransform(SS, 0, 0, SS, 0, 0); ctx = cx2; try { fn(); } finally { ctx = prevCtx; }
+  };
+  const shadeCell = (cx2, tint, a) => { // misma luz que en el juego y, si toca, un tinte (daño)
+    cx2.setTransform(SS, 0, 0, SS, 0, 0); cx2.globalCompositeOperation = 'source-atop';
+    const r = 27 * S, cy = AY - 12 * S;
+    const g = cx2.createRadialGradient(AX - r * 0.35, cy - r * 0.45, 2, AX, cy, r * 1.25);
+    g.addColorStop(0, 'rgba(255,248,232,.38)'); g.addColorStop(0.38, 'rgba(255,255,255,0)'); g.addColorStop(0.78, 'rgba(0,0,0,.32)'); g.addColorStop(1, 'rgba(0,0,0,.6)');
+    cx2.fillStyle = g; cx2.fillRect(0, 0, F, F);
+    if (tint) { cx2.globalAlpha = a; cx2.fillStyle = tint; cx2.fillRect(0, 0, F, F); cx2.globalAlpha = 1; }
+    cx2.globalCompositeOperation = 'source-over';
+  };
+  const layer = (dst, src, behind) => { dst.setTransform(1, 0, 0, 1, 0, 0); dst.globalCompositeOperation = behind ? 'destination-over' : 'source-over'; dst.drawImage(src, 0, 0); dst.globalCompositeOperation = 'source-over'; };
+  const put = (dst, col, row, src = tmp, alpha = 1) => { dst.globalAlpha = alpha; dst.imageSmoothingQuality = 'high'; dst.drawImage(src, 0, 0, F * SS, F * SS, col * F, row * F, F, F); dst.globalAlpha = 1; };
+  const body = (face, walk, shootT, o = {}) => { // el personaje con los pies en (80, 150)
+    ctx.save(); ctx.translate(AX + (o.dx || 0), AY + (o.dy || 0));
+    if (o.rot) { ctx.translate(0, 17 * S); ctx.rotate(o.rot); ctx.translate(0, -17 * S); }
+    if (o.sy) { ctx.translate(0, 17 * S); ctx.scale(o.sx || 1, o.sy); ctx.translate(0, -17 * S); }
+    poseOverride = o.pose === undefined ? null : o.pose; eyeMode = o.eyes || null;
+    try { drawChar(c, 0, 0, S, face, walk, shootT); } finally { poseOverride = null; eyeMode = null; }
+    ctx.restore();
+  };
+  const FACES = ['B', 'T', 'L', 'R'], DV = { B: [0, 1], T: [0, -1], L: [-1, 0], R: [1, 0] };
+  const tearObj = (k, ang = 0) => ({ kind: c.tear || 'tear', x: 0, y: 0, r: 8, vx: Math.cos(ang) * 8, vy: Math.sin(ang) * 8, friendly: true,
+    life: Math.round(9 * (1 - k)) + 1, maxLife: 10, spin: k * 6, ang, swing: 1, seed: 0, t: 0 });
+  const tear = (x, y, k, ang, sc) => { ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc); drawTear(tearObj(k, ang)); ctx.restore(); };
+  try {
+    p = { ...newPlayer(c), char: c }; spriteExport = true; particles = [];
+    // 1) movimiento
+    const [mv, mx] = sheet(8, 8);
+    FACES.forEach((f, r) => {
+      for (let i = 0; i < 4; i++) {
+        frame = 1000 + i * 10; const b = Math.sin(i / 4 * Math.PI * 2);
+        draw(tx, () => body(f, 0, 0, { sy: 1 + b * 0.025, sx: 1 - b * 0.015 })); shadeCell(tx); put(mx, i, r);
+      }
+      for (let i = 0; i < 8; i++) {
+        frame = 1000 + i * 5; const w = i / 8 * Math.PI * 2;
+        draw(tx, () => body(f, w, 0, { dy: -Math.abs(Math.sin(w)) * 3 })); shadeCell(tx); put(mx, i, 4 + r);
+      }
+    });
+    // 2) disparo: anticipación, disparo (cuadro 2), retroceso; luego el proyectil y su impacto
+    const [sh, shc] = sheet(6, 6), ST = [-5, -2, 8, 6, 3, 1], KICK = [0, 0, 3, 2, 0, 0];
+    FACES.forEach((f, r) => {
+      const [dx, dy] = DV[f];
+      for (let i = 0; i < 6; i++) {
+        frame = 1000 + i * 4;
+        draw(tx, () => body(f, 0, ST[i], { dx: -dx * KICK[i], dy: -dy * KICK[i] })); shadeCell(tx);
+        if (i === 2 || i === 3) { // sale el disparo hacia donde mira
+          draw(ax, () => tear(AX + dx * (34 + (i - 2) * 16), AY - 22 + dy * (30 + (i - 2) * 14), 0.1, Math.atan2(dy, dx), 1.6));
+          layer(tx, aux, f === 'T');
+        }
+        put(shc, i, r);
+      }
+    });
+    for (let i = 0; i < 4; i++) { frame = 1000 + i * 8; draw(tx, () => tear(80, 80, i / 4, 0, 2)); put(shc, i, 4); }
+    const col = TEAR_COLOR[c.tear] || '#9fd3ff';
+    for (let i = 0; i < 6; i++) {
+      const k = i / 5;
+      draw(tx, () => {
+        ctx.globalAlpha = 1 - k * 0.9; ctx.strokeStyle = col; ctx.lineWidth = 4 * (1 - k) + 1;
+        ell(80, 84, 10 + k * 34, (10 + k * 34) * 0.55); ctx.stroke();
+        ctx.fillStyle = col;
+        if (i < 2) { ell(80, 80, 12 * (1 - k * 2), 12 * (1 - k * 2)); ctx.fill(); }
+        for (let j = 0; j < 8; j++) { const a = j / 8 * Math.PI * 2, rr = 3.5 * (1 - k) + 0.5; ell(80 + Math.cos(a) * (8 + k * 40), 80 + Math.sin(a) * (6 + k * 26) - Math.sin(k * Math.PI) * 10, rr, rr); ctx.fill(); }
+        ctx.globalAlpha = 1;
+      });
+      put(shc, i, 5);
+    }
+    // 3) daño (destello blanco, rojo y vuelve a la normalidad) y muerte (cae, cierra los ojos y sube su alma)
+    const [hu, hc] = sheet(10, 5), HT = [['#ffffff', 0.85], ['#ff2020', 0.55], ['#ff2020', 0.25], [null, 0]];
+    FACES.forEach((f, r) => {
+      for (let i = 0; i < 4; i++) {
+        frame = 1000 + i * 4;
+        draw(tx, () => body(f, 0, 6, { dx: [5, -4, 2, 0][i], pose: 1, sy: [0.9, 0.95, 1.02, 1][i], sx: [1.08, 1.04, 0.99, 1][i] }));
+        shadeCell(tx, HT[i][0], HT[i][1]); put(hc, i, r);
+      }
+    });
+    for (let i = 0; i < 10; i++) {
+      frame = 1000 + i * 6; const fall = clamp((i - 1) / 4, 0, 1);
+      draw(tx, () => body('B', 0, 0, { rot: -smooth(fall) * Math.PI / 2, dx: smooth(fall) * 62, dy: -smooth(fall) * 26, eyes: i >= 3 ? 'closed' : null, pose: i < 3 ? 1 : 0, sy: i === 0 ? 0.88 : 1, sx: i === 0 ? 1.1 : 1 }));
+      shadeCell(tx, i < 2 ? '#ff2020' : null, i === 0 ? 0.55 : 0.3);
+      put(hc, i, 4);
+      if (i >= 6) {
+        const k = (i - 6) / 3, up = 30 + k * 34;
+        draw(ax, () => { body('B', 0, 0, { dy: -up, eyes: 'closed' }); ctx.strokeStyle = '#ffe680'; ctx.lineWidth = 2.5; ell(AX, AY - up - 44, 14, 4.5); ctx.stroke(); });
+        ax.setTransform(SS, 0, 0, SS, 0, 0); ax.globalCompositeOperation = 'source-atop'; ax.fillStyle = 'rgba(235,245,255,.75)'; ax.fillRect(0, 0, F, F); ax.globalCompositeOperation = 'source-over';
+        put(hc, i, 4, aux, 0.75 - k * 0.35);
+      }
+    }
+    return { move: mv.toDataURL('image/png'), shoot: sh.toDataURL('image/png'), hurt: hu.toDataURL('image/png') };
+  } finally { p = prevP; frame = prevFrame; particles = prevParticles; spriteExport = false; ctx = prevCtx; }
 };
 // ---------- Exportar música y sonidos a archivos (lo usa musica/exportar_audio.js) ----------
 // Graba con el mismo sintetizador del juego, sin altavoces y más rápido que en tiempo real. Devuelve un WAV en base64.
