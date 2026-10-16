@@ -6823,7 +6823,8 @@ const UT_MENU = { x0: 134, y0: 300, x1: 826, y1: 468 }; // caja grande (turno de
 const UT_SX = 480, UT_FEET = 292; // Sans: centro y pies
 const UT_SP = 2.6; // velocidad del alma
 const UT_BTNS = ['LUCHAR', 'ACTUAR', 'OBJETO', 'PIEDAD'];
-const UT_ITEMS = [['Pastel', 99], ['Fideos', 90], ['Filete', 60], ['Héroe', 40], ['Héroe', 40], ['Héroe', 40], ['Nieve', 45], ['Nieve', 45]];
+const UT_ITEMS = [['Filete', 60], ['Héroe', 40], ['Héroe', 40], ['Nieve', 45]]; // pocos: es el segundo jefe más difícil (sólo Isaac Oscuro es peor)
+const utHard = () => 1.2 + loopN() * 0.12; // rapidez de los huesos (sube en el modo infinito)
 const UT_G = [[0, 1], [0, -1], [-1, 0], [1, 0]]; // gravedad del alma azul: abajo, arriba, izquierda, derecha
 const UT_FONT = 'bold 23px "Courier New", monospace';
 const UT_SANS_FONT = 'bold 17px "Comic Sans MS", "Comic Neue", cursive';
@@ -6850,14 +6851,14 @@ const UT_FLAVOR = ['* Te sientes como si fueras a pasarla mal.', '* Sans te mira
 
 // ---------- ataques (t = cuadro del ataque, b = caja) ----------
 const utB = () => ut.boxT;
-function uBone(x, y, w, h, vx, vy, blue = false) { ut.objs.push({ k: 'bone', x, y, w, h, vx, vy, blue, t: 0, life: 700 }); }
+function uBone(x, y, w, h, vx, vy, blue = false) { const k = utHard(); ut.objs.push({ k: 'bone', x, y, w, h, vx: vx * k, vy: vy * k, blue, t: 0, life: 700 }); }
 const uFloor = (fromR, h, sp, blue) => { const b = utB(); uBone(fromR ? b.x1 + 4 : b.x0 - 16, b.y1 - h, 12, h + 6, fromR ? -sp : sp, 0, blue); };
 const uCeil = (fromR, h, sp, blue) => { const b = utB(); uBone(fromR ? b.x1 + 4 : b.x0 - 16, b.y0 - 6, 12, h + 6, fromR ? -sp : sp, 0, blue); };
 const uWall = (fromR, sp, blue) => uCeil(fromR, utB().y1 - utB().y0, sp, blue);
 const uGap = (fromR, gc, gh, sp) => { const b = utB(); uCeil(fromR, gc - gh / 2 - b.y0, sp); uFloor(fromR, b.y1 - (gc + gh / 2), sp); };
 function uStab(side, d, warn = 22, hold = 26) { ut.objs.push({ k: 'stab', side, d, warn, hold, t: 0, b: { ...utB() }, life: warn + hold + 10 }); }
 function uGb(x, y, ang, s = 1, o = {}) { // Gaster Blaster: entra volando, carga y dispara un rayo
-  const dx = x - 480, dy = y - 300, m = Math.hypot(dx, dy) || 1, A = o.A ?? 16, C = o.C ?? 22, F = o.F ?? 28;
+  const dx = x - 480, dy = y - 300, m = Math.hypot(dx, dy) || 1, A = o.A ?? 14, C = o.C ?? 15, F = o.F ?? 30;
   ut.objs.push({ k: 'gb', x, y, ang, s, sx: x + dx / m * 260, sy: y + dy / m * 260, sa: ang + Math.PI * 1.5, A, C, F, w: 44 * s, t: 0, life: A + C + F + 34 });
   sfx('gbCharge', 0.05);
 }
@@ -6882,40 +6883,41 @@ const UT_ATTACKS = [
     if (t >= 180 && t <= 300 && t % 30 === 0) { if ((t / 30) % 2) uWall(true, 3.6, true); else uCeil(true, b.y1 - b.y0 - 34, 3.6); }
   } },
   { w: 300, h: 168, soul: 'red', dur: 350, run(t, b) { // túnel de huesos ondulado
-    if (t >= 6 && t <= 270 && t % 6 === 0) uGap(true, utMid(b)[1] + Math.sin(t * 0.035) * 40, 66, 4.2);
+    if (t >= 6 && t <= 270 && t % 6 === 0) uGap(true, utMid(b)[1] + Math.sin(t * 0.045) * 46, 54, 4.2);
   } },
   { w: 230, h: 168, soul: 'red', dur: 330, run(t, b) { // blasters por todos lados
-    if (t <= 230 && t % 24 === 6) uAim(...uAround(b, 175));
-    if (t === 262) for (let i = 0; i < 4; i++) uAim(...uAround(b, 175), 1, {}, (i - 1.5) * 0.3);
+    if (t <= 240 && t % 16 === 6) uAim(...uAround(b, 175));
+    if (t === 262 || t === 290) for (let i = 0; i < 4; i++) uAim(...uAround(b, 175), 1, {}, (i - 1.5) * 0.3);
   } },
   { w: 420, h: 140, soul: 'blue', dur: 380, run(t, b) { // paredes azules (quieto) y huesos blancos (salta)
-    if (t >= 10 && t <= 300 && t % 48 === 10) { if (((t - 10) / 48) % 2) uWall(true, 3.4, true); else uFloor(true, 28, 3.4); }
+    if (t >= 10 && t <= 300 && t % 36 === 10) { if (((t - 10) / 36) % 2) uWall(true, 3.4, true); else uFloor(true, 30, 3.4); }
+    if (t >= 46 && t <= 300 && t % 72 === 46) uWall(false, 3.4, true);
     if (t === 320) uAim(b.x1 + 80, utMid(b)[1]);
   } },
   { w: 230, h: 168, soul: 'blue', dur: 360, run(t, b) { // te avienta contra las paredes y salen huesos de ellas
     const seq = [0, 2, 1, 3, 0, 3, 1, 2];
-    if (t >= 6 && (t - 6) % 40 === 0 && (t - 6) / 40 < 8) uSlam(seq[(t - 6) / 40]);
-    if (t >= 18 && (t - 18) % 40 === 0 && (t - 18) / 40 < 8) uStab(seq[(t - 18) / 40], 32, 12, 14);
+    if (t >= 6 && (t - 6) % 34 === 0 && (t - 6) / 34 < 9) uSlam(seq[(t - 6) / 34 % 8]);
+    if (t >= 17 && (t - 17) % 34 === 0 && (t - 17) / 34 < 9) uStab(seq[(t - 17) / 34 % 8], 34, 10, 14);
   } },
   { w: 320, h: 168, soul: 'red', dur: 330, run(t, b) { // lluvia de huesos y huesos que barren de lado
-    if (t <= 260 && t % 10 === 0) uBone(rnd(b.x0 + 10, b.x1 - 22), b.y0 - 44, 12, 40, 0, 3.2);
-    if (t <= 260 && t % 64 === 30) { const fromL = (t / 64 | 0) % 2 === 0, y = rnd(b.y0 + 20, b.y1 - 30); uBone(fromL ? b.x0 - 100 : b.x1 + 4, y, 96, 12, fromL ? 3.6 : -3.6, 0); }
+    if (t <= 260 && t % 7 === 0) uBone(rnd(b.x0 + 10, b.x1 - 22), b.y0 - 44, 12, 40, 0, 3.2);
+    if (t <= 260 && t % 44 === 30) { const fromL = (t / 64 | 0) % 2 === 0, y = rnd(b.y0 + 20, b.y1 - 30); uBone(fromL ? b.x0 - 100 : b.x1 + 4, y, 96, 12, fromL ? 3.6 : -3.6, 0); }
   } },
   { w: 460, h: 140, soul: 'blue', dur: 380, run(t, b) { // escalera de huesos y blasters desde arriba
     if (t >= 10 && t <= 280 && t % 30 === 10) uFloor(true, [18, 26, 32, 26][((t - 10) / 30) % 4], 4);
-    if (t >= 40 && t <= 300 && t % 60 === 40) uGb(ut.soul.x, b.y0 - 90, Math.PI / 2, 0.8);
+    if (t >= 40 && t <= 300 && t % 40 === 0) uGb(ut.soul.x, b.y0 - 90, Math.PI / 2, 0.8);
   } },
   { w: 230, h: 168, soul: 'red', dur: 360, run(t, b) { // anillo de blasters que gira
     const [cx, cy] = utMid(b);
-    if (t <= 290 && t % 15 === 0) { const a = t * 0.11; uAim(cx + Math.cos(a) * 185, clamp(cy + Math.sin(a) * 165, 40, 560), 0.9); }
+    if (t <= 290 && t % 11 === 0) { const a = t * 0.13; uAim(cx + Math.cos(a) * 185, clamp(cy + Math.sin(a) * 165, 40, 560), 0.9); }
   } },
   { w: 230, h: 168, soul: 'blue', dur: 640, run(t, b) { // el último: todo junto y más rápido
     const [, cy] = utMid(b);
     if (t >= 6 && t <= 276 && (t - 6) % 30 === 0) { const g = ((t - 6) / 30 * 7 + 1) % 4; uSlam(g); ut.lastSlam = g; }
     if (t >= 16 && t <= 286 && (t - 16) % 30 === 0) uStab(ut.lastSlam, 30, 10, 12);
     if (t === 300) uSoul('red');
-    if (t >= 310 && t <= 450 && t % 14 === 0) uAim(...uAround(b, 175));
-    if (t >= 470 && t <= 600 && t % 6 === 0) uGap(true, cy + Math.sin(t * 0.05) * 38, 70, 5);
+    if (t >= 310 && t <= 450 && t % 10 === 0) uAim(...uAround(b, 175));
+    if (t >= 470 && t <= 600 && t % 6 === 0) uGap(true, cy + Math.sin(t * 0.055) * 44, 58, 5);
   } },
 ];
 
@@ -7097,7 +7099,7 @@ function utUpdate() {
       if (o.k === 'gb' && o.t === o.A + o.C) { sfx('gbFire', 0.05); u.shake = Math.max(u.shake, 3); }
       if (o.k === 'bone') { const x = o.x + o.vx * o.t, y = o.y + o.vy * o.t; if (x < u.box.x0 - 140 || x > u.box.x1 + 140 || y > u.box.y1 + 60) o.dead = true; }
       if (o.t > o.life) o.dead = true;
-      if (!o.dead && utHit(o, s.x, s.y, o.t, s.moved)) utHurt(o.k === 'gb' ? 2 : 1);
+      if (!o.dead && utHit(o, s.x, s.y, o.t, s.moved)) utHurt(o.k === 'gb' ? 4 : 2);
       if (!ut || ut.phase === 'broken') return;
     }
     u.objs = u.objs.filter(o => !o.dead);

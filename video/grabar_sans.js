@@ -50,12 +50,13 @@ const BOT = `(() => {
     } else if (u.phase === 'list') { if (u.botW > 45) press('Enter'); }
     else if (u.phase === 'aim') { if (Math.abs(u.aimX - 480) < 6) press('Enter'); }
     if (u.phase !== 'attack' && u.phase !== 'talk') { u.botIn = null; return; }
+    if (u.botIn && u.t % (window.__botEvery || 1)) return; // __botEvery/__botLook: bot más "humano" (reacciona más lento)
     const [cx, cy] = utMid(u.box);
     let best = 0, bestS = 1e9;
     DIRS.forEach(([dx, dy], i) => {
       const inp = { l: dx < 0, r: dx > 0, u: dy < 0, d: dy > 0 }, s = { ...u.soul };
       let sc = 0;
-      for (let k = 1; k <= 22; k++) {
+      for (let k = 1; k <= (window.__botLook || 22); k++) {
         utSoulStep(s, inp, u.box);
         for (const o of u.objs) if (utHit(o, s.x, s.y, o.t + k, s.moved)) sc += 30 - k;
       }
