@@ -100,7 +100,7 @@ function setupStick(el, onMove) {
   el.addEventListener('pointercancel', end);
 }
 // en los menús el joystick izquierdo también sirve para elegir personaje
-let stickMenuDir = 0;
+let stickMenuDir = 0, stickMenuV = 0;
 // código secreto táctil: mover arriba, abajo, izquierda, derecha, arriba, derecha => minijuego retro
 const STICK_CODE = 'UDLRUR';
 let stickCode = '', stickCodeDir = '', stickCodeT = 0;
@@ -119,7 +119,9 @@ setupStick(document.getElementById('stickL'), (x, y) => {
   }
   touchMove.x = m > dead ? x : 0; touchMove.y = m > dead ? y : 0;
   const dir = x < -0.5 ? -1 : x > 0.5 ? 1 : 0;
-  if (dir !== stickMenuDir) { stickMenuDir = dir; if (dir && state !== 'play') onKey(dir < 0 ? 'ArrowLeft' : 'ArrowRight'); }
+  if (dir !== stickMenuDir) { stickMenuDir = dir; if (dir && (state !== 'play' || ut)) onKey(dir < 0 ? 'ArrowLeft' : 'ArrowRight'); }
+  const vdir = y < -0.5 ? -1 : y > 0.5 ? 1 : 0; // en la batalla de Sans también para las listas
+  if (vdir !== stickMenuV) { stickMenuV = vdir; if (vdir && ut) onKey(vdir < 0 ? 'ArrowUp' : 'ArrowDown'); }
 });
 // joystick derecho: dispara en la dirección dominante (como las flechas)
 setupStick(document.getElementById('stickR'), (x, y) => {
@@ -314,6 +316,22 @@ const SFX = {
   },
   shield() { tone({ f: 880, f2: 1760, type: 'triangle', dur: 0.25, vol: 0.2 }); tone({ f: 1320, type: 'sine', dur: 0.4, vol: 0.12, delay: 0.05 }); },
   floor() { tone({ f: 500, f2: 50, type: 'sine', dur: 0.9, vol: 0.35 }); noise({ dur: 0.9, vol: 0.2, freq: 2000, f2: 100 }); },
+  // batalla de Sans (estilo Undertale)
+  utVoice() { tone({ f: 175 + Math.random() * 25, type: 'square', dur: 0.045, vol: 0.05 }); },
+  utText() { tone({ f: 640, type: 'square', dur: 0.025, vol: 0.03 }); },
+  utMove() { tone({ f: 880, type: 'square', dur: 0.04, vol: 0.06 }); },
+  utOk() { tone({ f: 1046, type: 'square', dur: 0.05, vol: 0.07 }); tone({ f: 1318, type: 'square', dur: 0.07, vol: 0.06, delay: 0.04 }); },
+  utEnc() { tone({ f: 1046, type: 'square', dur: 0.07, vol: 0.09 }); tone({ f: 523, type: 'square', dur: 0.07, vol: 0.06 }); },
+  utHurt() { tone({ f: 600, f2: 150, type: 'square', dur: 0.12, vol: 0.1 }); noise({ dur: 0.08, vol: 0.12, freq: 2000 }); },
+  utDing() { tone({ f: 1760, type: 'triangle', dur: 0.4, vol: 0.12 }); tone({ f: 2637, type: 'sine', dur: 0.3, vol: 0.06 }); },
+  utSlam() { noise({ dur: 0.18, vol: 0.4, freq: 600, f2: 80 }); tone({ f: 110, f2: 45, type: 'square', dur: 0.15, vol: 0.2 }); },
+  utBone() { tone({ f: 1200, f2: 600, type: 'square', dur: 0.05, vol: 0.06 }); noise({ dur: 0.06, vol: 0.1, freq: 4000 }); },
+  gbCharge() { tone({ f: 180, f2: 900, type: 'sawtooth', dur: 0.45, vol: 0.06 }); noise({ dur: 0.45, vol: 0.07, freq: 500, f2: 3000, type: 'bandpass', q: 2 }); },
+  gbFire() { noise({ dur: 0.7, vol: 0.3, freq: 3000, f2: 400 }); tone({ f: 140, f2: 60, type: 'sawtooth', dur: 0.6, vol: 0.13 }); },
+  utHit() { noise({ dur: 0.3, vol: 0.4, freq: 1800, f2: 200 }); tone({ f: 220, f2: 60, type: 'square', dur: 0.3, vol: 0.2 }); },
+  utHeal() { [523, 659, 784, 1046].forEach((f, i) => tone({ f, type: 'triangle', dur: 0.1, vol: 0.12, delay: i * 0.05 })); },
+  utCrack() { tone({ f: 300, f2: 120, type: 'square', dur: 0.12, vol: 0.18 }); noise({ dur: 0.1, vol: 0.25, freq: 3500 }); },
+  utShatter() { for (let i = 0; i < 5; i++) tone({ f: 900 - i * 120, type: 'square', dur: 0.06, vol: 0.08, delay: i * 0.03 }); noise({ dur: 0.3, vol: 0.25, freq: 5000, f2: 800 }); },
   start() { [262, 330, 392, 523].forEach((f, i) => tone({ f, type: 'square', dur: 0.15, vol: 0.15, delay: i * 0.08 })); },
 };
 const lastPlay = {};
@@ -1655,7 +1673,7 @@ function freeSpot(r) {
 }
 function enterRoom() {
   cur.visited = true;
-  enemies = []; tears = []; particles = []; hazards = []; spawnQ = []; fxAnims = []; bossIntro = null; deathCut = null; endingAt = 0;
+  enemies = []; tears = []; particles = []; hazards = []; spawnQ = []; fxAnims = []; bossIntro = null; ut = null; deathCut = null; endingAt = 0;
   p.shield = p.shieldMax; // el Escudo Divino se recarga en cada sala
   if (cur.type === 'devil' || cur.type === 'angel') {
     if (!cur.seen) {
@@ -1672,6 +1690,7 @@ function enterRoom() {
     sfx('doorClose');
     playMusic(isFinalLevel() ? 'final' : bossMusic(floorBoss), 0.9); // cada jefe tiene su propia canción
     if (retro.on) { showMsg(b.name, b.noHomage ? b.ref : 'Jefe · homenaje a ' + b.ref); sfx(floorBoss === 'dragon' ? 'screech' : 'roar'); }
+    else if (floorBoss === 'sans') utStart(b); // contra Sans la pelea es como en Undertale
     else bossIntro = { t: 0, boss: b }; // presentación del jefe (ver drawBossIntro)
   } else {
     sfx('doorClose');
@@ -2731,6 +2750,7 @@ function onKey(c) {
     } else if (isConfirm(c)) skipEnding();
     return;
   }
+  if (ut && state === 'play') { utKey(c); return; }
   if (bossIntro && (isConfirm(c) || c.startsWith('Arrow')) && bossIntro.t > 40 && bossIntro.t < INTRO.out) { bossIntro.t = INTRO.out; return; } // saltar
   if (state === 'win') { if (isConfirm(c)) { state = 'play'; winPending = false; nextFloor(); } else if (c === 'KeyR') enterSelect(); return; }
   if (c === 'KeyR') startGame();
@@ -2750,6 +2770,7 @@ function update() {
   if (state === 'dead' && deathCut) { updateDeathCut(); updateParticles(); return; }
   if (state !== 'play' || paused) { updateParticles(); return; }
   if (endingAt > 0 && --endingAt === 0) { startEnding(); return; }
+  if (ut) { utUpdate(); return; } // batalla de Sans (estilo Undertale)
   if (bossIntro) { updateBossIntro(); updateParticles(); return; } // el juego se congela durante la presentación
 
   let ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), iy = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
@@ -6708,6 +6729,7 @@ function draw() {
   if (state === 'menu') { drawMenu(); drawPost(0.45); drawUnlockToasts(); return; }
   if (state === 'select') { drawSelect(); drawPost(0.45); drawUnlockToasts(); return; }
   if (state === 'ending') { drawEnding(); drawPost(0.55); return; }
+  if (ut && state === 'play') { utDraw(); return; }
   ctx.save();
   if (shake) ctx.translate(rnd(-shake, shake), rnd(-shake, shake));
   drawRoom();
@@ -6789,6 +6811,526 @@ function draw() {
     drawCharShaded(p.char, CX, 320 + Math.sin(frame * 0.1) * 8, 3, 'B', frame * 0.2, 0);
     ctx.fillStyle = '#bfae94'; ctx.font = '18px monospace';
     ctx.fillText('ENTER: seguir en modo infinito (más difícil) · R: menú', CX, 440);
+  }
+}
+
+// =====================================================================
+// BATALLA CONTRA SANS (como en Undertale): el alma en una caja, LUCHAR / ACTUAR / OBJETO / PIEDAD,
+// huesos, huesos azules, Gaster Blasters, alma azul con gravedad y KR (karma)
+// =====================================================================
+let ut = null;
+const UT_MENU = { x0: 134, y0: 300, x1: 826, y1: 468 }; // caja grande (turno del jugador)
+const UT_SX = 480, UT_FEET = 292; // Sans: centro y pies
+const UT_SP = 2.6; // velocidad del alma
+const UT_BTNS = ['LUCHAR', 'ACTUAR', 'OBJETO', 'PIEDAD'];
+const UT_ITEMS = [['Pastel', 99], ['Fideos', 90], ['Filete', 60], ['Héroe', 40], ['Héroe', 40], ['Héroe', 40], ['Nieve', 45], ['Nieve', 45]];
+const UT_G = [[0, 1], [0, -1], [-1, 0], [1, 0]]; // gravedad del alma azul: abajo, arriba, izquierda, derecha
+const UT_FONT = 'bold 23px "Courier New", monospace';
+const UT_SANS_FONT = 'bold 17px "Comic Sans MS", "Comic Neue", cursive';
+const utBox = (w, h) => ({ x0: UT_SX - w / 2, x1: UT_SX + w / 2, y0: UT_MENU.y1 - h, y1: UT_MENU.y1 });
+const utMid = b => [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2];
+
+const UT_INTRO = ['hoy es un día precioso allá afuera.', 'los pájaros cantan, las flores florecen...', 'en días como estos, chicos como tú...', 'deberían estar ardiendo en el infierno.'];
+const UT_LINES = [null,
+  ['je. siempre me pregunté por qué nadie usa su ataque más fuerte primero.'],
+  ['¿qué? ¿creíste que me iba a quedar quieto mientras me pegas?'],
+  ['te ves frustrado por algo.'],
+  ['...', 'eres de los que no se rinden, ¿eh?'],
+  ['escucha. sé que no respondes bien a la amabilidad...', 'pero algún día... tal vez... podrías intentarlo.'],
+  ['je je je...'],
+  ['oye. ¿no te cansas de esto?', 'porque yo sí.'],
+  ['bueno. ya casi.'],
+  ['listo. ¿preparado?', 'sobrevive a ESTO y te enseño mi ataque especial.'],
+];
+const UT_TIRED = ['huff... huff...', 'muy bien. aquí va. mi ataque especial...', '...', '...', 'zzz...'];
+const UT_DEATH = ['...', 'bueno. supongo que eso es todo, ¿eh?', 'solo... no digas que no te lo advertí.', 'papyrus... ¿tienes hambre?'];
+const UT_FLAVOR = ['* Te sientes como si fueras a pasarla mal.', '* Sans te mira con su sonrisa de siempre.', '* Sans está bostezando.',
+  '* Huele a salsa de tomate.', '* Sans no deja de sonreír.', '* Sans se ve un poco cansado.', '* Sans te observa fijamente.',
+  '* El aire se siente pesado.', '* Sans respira hondo.', '* Sans prepara su ataque especial.'];
+
+// ---------- ataques (t = cuadro del ataque, b = caja) ----------
+const utB = () => ut.boxT;
+function uBone(x, y, w, h, vx, vy, blue = false) { ut.objs.push({ k: 'bone', x, y, w, h, vx, vy, blue, t: 0, life: 700 }); }
+const uFloor = (fromR, h, sp, blue) => { const b = utB(); uBone(fromR ? b.x1 + 4 : b.x0 - 16, b.y1 - h, 12, h + 6, fromR ? -sp : sp, 0, blue); };
+const uCeil = (fromR, h, sp, blue) => { const b = utB(); uBone(fromR ? b.x1 + 4 : b.x0 - 16, b.y0 - 6, 12, h + 6, fromR ? -sp : sp, 0, blue); };
+const uWall = (fromR, sp, blue) => uCeil(fromR, utB().y1 - utB().y0, sp, blue);
+const uGap = (fromR, gc, gh, sp) => { const b = utB(); uCeil(fromR, gc - gh / 2 - b.y0, sp); uFloor(fromR, b.y1 - (gc + gh / 2), sp); };
+function uStab(side, d, warn = 22, hold = 26) { ut.objs.push({ k: 'stab', side, d, warn, hold, t: 0, b: { ...utB() }, life: warn + hold + 10 }); }
+function uGb(x, y, ang, s = 1, o = {}) { // Gaster Blaster: entra volando, carga y dispara un rayo
+  const dx = x - 480, dy = y - 300, m = Math.hypot(dx, dy) || 1, A = o.A ?? 16, C = o.C ?? 22, F = o.F ?? 28;
+  ut.objs.push({ k: 'gb', x, y, ang, s, sx: x + dx / m * 260, sy: y + dy / m * 260, sa: ang + Math.PI * 1.5, A, C, F, w: 44 * s, t: 0, life: A + C + F + 34 });
+  sfx('gbCharge', 0.05);
+}
+const uAim = (x, y, s, o, off = 0) => uGb(x, y, Math.atan2(ut.soul.y - y, ut.soul.x - x) + off, s, o);
+function uAround(b, r) { const [cx, cy] = utMid(b), a = rnd(0, Math.PI * 2); return [cx + Math.cos(a) * r, clamp(cy + Math.sin(a) * r * 0.85, 40, 560)]; }
+function uSlam(g) { const s = ut.soul; if (s.mode !== 'blue') sfx('utDing'); s.mode = 'blue'; s.g = g; s.vg = 10; s.slam = true; s.ground = false; ut.hand = { t: ut.t, g }; }
+function uSoul(mode) { const s = ut.soul; if (s.mode !== mode) sfx('utDing'); s.mode = mode; s.g = 0; s.vg = 0; s.slam = false; s.ground = false; }
+
+const UT_ATTACKS = [
+  { w: 230, h: 168, soul: 'blue', dur: 320, run(t, b) { // el famoso primer ataque: golpe al suelo, huesos y blasters
+    const [cx, cy] = utMid(b);
+    if (t === 1) uSlam(0);
+    if (t === 16) uStab(0, 46, 20, 26);
+    if (t === 80) uSoul('red');
+    if (t === 86) { uGb(b.x0 - 70, cy, 0); uGb(b.x1 + 70, cy, Math.PI); }
+    if (t === 136) { uGb(cx - 58, b.y0 - 90, Math.PI / 2); uGb(cx + 58, b.y0 - 90, Math.PI / 2); }
+    if (t === 186) for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const x = cx + dx * 170, y = cy + dy * 130; uGb(x, y, Math.atan2(cy - y, cx - x)); }
+    if (t === 236 || t === 262) { uAim(...uAround(b, 175)); uAim(...uAround(b, 175)); }
+  } },
+  { w: 460, h: 140, soul: 'blue', dur: 350, run(t, b) { // saltar huesos; luego agacharse y quedarse quieto con los azules
+    if (t >= 10 && t <= 150 && t % 38 === 10) uFloor(true, [20, 30, 24, 34][(t / 38 | 0) % 4], 3.6);
+    if (t >= 180 && t <= 300 && t % 30 === 0) { if ((t / 30) % 2) uWall(true, 3.6, true); else uCeil(true, b.y1 - b.y0 - 34, 3.6); }
+  } },
+  { w: 300, h: 168, soul: 'red', dur: 350, run(t, b) { // túnel de huesos ondulado
+    if (t >= 6 && t <= 270 && t % 6 === 0) uGap(true, utMid(b)[1] + Math.sin(t * 0.035) * 40, 66, 4.2);
+  } },
+  { w: 230, h: 168, soul: 'red', dur: 330, run(t, b) { // blasters por todos lados
+    if (t <= 230 && t % 24 === 6) uAim(...uAround(b, 175));
+    if (t === 262) for (let i = 0; i < 4; i++) uAim(...uAround(b, 175), 1, {}, (i - 1.5) * 0.3);
+  } },
+  { w: 420, h: 140, soul: 'blue', dur: 380, run(t, b) { // paredes azules (quieto) y huesos blancos (salta)
+    if (t >= 10 && t <= 300 && t % 48 === 10) { if (((t - 10) / 48) % 2) uWall(true, 3.4, true); else uFloor(true, 28, 3.4); }
+    if (t === 320) uAim(b.x1 + 80, utMid(b)[1]);
+  } },
+  { w: 230, h: 168, soul: 'blue', dur: 360, run(t, b) { // te avienta contra las paredes y salen huesos de ellas
+    const seq = [0, 2, 1, 3, 0, 3, 1, 2];
+    if (t >= 6 && (t - 6) % 40 === 0 && (t - 6) / 40 < 8) uSlam(seq[(t - 6) / 40]);
+    if (t >= 18 && (t - 18) % 40 === 0 && (t - 18) / 40 < 8) uStab(seq[(t - 18) / 40], 32, 12, 14);
+  } },
+  { w: 320, h: 168, soul: 'red', dur: 330, run(t, b) { // lluvia de huesos y huesos que barren de lado
+    if (t <= 260 && t % 10 === 0) uBone(rnd(b.x0 + 10, b.x1 - 22), b.y0 - 44, 12, 40, 0, 3.2);
+    if (t <= 260 && t % 64 === 30) { const fromL = (t / 64 | 0) % 2 === 0, y = rnd(b.y0 + 20, b.y1 - 30); uBone(fromL ? b.x0 - 100 : b.x1 + 4, y, 96, 12, fromL ? 3.6 : -3.6, 0); }
+  } },
+  { w: 460, h: 140, soul: 'blue', dur: 380, run(t, b) { // escalera de huesos y blasters desde arriba
+    if (t >= 10 && t <= 280 && t % 30 === 10) uFloor(true, [18, 26, 32, 26][((t - 10) / 30) % 4], 4);
+    if (t >= 40 && t <= 300 && t % 60 === 40) uGb(ut.soul.x, b.y0 - 90, Math.PI / 2, 0.8);
+  } },
+  { w: 230, h: 168, soul: 'red', dur: 360, run(t, b) { // anillo de blasters que gira
+    const [cx, cy] = utMid(b);
+    if (t <= 290 && t % 15 === 0) { const a = t * 0.11; uAim(cx + Math.cos(a) * 185, clamp(cy + Math.sin(a) * 165, 40, 560), 0.9); }
+  } },
+  { w: 230, h: 168, soul: 'blue', dur: 640, run(t, b) { // el último: todo junto y más rápido
+    const [, cy] = utMid(b);
+    if (t >= 6 && t <= 276 && (t - 6) % 30 === 0) { const g = ((t - 6) / 30 * 7 + 1) % 4; uSlam(g); ut.lastSlam = g; }
+    if (t >= 16 && t <= 286 && (t - 16) % 30 === 0) uStab(ut.lastSlam, 30, 10, 12);
+    if (t === 300) uSoul('red');
+    if (t >= 310 && t <= 450 && t % 14 === 0) uAim(...uAround(b, 175));
+    if (t >= 470 && t <= 600 && t % 6 === 0) uGap(true, cy + Math.sin(t * 0.05) * 38, 70, 5);
+  } },
+];
+
+// ---------- geometría de los ataques (en función del tiempo, así también sirve para predecir) ----------
+function utStabDepth(o, tt) { const k = tt - o.warn; if (k < 0) return 0; return o.d * Math.min(1, k / 5, clamp((o.warn + o.hold + 8 - tt) / 8, 0, 1)); }
+function utRects(o, tt) {
+  if (o.k === 'bone') return [[o.x + o.vx * tt, o.y + o.vy * tt, o.w, o.h]];
+  if (o.k === 'stab') {
+    const d = utStabDepth(o, tt), b = o.b; if (d <= 0) return [];
+    return [[[b.x0, b.y1 - d, b.x1 - b.x0, d], [b.x0, b.y0, b.x1 - b.x0, d], [b.x0, b.y0, d, b.y1 - b.y0], [b.x1 - d, b.y0, d, b.y1 - b.y0]][o.side]];
+  }
+  return [];
+}
+function utGbPos(o, tt) {
+  const e = easeOut(tt / o.A), f0 = o.A + o.C;
+  let x = lerp(o.sx, o.x, e), y = lerp(o.sy, o.y, e);
+  if (tt > f0) { const back = (tt - f0) * (tt - f0) * 0.05; x -= Math.cos(o.ang) * back; y -= Math.sin(o.ang) * back; } // retrocede al disparar
+  return { x, y, a: lerp(o.sa, o.ang, e) };
+}
+const utGbBeam = (o, tt) => { const k = tt - o.A - o.C; return k < 0 || k > o.F ? 0 : o.w * Math.min(1, k / 4, (o.F - k) / 10); };
+function utHit(o, x, y, tt, moved) { // ¿el alma en (x, y) choca con el objeto en el cuadro tt?
+  if (o.k === 'gb') {
+    const bw = utGbBeam(o, tt); if (bw < o.w * 0.5) return false;
+    const g = utGbPos(o, tt), c = Math.cos(o.ang), s = Math.sin(o.ang), dx = x - g.x, dy = y - g.y;
+    return dx * c + dy * s > 0 && Math.abs(dy * c - dx * s) < bw * 0.38 + 4;
+  }
+  if (o.blue && !moved) return false; // los huesos azules sólo duelen si te mueves
+  for (const [rx, ry, rw, rh] of utRects(o, tt)) if (x > rx - 5 && x < rx + rw + 5 && y > ry - 5 && y < ry + rh + 5) return true;
+  return false;
+}
+
+// ---------- el alma ----------
+function utSoulStep(s, inp, b) {
+  const H = 11, lo = { x: b.x0 + H, y: b.y0 + H }, hi = { x: b.x1 - H, y: b.y1 - H }, ox = s.x, oy = s.y;
+  s.landed = false;
+  if (s.mode === 'red') {
+    s.x = clamp(s.x + ((inp.r ? 1 : 0) - (inp.l ? 1 : 0)) * UT_SP, lo.x, hi.x);
+    s.y = clamp(s.y + ((inp.d ? 1 : 0) - (inp.u ? 1 : 0)) * UT_SP, lo.y, hi.y);
+  } else { // alma azul: la gravedad la jala hacia una pared y sólo puede saltar
+    const [gx, gy] = UT_G[s.g];
+    const lat = gx ? (inp.d ? 1 : 0) - (inp.u ? 1 : 0) : (inp.r ? 1 : 0) - (inp.l ? 1 : 0);
+    const jump = gy > 0 ? inp.u : gy < 0 ? inp.d : gx > 0 ? inp.l : inp.r;
+    if (s.ground && jump && !s.slam) { s.vg = -5.4; s.ground = false; }
+    if (!jump && !s.slam && s.vg < -1.4) s.vg = -1.4;
+    s.vg = Math.min(s.slam ? 18 : 8, s.vg + (s.slam ? 1.2 : s.vg < 0 ? 0.3 : 0.42));
+    s.x = clamp(s.x + gx * s.vg + (gx ? 0 : lat * UT_SP), lo.x, hi.x);
+    s.y = clamp(s.y + gy * s.vg + (gy ? 0 : lat * UT_SP), lo.y, hi.y);
+    const floor = gx > 0 ? s.x >= hi.x : gx < 0 ? s.x <= lo.x : gy > 0 ? s.y >= hi.y : s.y <= lo.y;
+    const ceil = gx > 0 ? s.x <= lo.x : gx < 0 ? s.x >= hi.x : gy > 0 ? s.y <= lo.y : s.y >= hi.y;
+    if (floor && s.vg >= 0) { s.landed = s.slam; s.ground = true; s.vg = 0; s.slam = false; } else s.ground = false;
+    if (ceil && s.vg < 0) s.vg = 0;
+  }
+  s.moved = s.x !== ox || s.y !== oy;
+}
+function utHurt(kr) {
+  const u = ut; if (u.hitCd > 0) return;
+  u.hitCd = 2; u.hp -= 1; u.kr = Math.min(40, u.kr + kr, Math.max(0, u.hp - 1));
+  sfx('utHurt', 0.07); u.shake = Math.max(u.shake, 2.5);
+  if (u.hp <= 0) {
+    if (u.noDie) { u.hp = 1; return; }
+    u.hp = 0; u.kr = 0; u.phase = 'broken'; u.bt = 0; u.objs = []; stopMusic();
+  }
+}
+
+// ---------- flujo de la pelea ----------
+function utStart(boss, turn = 0) {
+  stopMusic();
+  ut = { boss, phase: 'enc', t: 0, pt: 0, turn, hp: 92, maxHp: 92, kr: 0, krT: 0, hitCd: 0, items: UT_ITEMS.map(i => [...i]), btn: 0, sub: 0,
+    text: '', textN: 0, bub: null, box: { ...UT_MENU }, boxT: utBox(UT_ATTACKS[turn].w, UT_ATTACKS[turn].h), objs: [], atk: null, at: 0,
+    soul: { x: clamp(p.x, 20, W - 20), y: clamp(p.y - 12, 20, H - 20), mode: 'red', g: 0, vg: 0, ground: false, slam: false, moved: false },
+    enc: { x: clamp(p.x, 20, W - 20), y: clamp(p.y - 12, 20, H - 20) }, dodge: -999, miss: -999, hit: -999, slash: -999, hand: null,
+    shake: 0, sleep: false, sansHp: 1, shards: null, eye: 'normal', noDie: false, botIn: null };
+}
+const utPhase = (ph) => { ut.phase = ph; ut.pt = 0; };
+function utSay(text) { ut.text = text; ut.textN = 0; }
+function utTalk(lines, next, eyes = []) { utPhase('talk'); ut.bub = { lines, i: 0, n: 0, next, eyes }; }
+function utNextLine() {
+  const b = ut.bub; if (!b) return;
+  if (b.n < b.lines[b.i].length) { b.n = b.lines[b.i].length; return; }
+  if (++b.i >= b.lines.length) { ut.bub = null; b.next(); } else b.n = 0;
+}
+function utMenuStart() {
+  const u = ut; utPhase('menu'); u.boxT = { ...UT_MENU }; u.objs = []; uSoul('red');
+  utSay(u.sleep ? '* Sans se quedó dormido.' : UT_FLAVOR[clamp(u.turn - 1, 0, UT_FLAVOR.length - 1)]);
+}
+function utBeginTurn() { // Sans habla y luego ataca
+  const u = ut;
+  if (u.sleep) { utMenuStart(); return; }
+  const a = UT_ATTACKS[u.turn];
+  u.boxT = utBox(a.w, a.h); u.text = ''; [u.soul.x, u.soul.y] = utMid(u.boxT); uSoul('red');
+  const lines = UT_LINES[u.turn];
+  if (lines) utTalk(lines, () => utAttack(u.turn)); else utAttack(u.turn);
+}
+function utAttack(i) {
+  const u = ut, a = UT_ATTACKS[i];
+  u.atk = a; u.at = -14; u.boxT = utBox(a.w, a.h); utPhase('attack');
+  if (a.soul === 'blue') { uSoul('blue'); u.soul.vg = 2; }
+}
+function utEndAttack() {
+  const u = ut; u.objs = []; u.atk = null; u.turn++; uSoul('red');
+  if (u.turn >= UT_ATTACKS.length) utTalk(UT_TIRED, () => { u.sleep = true; utMenuStart(); }, [null, null, 'closed', 'closed', 'closed']);
+  else utMenuStart();
+}
+function utChoose() {
+  const u = ut; sfx('utOk');
+  if (u.btn === 0) { utPhase('aim'); u.aimX = UT_MENU.x0 + 8; u.text = ''; return; }
+  const list = u.btn === 1 ? ['* Revisar'] : u.btn === 2 ? u.items.map(i => '* ' + i[0]) : ['* Perdonar'];
+  if (!list.length) { sfx('bump'); return; }
+  u.list = list; u.sub = 0; utPhase('list'); u.text = '';
+}
+function utDoList() {
+  const u = ut; sfx('utOk');
+  if (u.btn === 1) utResult('* SANS  1 ATQ  1 DEF\n* El enemigo más fácil.\n* Sólo puede hacer 1 de daño.');
+  else if (u.btn === 2) {
+    const [name, heal] = u.items.splice(u.sub, 1)[0], before = u.hp;
+    u.hp = Math.min(u.maxHp, u.hp + heal); u.kr = Math.min(u.kr, u.hp - 1); sfx('utHeal');
+    utResult(`* Te comiste ${name === 'Héroe' ? 'el sándwich del Héroe' : name === 'Nieve' ? 'el trozo de muñeco de nieve' : 'el ' + name}.\n* ` +
+      (u.hp >= u.maxHp ? '¡Tus PV están al máximo!' : `Recuperaste ${u.hp - before} PV.`));
+  } else utResult('* Intentaste perdonar a Sans.\n* ...pero no parece que vaya a funcionar.');
+}
+function utResult(text) { utPhase('result'); utSay(text); }
+function utStrike() { // se detiene la barra de ataque
+  const u = ut; utPhase('slash'); u.slash = u.t; sfx('slash');
+  u.acc = 1 - Math.min(1, Math.abs(u.aimX - UT_SX) / (UT_MENU.x1 - UT_SX));
+}
+function utWin() { const b = ut.boss; ut = null; b.hp = 0; b.spawn = 0; p.x = CX - 170; p.y = CY + 70; p.vx = p.vy = 0; p.inv = 60; }
+function utDie() { // el alma se rompió: pasa a la muerte normal del juego (cinemática de Sans y HAS MUERTO)
+  const b = ut.boss, turn = ut.turn; ut = null;
+  p.inv = 0; p.shield = 0; p.star = 0; hurt(p.hp);
+  if (state === 'play') utStart(b, Math.min(turn, UT_ATTACKS.length - 1)); // Lázaro revive: la pelea sigue
+}
+function utKey(c) {
+  const u = ut;
+  if (c === 'KeyP') { paused = !paused; if (AC) { if (paused) AC.suspend(); else AC.resume(); } return; }
+  if (paused) return;
+  const ok = isConfirm(c) || c === 'KeyZ', back = ['KeyX', 'ShiftLeft', 'ShiftRight', 'Escape', 'Backspace'].includes(c);
+  const lf = c === 'ArrowLeft' || c === 'KeyA', rt = c === 'ArrowRight' || c === 'KeyD', up = c === 'ArrowUp' || c === 'KeyW', dn = c === 'ArrowDown' || c === 'KeyS';
+  if (u.phase === 'talk') { if (ok || back) utNextLine(); }
+  else if (u.phase === 'result') { if (ok || back) { if (u.textN < u.text.length) u.textN = u.text.length; else if (u.pt > 10) utBeginTurn(); } }
+  else if (u.phase === 'menu') {
+    if (lf || rt) { u.btn = (u.btn + (lf ? 3 : 1)) % 4; sfx('utMove'); }
+    else if (ok) utChoose();
+  } else if (u.phase === 'list') {
+    const n = u.list.length;
+    if (lf || rt) u.sub = clamp(u.sub + (lf ? -1 : 1), 0, n - 1); else if (up || dn) u.sub = clamp(u.sub + (up ? -2 : 2), 0, n - 1);
+    if (lf || rt || up || dn) sfx('utMove');
+    if (back) { utPhase('menu'); u.textN = u.text.length; utSay(u.sleep ? '* Sans se quedó dormido.' : UT_FLAVOR[clamp(u.turn - 1, 0, UT_FLAVOR.length - 1)]); u.textN = 999; }
+    else if (ok) utDoList();
+  } else if (u.phase === 'aim') { if (ok && u.pt > 6) utStrike(); else if (back) { utPhase('menu'); utSay(UT_FLAVOR[clamp(u.turn - 1, 0, UT_FLAVOR.length - 1)]); u.textN = 999; } }
+}
+
+function utUpdate() {
+  const u = ut; u.t++; u.pt++;
+  if (u.shake > 0.3) u.shake *= 0.85; else u.shake = 0;
+  if (window.__utBot) window.__utBot(u); // lo usa video/grabar_sans.js para jugar solo
+  if (!ut) return;
+  for (const k of ['x0', 'y0', 'x1', 'y1']) u.box[k] += clamp(u.boxT[k] - u.box[k], -14, 14);
+  if (u.kr > 0 && ++u.krT >= (u.kr > 30 ? 3 : u.kr > 20 ? 6 : u.kr > 10 ? 12 : 30)) { u.krT = 0; u.kr--; if (u.hp > 1) u.hp--; } // el karma va quitando vida
+  if (u.hitCd > 0) u.hitCd--;
+  if (u.textN < u.text.length) { const a = Math.floor(u.textN); u.textN = Math.min(u.text.length, u.textN + 0.55); if (Math.floor(u.textN) > a && /\S/.test(u.text[a])) sfx('utText', 0.05); }
+  const bub = u.bub;
+  if (bub && bub.n < bub.lines[bub.i].length) { const a = Math.floor(bub.n); bub.n = Math.min(bub.lines[bub.i].length, bub.n + 0.5); if (Math.floor(bub.n) > a && /\S/.test(bub.lines[bub.i][a])) sfx('utVoice', 0.06); }
+  const s = u.soul, inp = u.botIn || { l: keys.ArrowLeft || keys.KeyA || touchMove.x < -0.3, r: keys.ArrowRight || keys.KeyD || touchMove.x > 0.3,
+    u: keys.ArrowUp || keys.KeyW || touchMove.y < -0.3, d: keys.ArrowDown || keys.KeyS || touchMove.y > 0.3 };
+  const ph = u.phase;
+  if (ph === 'enc') { // la pantalla se pone negra, el alma parpadea y entra a la caja
+    if (u.t === 1 || u.t === 17 || u.t === 33) sfx('utEnc');
+    if (u.t > 48) { const k = easeOut((u.t - 48) / 30), [cx, cy] = utMid(u.boxT); s.x = lerp(u.enc.x, cx, k); s.y = lerp(u.enc.y, cy, k); }
+    if (u.t === 82) utTalk(u.turn ? ['je. ¿otra vez tú?'] : UT_INTRO, () => { playMusic('sans'); utAttack(u.turn); }, [null, null, null, 'none']);
+  } else if (ph === 'talk' || ph === 'attack') {
+    if (u.box.x0 === u.boxT.x0 && u.box.y0 === u.boxT.y0 && u.box.x1 === u.boxT.x1) utSoulStep(s, inp, u.box);
+    if (s.landed) { sfx('utSlam'); u.shake = 6; }
+  }
+  if (ph === 'attack') {
+    if (++u.at > 0) u.atk.run(u.at, u.boxT);
+    for (const o of u.objs) {
+      o.t++;
+      if (o.k === 'stab' && o.t === o.warn) sfx('utBone', 0.03);
+      if (o.k === 'gb' && o.t === o.A + o.C) { sfx('gbFire', 0.05); u.shake = Math.max(u.shake, 3); }
+      if (o.k === 'bone') { const x = o.x + o.vx * o.t, y = o.y + o.vy * o.t; if (x < u.box.x0 - 140 || x > u.box.x1 + 140 || y > u.box.y1 + 60) o.dead = true; }
+      if (o.t > o.life) o.dead = true;
+      if (!o.dead && utHit(o, s.x, s.y, o.t, s.moved)) utHurt(o.k === 'gb' ? 2 : 1);
+      if (!ut || ut.phase === 'broken') return;
+    }
+    u.objs = u.objs.filter(o => !o.dead);
+    if (u.at >= u.atk.dur) utEndAttack();
+  } else if (ph === 'aim') {
+    u.aimX += 9;
+    if (u.aimX > UT_MENU.x1 - 8) { u.acc = 0; utPhase('slash'); u.slash = -999; } // no le diste: falla solo
+  } else if (ph === 'slash') {
+    if (u.pt === 8) {
+      if (u.sleep) { u.hit = u.t; sfx('utHit'); stopMusic(); u.shake = 8; } // ¡por fin le pegas!
+      else { u.dodge = u.t; u.miss = u.t; sfx('swoosh'); }
+    }
+    if (u.sleep && u.pt > 8) u.sansHp = Math.max(0, 1 - (u.pt - 30) / 60);
+    if (u.pt === (u.sleep ? 130 : 70)) { if (u.sleep) utTalk(UT_DEATH, () => utPhase('out'), ['none', 'none', 'none', 'none']); else utBeginTurn(); }
+  } else if (ph === 'out') { if (u.pt >= 70) utWin(); }
+  else if (ph === 'broken') { // el corazón se rompe
+    u.bt++;
+    if (u.bt === 30) sfx('utCrack');
+    if (u.bt === 80) { sfx('utShatter'); u.shards = Array.from({ length: 6 }, () => ({ x: s.x, y: s.y, vx: rnd(-2.5, 2.5), vy: rnd(-4, -1), r: rnd(0, 6) })); }
+    if (u.shards) for (const q of u.shards) { q.x += q.vx; q.y += q.vy; q.vy += 0.12; q.r += 0.2; }
+    if (u.bt >= 190) utDie();
+  }
+}
+
+// ---------- dibujo ----------
+const UT_HEART = ['.11...11.', '1111.1111', '111111111', '111111111', '.1111111.', '..11111..', '...111...', '....1....'];
+function utHeart(x, y, col, part = 0) { // part: 0 entero, -1 mitad izquierda, 1 mitad derecha
+  ctx.fillStyle = col;
+  UT_HEART.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (row[i] === '1' && (!part || (part < 0 ? i < 4 + (j % 2) : i >= 4 + (j % 2)))) ctx.fillRect(Math.round(x - 9 + i * 2), Math.round(y - 8 + j * 2), 2, 2); });
+}
+function utBoneDraw(x, y, w, h, col) {
+  ctx.fillStyle = col;
+  if (h >= w) { ctx.fillRect(x + 2, y + 3, w - 4, h - 6); ctx.beginPath(); ctx.roundRect(x, y, w, 7, 3); ctx.roundRect(x, y + h - 7, w, 7, 3); ctx.fill(); }
+  else { ctx.fillRect(x + 3, y + 2, w - 6, h - 4); ctx.beginPath(); ctx.roundRect(x, y, 7, h, 3); ctx.roundRect(x + w - 7, y, 7, h, 3); ctx.fill(); }
+}
+function utStabDraw(o) {
+  const b = o.b, d = utStabDepth(o, o.t);
+  if (o.t < o.warn) { // aviso: el borde parpadea antes de que salgan los huesos
+    const r = utRects({ ...o, warn: 0, hold: 99 }, 6)[0];
+    if (Math.floor(o.t / 3) % 2) { ctx.strokeStyle = '#ff3030'; ctx.lineWidth = 2; ctx.strokeRect(r[0] + 1, r[1] + 1, r[2] - 2, r[3] - 2); }
+    return;
+  }
+  if (d <= 0) return;
+  if (o.side < 2) for (let x = b.x0 + 2; x < b.x1; x += 13) utBoneDraw(x, o.side === 0 ? b.y1 - d : b.y0 - 6, 10, d + 6, '#fff');
+  else for (let y = b.y0 + 2; y < b.y1; y += 13) utBoneDraw(o.side === 2 ? b.x0 - 6 : b.x1 - d, y, d + 6, 10, '#fff');
+}
+function utGbDraw(o) {
+  const g = utGbPos(o, o.t), f0 = o.A + o.C, k = clamp((o.t - o.A) / o.C, 0, 1), bw = utGbBeam(o, o.t), sc = 1.7 * o.s;
+  if (bw > 0) {
+    const c = Math.cos(o.ang), s = Math.sin(o.ang), x0 = g.x + c * 14 * sc, y0 = g.y + s * 14 * sc, w = bw * (1 + Math.sin(frame * 1.3) * 0.06);
+    ctx.save(); ctx.lineCap = 'butt';
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = w * 1.25; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + c * 1500, y0 + s * 1500); ctx.stroke();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = w * 0.85; ctx.stroke();
+    ctx.restore();
+  }
+  blasterSkull(g.x, g.y, g.a, o.t > f0 ? 10 : 3 + k * 4, sc, o.t > f0 - 8);
+}
+function utBubble(x, y, text, n) {
+  ctx.font = UT_SANS_FONT;
+  const words = text.slice(0, Math.floor(n)).split(' '), lines = [''];
+  for (const w of words) { const t = lines[lines.length - 1] ? lines[lines.length - 1] + ' ' + w : w; if (ctx.measureText(t).width > 196 && lines[lines.length - 1]) lines.push(w); else lines[lines.length - 1] = t; }
+  const full = []; { const ws = text.split(' '); let l = ''; for (const w of ws) { const t = l ? l + ' ' + w : w; if (ctx.measureText(t).width > 196 && l) { full.push(l); l = w; } else l = t; } full.push(l); }
+  const h = Math.max(70, full.length * 24 + 22);
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(x, y, 226, h, 10); ctx.fill();
+  poly([[x + 2, y + 26], [x - 18, y + 36], [x + 2, y + 44]]); ctx.fill();
+  ctx.fillStyle = '#000'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  lines.forEach((l, i) => ctx.fillText(l, x + 14, y + 12 + i * 24));
+}
+const utSansCv = mkCanvas(120, 110), utSansX = utSansCv.getContext('2d');
+function utDrawSans(x, feet) { // Sans en blanco y negro, dibujado a media resolución para que se vea pixelado
+  const u = ut, prev = ctx; ctx = utSansX;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, 120, 110); ctx.translate(60, 104);
+  const sleeping = u.sleep && !(u.hit > 0), tired = u.turn >= UT_ATTACKS.length;
+  const bob = sleeping ? Math.sin(frame * 0.04) * 1.2 : Math.round(Math.sin(frame * 0.09) * 1), hb = sleeping ? bob : Math.round(Math.sin(frame * 0.09 + 0.6) * 1);
+  const hand = u.hand && u.t - u.hand.t < 18 ? u.hand.g : -1;
+  ctx.lineWidth = 1.2; ctx.strokeStyle = '#000';
+  const W_ = '#fff';
+  // pantuflas y piernas
+  ctx.fillStyle = W_; ell(-9, -3, 7, 3); ctx.fill(); ctx.stroke(); ell(9, -3, 7, 3); ctx.fill(); ctx.stroke();
+  ctx.fillRect(-7, -15, 4, 11); ctx.fillRect(3, -15, 4, 11);
+  // short
+  ctx.fillStyle = '#000'; ctx.fillRect(-15, -29 + bob, 30, 15); ctx.strokeStyle = W_; ctx.strokeRect(-15, -29 + bob, 30, 15);
+  ctx.fillStyle = W_; ctx.fillRect(-13, -28 + bob, 2, 13); ctx.fillRect(11, -28 + bob, 2, 13);
+  ctx.strokeStyle = '#000';
+  // mangas (una se levanta cuando te avienta)
+  ctx.fillStyle = W_;
+  ctx.beginPath(); ctx.roundRect(-29, -55 + bob, 10, 25, 4); ctx.fill(); ctx.stroke();
+  if (hand < 0) { ctx.beginPath(); ctx.roundRect(19, -55 + bob, 10, 25, 4); ctx.fill(); ctx.stroke(); }
+  else {
+    const [gx, gy] = UT_G[hand], a = Math.atan2(gy, gx);
+    ctx.save(); ctx.translate(23, -50 + bob); ctx.rotate(a - Math.PI / 2); ctx.beginPath(); ctx.roundRect(-5, 0, 10, 24, 4); ctx.fill(); ctx.stroke();
+    ell(0, 26, 4, 4); ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+  // chamarra
+  ctx.beginPath(); ctx.roundRect(-22, -57 + bob, 44, 31, 5); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#000'; ctx.fillRect(-8, -54 + bob, 16, 27);
+  ctx.fillStyle = W_; ctx.fillRect(-6, -52 + bob, 12, 24);
+  ctx.beginPath(); ctx.moveTo(-8, -54 + bob); ctx.lineTo(-8, -27 + bob); ctx.moveTo(8, -54 + bob); ctx.lineTo(8, -27 + bob);
+  ctx.moveTo(-19, -36 + bob); ctx.lineTo(-11, -36 + bob); ctx.moveTo(11, -36 + bob); ctx.lineTo(19, -36 + bob); ctx.stroke();
+  ctx.fillStyle = '#000'; ctx.fillRect(-11, -50 + bob, 1, 10); ctx.fillRect(10, -50 + bob, 1, 10); // cordones
+  // capucha de peluche
+  ctx.fillStyle = W_; ell(0, -57 + bob, 23, 5.5); ctx.fill(); ctx.stroke();
+  // cabeza
+  const hy = -73 + bob + hb;
+  ctx.lineWidth = 1.5; ell(0, hy, 17.5, 15.5); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#000';
+  if (sleeping || (u.bub && u.bub.eyes[u.bub.i] === 'closed')) { ctx.fillRect(-10, hy - 2, 7, 1.6); ctx.fillRect(3, hy - 2, 7, 1.6); }
+  else {
+    ell(-6.5, hy - 2.5, 4.4, 4.4); ctx.fill(); ell(6.5, hy - 2.5, 4.4, 4.4); ctx.fill();
+    const none = (u.bub && u.bub.eyes[u.bub.i] === 'none') || u.hit > 0;
+    if (!none) {
+      const glow = u.phase === 'attack' && !tired;
+      ctx.fillStyle = glow ? (Math.floor(frame / 4) % 2 ? '#30c8ff' : '#ffe830') : W_;
+      ell(-6.5, hy - 2.5, glow ? 2 : 1.5, glow ? 2 : 1.5); ctx.fill();
+      if (!glow) { ctx.fillStyle = W_; ell(6.5, hy - 2.5, 1.5, 1.5); ctx.fill(); }
+    }
+  }
+  ctx.fillStyle = '#000'; poly([[-1.6, hy + 3.5], [0, hy + 0.8], [1.6, hy + 3.5]]); ctx.fill();
+  ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-12, hy + 6); ctx.quadraticCurveTo(0, hy + 12, 12, hy + 6); ctx.stroke();
+  ctx.beginPath(); for (let i = -8; i <= 8; i += 4) { ctx.moveTo(i, hy + 7.5 + (8 - Math.abs(i)) * 0.25); ctx.lineTo(i, hy + 10.5); } ctx.stroke();
+  if (tired && !sleeping && !(u.hit > 0)) { ctx.fillStyle = '#7ad0ff'; teardrop(14, hy - 9, 3); ctx.fill(); }
+  ctx = prev;
+  ctx.save(); ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(utSansCv, Math.round(x - 120), Math.round(feet - 208), 240, 220);
+  ctx.restore();
+  if (u.phase === 'attack' && !tired) { // brillo del ojo
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(x - 13, feet - 151 + (bob + hb) * 2, 0, x - 13, feet - 151, 22);
+    g.addColorStop(0, Math.floor(frame / 4) % 2 ? 'rgba(60,200,255,.7)' : 'rgba(255,230,60,.6)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(x - 40, feet - 180, 54, 54); ctx.restore();
+  }
+  if (sleeping) { ctx.fillStyle = '#fff'; ctx.font = UT_SANS_FONT; ctx.textAlign = 'left'; for (let i = 0; i < 3; i++) { const k = (frame * 0.01 + i / 3) % 1; ctx.globalAlpha = Math.sin(k * Math.PI); ctx.fillText('Z', x + 30 + k * 30, feet - 170 - k * 50); } ctx.globalAlpha = 1; }
+}
+function utDrawButtons() {
+  const u = ut;
+  UT_BTNS.forEach((name, i) => {
+    const x = [134, 318, 510, 694][i], y = 516, sel = (u.phase === 'menu' || u.phase === 'list' || u.phase === 'aim') && u.btn === i;
+    const col = sel ? '#ffff00' : '#ff8c1a';
+    ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.strokeRect(x + 1.5, y + 1.5, 129, 47);
+    ctx.fillStyle = col; ctx.font = 'bold 21px "Courier New", monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(name, x + 38, y + 26);
+    if (sel && u.phase === 'menu') utHeart(x + 20, y + 25, '#ff0000');
+    else { // iconitos
+      ctx.save(); ctx.translate(x + 20, y + 25);
+      if (i === 0) { ctx.fillRect(-1.5, -10, 3, 14); ctx.fillRect(-6, 3, 12, 3); ctx.fillRect(-1.5, 6, 3, 5); }
+      else if (i === 1) { ctx.beginPath(); ctx.roundRect(-9, -8, 18, 12, 3); ctx.fill(); poly([[-4, 4], [-7, 10], [1, 4]]); ctx.fill(); }
+      else if (i === 2) { ctx.fillRect(-8, -4, 16, 13); ctx.fillRect(-4, -9, 8, 3); }
+      else { ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(-7, -7); ctx.lineTo(7, 7); ctx.moveTo(7, -7); ctx.lineTo(-7, 7); ctx.stroke(); }
+      ctx.restore();
+    }
+  });
+}
+function utDrawStats() {
+  const u = ut, y = 492;
+  ctx.font = 'bold 20px "Courier New", monospace'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = '#fff';
+  ctx.fillText(p.char.name.split(' ')[0].toUpperCase().slice(0, 8) + '   LV 19', 134, y);
+  ctx.font = 'bold 13px "Courier New", monospace'; ctx.fillText('HP', 398, y);
+  const bx = 426, bw = 110, bh = 24;
+  ctx.fillStyle = '#c00000'; ctx.fillRect(bx, y - bh / 2, bw, bh);
+  ctx.fillStyle = '#ff00ff'; ctx.fillRect(bx, y - bh / 2, bw * u.hp / u.maxHp, bh);
+  ctx.fillStyle = '#ffff00'; ctx.fillRect(bx, y - bh / 2, bw * Math.max(0, u.hp - u.kr) / u.maxHp, bh);
+  ctx.fillStyle = '#fff'; ctx.fillText('KR', bx + bw + 12, y);
+  ctx.font = 'bold 20px "Courier New", monospace'; ctx.fillStyle = u.kr > 0 ? '#ff00ff' : '#fff';
+  ctx.fillText(`${String(Math.max(0, u.hp)).padStart(2, '0')} / ${u.maxHp}`, bx + bw + 44, y);
+}
+function utDraw() {
+  const u = ut;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  if (u.shake) ctx.translate(Math.round(rnd(-u.shake, u.shake)), Math.round(rnd(-u.shake, u.shake)));
+  const s = u.soul, enc = u.phase === 'enc', ui = enc ? clamp((u.t - 48) / 30, 0, 1) : 1;
+  if (enc && u.t <= 48) { if (Math.floor((u.t - 1) / 8) % 2 === 0) utHeart(s.x, s.y, '#ff0000'); ctx.restore(); return; }
+  if (u.phase === 'broken') { // sólo queda el corazón
+    if (!u.shards) { const sp = u.bt >= 30 ? 3 : 0; utHeart(s.x - sp, s.y, '#ff0000', sp ? -1 : 0); if (sp) utHeart(s.x + sp, s.y, '#ff0000', 1); }
+    else for (const q of u.shards) { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.r); ctx.fillStyle = '#ff0000'; ctx.fillRect(-3, -3, 6, 6); ctx.fillRect(-1, 3, 3, 2); ctx.restore(); }
+    ctx.restore(); return;
+  }
+  ctx.globalAlpha = ui;
+  // Sans (se hace a un lado cuando esquiva)
+  const dk = (u.t - u.dodge) / 45, dodgeX = dk >= 0 && dk < 1 ? -78 * (dk < 0.25 ? easeOut(dk / 0.25) : 1 - smooth((dk - 0.25) / 0.75)) : 0;
+  const hitX = u.hit > 0 && u.t - u.hit < 40 ? Math.sin((u.t - u.hit) * 1.6) * 6 * (1 - (u.t - u.hit) / 40) : 0;
+  utDrawSans(UT_SX + dodgeX + hitX, UT_FEET);
+  if (u.slash > 0 && u.t - u.slash < 26) { // tajo rojo
+    const k = (u.t - u.slash) / 14;
+    ctx.strokeStyle = '#ff2020'; ctx.lineWidth = 7; ctx.lineCap = 'butt'; ctx.globalAlpha = ui * clamp(2 - k, 0, 1);
+    ctx.beginPath(); ctx.moveTo(UT_SX + 50, UT_FEET - 170); ctx.lineTo(lerp(UT_SX + 50, UT_SX - 50, Math.min(1, k)), lerp(UT_FEET - 170, UT_FEET - 50, Math.min(1, k))); ctx.stroke();
+    ctx.globalAlpha = ui;
+  }
+  if (u.miss > 0 && u.t - u.miss < 60) { ctx.font = 'bold 30px "Courier New", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#c0c0c0'; ctx.fillText('FALLO', UT_SX + 20, UT_FEET - 196 - Math.min(10, (u.t - u.miss) * 0.8)); }
+  if (u.hit > 0) { // daño enorme y barra de vida de Sans
+    const k = u.t - u.hit;
+    ctx.fillStyle = '#404040'; ctx.fillRect(UT_SX - 100, UT_FEET - 230, 200, 16); ctx.fillStyle = '#00ff00'; ctx.fillRect(UT_SX - 100, UT_FEET - 230, 200 * u.sansHp, 16);
+    if (k < 120) { ctx.font = 'bold 34px "Courier New", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#ff2020'; ctx.fillText('9999999', UT_SX, UT_FEET - 250 - Math.max(0, 14 - k) * Math.abs(Math.sin(k * 0.3)) * 2); }
+  }
+  // caja
+  const b = u.box;
+  ctx.fillStyle = '#000'; ctx.fillRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 5; ctx.strokeRect(b.x0 + 2.5, b.y0 + 2.5, b.x1 - b.x0 - 5, b.y1 - b.y0 - 5);
+  ctx.save(); ctx.beginPath(); ctx.rect(b.x0 + 5, b.y0 + 5, b.x1 - b.x0 - 10, b.y1 - b.y0 - 10); ctx.clip();
+  for (const o of u.objs) {
+    if (o.k === 'bone') utBoneDraw(o.x + o.vx * o.t, o.y + o.vy * o.t, o.w, o.h, o.blue ? '#14a9ff' : '#fff');
+    else if (o.k === 'stab') utStabDraw(o);
+  }
+  // textos dentro de la caja
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.font = UT_FONT; ctx.fillStyle = '#fff';
+  if (u.text && (u.phase === 'menu' || u.phase === 'result')) u.text.slice(0, Math.floor(u.textN)).split('\n').forEach((l, i) => ctx.fillText(l, b.x0 + 26, b.y0 + 22 + i * 36));
+  if (u.phase === 'list') u.list.forEach((l, i) => {
+    const x = b.x0 + 70 + (i % 2) * 300, y = b.y0 + 22 + (i >> 1) * 34; ctx.fillText(l, x, y);
+    if (i === u.sub) utHeart(x - 26, y + 11, '#ff0000');
+  });
+  if (u.phase === 'aim' || (u.phase === 'slash' && u.pt < 50)) { // la diana del ataque
+    const [cx, cy] = utMid(UT_MENU);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+    ell(cx, cy, 330, 70); ctx.stroke(); ell(cx, cy, 220, 56); ctx.stroke(); ell(cx, cy, 110, 40); ctx.stroke();
+    ctx.fillStyle = '#2a8a2a'; ell(cx, cy, 36, 28); ctx.fill();
+    for (let i = -6; i <= 6; i++) { ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx + i * 50, cy - 6); ctx.lineTo(cx + i * 50, cy + 6); ctx.stroke(); }
+    const flash = u.phase === 'slash' && Math.floor(u.pt / 3) % 2;
+    ctx.fillStyle = flash ? '#000' : '#fff'; ctx.fillRect(u.aimX - 7, b.y0 + 8, 14, b.y1 - b.y0 - 16);
+    ctx.fillStyle = flash ? '#fff' : '#000'; ctx.fillRect(u.aimX - 3, b.y0 + 14, 6, b.y1 - b.y0 - 28);
+  }
+  ctx.restore();
+  for (const o of u.objs) if (o.k === 'gb') utGbDraw(o);
+  // el alma
+  if (u.phase === 'enc' || u.phase === 'talk' || u.phase === 'attack') utHeart(s.x, s.y, s.mode === 'blue' ? '#0060ff' : '#ff0000');
+  if (u.bub) utBubble(UT_SX + 92, 92, u.bub.lines[u.bub.i], u.bub.n);
+  utDrawStats();
+  utDrawButtons();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  if (u.phase === 'out') { ctx.fillStyle = `rgba(0,0,0,${clamp(u.pt / 60, 0, 1)})`; ctx.fillRect(0, 0, W, H); }
+  if (paused) {
+    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 40px "Courier New", monospace'; ctx.fillText('PAUSA', CX, CY);
   }
 }
 
