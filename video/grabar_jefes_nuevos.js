@@ -1,13 +1,13 @@
-// Graba las peleas contra Baldi y Dr. Fetus jugadas por un bot: video/pelea_baldi.mp4 y video/pelea_dr_fetus.mp4
+// Graba las peleas contra Baldi, Dr. Fetus y el Diablo jugadas por un bot: video/pelea_baldi.mp4, video/pelea_dr_fetus.mp4 y video/pelea_diablo.mp4
 // Abre el juego en Chrome/Edge sin ventana, entra al cuarto del jefe y un bot juega la pelea completa.
-// Uso:  node video/grabar_jefes_nuevos.js [baldi|fetus]        (sin nada graba los dos)
+// Uso:  node video/grabar_jefes_nuevos.js [baldi|fetus|devil]  (sin nada graba Baldi y Dr. Fetus)
 //       node video/grabar_jefes_nuevos.js fetus --probar       (sin video: juega a toda velocidad y dice cómo le fue al bot)
 // Necesita Google Chrome o Microsoft Edge, y ffmpeg (en el PATH o con: pip install imageio-ffmpeg)
 const { spawn, execFileSync } = require('child_process');
 const fs = require('fs'), path = require('path'), os = require('os');
 
 const DIR = __dirname, GAME = path.join(DIR, '..', 'isaac_verde.html');
-const OUT = { baldi: 'pelea_baldi.mp4', fetus: 'pelea_dr_fetus.mp4' };
+const OUT = { baldi: 'pelea_baldi.mp4', fetus: 'pelea_dr_fetus.mp4', devil: 'pelea_diablo.mp4' };
 const PORT = 9335;
 
 function findBrowser() {
@@ -113,6 +113,39 @@ const BOTS = `(() => {
     }
     f.botIn = best;
   };
+  // ---------- Cuphead contra el Diablo ----------
+  const COPTS = [{ x: -1 }, { x: 0 }, { x: 1 }, { x: -1, j: 1 }, { x: 0, j: 1 }, { x: 1, j: 1 }, { x: 0, down: 1 }, { x: -1, dash: 1 }, { x: 1, dash: 1 }]
+    .map(o => ({ x: o.x, j: !!o.j, down: !!o.down, dash: !!o.dash, up: false, shoot: false, ex: false }));
+  window.__dvlBot = d => {
+    d.noDie = true; // en el video los golpes se ven pero no quitan corazones
+    if (d.phase === 'card') { d.botIn = null; if (d.pt > 60) dvlKey('Enter'); return; }
+    const c = d.c, hb = dvlBossHb(d);
+    const aim = Math.round(Math.atan2(hb.y - (c.y - 30), hb.x - c.x) / (Math.PI / 4)) * (Math.PI / 4); // 8 direcciones, como en Cuphead
+    const fire = { shoot: d.phase === 'fight', ex: d.cards >= 1 && d.t % 90 === 0, aim };
+    if (!['ready', 'fight', 'ko'].includes(d.phase)) { d.botIn = { ...DV_NOINP }; return; }
+    // parry: si hay algo rosa muy cerca y está en el aire, vuelve a saltar
+    const b = dvlBox(c), pinkNear = !c.ground && c.parryOk && d.haz.some(h => h.pink && dvlCircs(h, d, 0).some(([x, y, r]) => dvlBoxHit(b, x, y, r + 10)));
+    if (d.botPlan && d.t % 3) { d.botIn = { ...d.botPlan, ...fire, j: pinkNear ? !c.jh : d.botPlan.j }; return; }
+    const plats = d.floor ? null : d.plats.filter(q => q.st === 0);
+    let pref = d.floor ? 480 + Math.sign(c.x - 480 || 1) * 170 : plats.length ? plats.reduce((a, q) => Math.abs(q.x - hb.x * 0.3 - c.x * 0.7) < Math.abs(a.x - hb.x * 0.3 - c.x * 0.7) ? q : a).x : 480;
+    let best = null, bs = 1e12;
+    for (const a of COPTS) for (const b2 of COPTS) {
+      if (b2.dash && a.dash) continue;
+      const s = { ...c }; let sc = 0, hit = false;
+      for (let k = 0; k < 26; k++) {
+        dvlStep(s, k < 10 ? a : b2, d, k + 1);
+        if (dvlDanger(d, s, k + 1)) { sc = 1e7 - k * 2e5; hit = true; break; }
+      }
+      if (!hit) {
+        sc = Math.abs(s.x - pref) * 0.6 + (a.j ? 6 : 0) + (a.dash ? 10 : 0) + (a.down ? 4 : 0);
+        if (!d.floor && !s.ground && s.y > 470) sc += 3e5; // no caerse al abismo
+      }
+      if (d.botPlan && a.x === d.botPlan.x && a.j === d.botPlan.j && a.down === d.botPlan.down) sc -= 3;
+      if (sc < bs) { bs = sc; best = a; }
+    }
+    d.botPlan = best;
+    d.botIn = { ...best, ...fire, j: pinkNear ? !c.jh : best.j };
+  };
   return true;
 })()`;
 
@@ -137,7 +170,7 @@ async function openGame(port) {
   const close = async () => { cdp.close(); browser.kill(); await sleep(500); try { fs.rmSync(profile, { recursive: true, force: true }); } catch {} };
   return { cdp, close, profile };
 }
-const STATUS = `bal ? 'baldi ' + bal.phase + (bal.z ? ' ' + bal.z.got + '/7' : '') : fet ? 'fetus ' + fet.phase + ' wp' + fet.botWp + ' muertes ' + fet.deaths + ' y' + Math.round(fet.m.y) : bossIntro ? 'intro' : 'fin'`;
+const STATUS = `dvl ? 'diablo ' + dvl.phase + ' fase' + dvl.stage + ' vida ' + Math.round(dvl.hp) + ' golpes ' + dvl.hits + ' parries ' + dvl.parries : bal ? 'baldi ' + bal.phase + (bal.z ? ' ' + bal.z.got + '/7' : '') : fet ? 'fetus ' + fet.phase + ' wp' + fet.botWp + ' muertes ' + fet.deaths + ' y' + Math.round(fet.m.y) : bossIntro ? 'intro' : 'fin'`;
 
 async function grabar(type, probar) {
   const { cdp, close, profile } = await openGame(PORT);
