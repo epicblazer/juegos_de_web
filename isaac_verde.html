@@ -8629,7 +8629,7 @@ KO_FIN.devil = {
 // =====================================================================
 let dvl = null;
 const DV_FLOOR = 500;
-const DV_HP = 650, DV_P2 = 350, DV_P3 = 150; // vida total (en balazos) y cuándo empieza cada fase
+const DV_HP = 1100, DV_P2 = 640, DV_P3 = 280; // vida total (en balazos) y cuándo empieza cada fase
 const DV_PLAT = [110, 295, 480, 665, 850]; // centros de las plataformas del abismo
 const DV_PINK = '#ff5fae';
 const DV_NOINP = { x: 0, up: false, down: false, j: false, shoot: false, dash: false, ex: false };
@@ -8692,7 +8692,7 @@ function dvlBossHb(d) {
 function dvlStart(boss) {
   dvl = { boss, t: 0, pt: 0, phase: 'card', stage: 1, hp: DV_HP, head: 'normal', mood: 'grin', hx: 480, floor: true, plats: [], c: dvlCup(),
     haz: [], shots: [], parts: [], atk: null, next: 60, last: '', cards: 0, hits: 0, parries: 0, shake: 0, hitF: 0, freeze: 0, msg: '', msgT: 0,
-    noDie: false, botIn: null, tri: 0, dropT: 260, cryT: 0 };
+    noDie: false, botIn: null, tri: 0, dropT: 160, cryT: 0, extra: [], lastX: '' };
   playMusic('devil', 0.3); sfx('dvlLaugh');
 }
 function dvlWin() { const b = dvl.boss; dvl = null; b.hp = 0; b.spawn = 0; p.x = CX - 170; p.y = CY + 70; p.vx = p.vy = 0; p.inv = 60; }
@@ -8784,16 +8784,16 @@ function dvlCupUpdate() {
 function dvlHurt(pit) {
   const d = dvl, c = d.c;
   if (c.inv > 0 && !pit) return;
-  if (c.inv <= 0) { d.hits++; if (!d.noDie) { p.inv = 0; hurt(1); } }
-  c.inv = 100; c.hitT = 22; d.shake = 9; sfx('cupHit');
+  if (c.inv <= 0) { d.hits++; if (!d.noDie) { p.inv = 0; hurt(2); } } // cada golpe quita un corazón entero
+  c.inv = 75; c.hitT = 22; d.shake = 9; sfx('cupHit');
   dvlBurst(c.x, c.y - 30, 14, pit ? ['#ff8020', '#ffd040', '#c02010'] : ['#fff', '#ffe0a0', '#e04040'], 6, 0.15);
 }
 function dvlDamage(n) {
   const d = dvl; if (d.phase !== 'fight') return;
   d.hp = Math.max(0, d.hp - n); d.hitF = 3; d.cards = Math.min(5, d.cards + n / 70);
-  if (d.stage === 1 && d.hp <= DV_P2) { d.phase = 'fall'; d.pt = 0; d.atk = null; d.haz = []; d.head = 'normal'; d.mood = 'angry'; sfx('dvlRoar'); d.shake = 14; }
+  if (d.stage === 1 && d.hp <= DV_P2) { d.phase = 'fall'; d.pt = 0; d.atk = null; d.extra = []; d.haz = []; d.head = 'normal'; d.mood = 'angry'; sfx('dvlRoar'); d.shake = 14; }
   else if (d.stage === 2 && d.hp <= DV_P3) { d.stage = 3; d.mood = 'cry'; d.msg = '¡EL DIABLO ESTÁ LLORANDO!'; d.msgT = 120; sfx('dvlCry'); d.next = 90; }
-  else if (d.hp <= 0) { d.phase = 'ko'; d.pt = 0; d.atk = null; d.mood = 'ko'; for (const h of d.haz) h.dead = true; d.freeze = 20; sfx('dvlKO'); d.shake = 20; stopMusic(); }
+  else if (d.hp <= 0) { d.phase = 'ko'; d.pt = 0; d.atk = null; d.extra = []; d.mood = 'ko'; for (const h of d.haz) h.dead = true; d.freeze = 20; sfx('dvlKO'); d.shake = 20; stopMusic(); }
 }
 function dvlShotsUpdate() {
   const d = dvl, hb = dvlBossHb(d);
@@ -8833,39 +8833,40 @@ const DV_ATK = {
   // FASE 1
   clap(d, fast) { // carnero: sus brazos salen de los lados y aplauden a media altura... ¡agáchate!
     d.head = 'ram'; sfx('dvlRam');
-    const t0 = d.t + 46, inn = fast ? 40 : 52, hold = 14, out = 60, y = 402;
+    const t0 = d.t + 32, inn = fast ? 26 : 34, hold = 8, out = 38, y = 402;
     const hx = t => { const k = t - t0; return k < 0 ? -140 : k < inn ? lerp(-140, 434, easeIn(k / inn)) : k < inn + hold ? 434 : lerp(434, -140, easeIn((k - inn - hold) / out)); };
     d.haz.push({ k: 'arms', y, from: t0, end: t0 + inn + hold + out, hx,
       circ(t) { const x = hx(t), r = []; r.push([x, y, 46], [W - x, y, 46]); for (let a = x - 50; a > -60; a -= 46) r.push([a, y - 4, 22], [W - a, y - 4, 22]); return r; } });
-    return { dur: 46 + inn + hold + out + 10, run(a) { if (a.t === 46 + inn) { sfx('dvlClap'); d.shake = 16; dvlBurst(480, y, 24, ['#fff', '#ffe8b0'], 7, 0); } } };
+    return { dur: 32 + inn + hold + out + 6, run(a) { if (a.t === 32 + inn) { sfx('dvlClap'); d.shake = 16; dvlBurst(480, y, 24, ['#fff', '#ffe8b0'], 7, 0); } } };
   },
   snake(d, fast) { // serpiente: se arrastra por el piso de un lado al otro... ¡sáltala!
     d.head = 'snake'; sfx('dvlHiss');
-    const dir = d.c.x > 480 ? 1 : -1, t0 = d.t + 40, sp = fast ? 9 : 7.6, n = 7, gapS = 24;
+    const dir = d.c.x > 480 ? 1 : -1, t0 = d.t + 28, sp = fast ? 11.5 : 9.5, n = 7, gapS = 24;
     const pos = (t, i) => { const k = t - t0 - i * gapS / sp; return [dir > 0 ? -90 + k * sp : W + 90 - k * sp, DV_FLOOR - 26 - (i ? 0 : 2) + Math.sin((t - i * 3) * 0.22) * 5]; };
     const len = (W + 180 + n * gapS) / sp;
     d.haz.push({ k: 'snake', dir, n, pos, from: t0, end: t0 + len,
       circ(t) { const r = []; for (let i = 0; i <= n; i++) { const [x, y] = pos(t, i); r.push([x, y, i ? 22 - i : 27]); } return r; } });
-    return { dur: 40 + len + 10, run() {} };
+    return { dur: 28 + len + 6, run() {} };
   },
   spider(d, fast) { // araña: su cabeza cae del techo encima de ti
     d.head = 'spider'; sfx('dvlHiss');
-    const drops = fast ? 4 : 3, per = fast ? 68 : 80;
+    const drops = fast ? 6 : 5, per = fast ? 50 : 58;
     const h = { k: 'spider', x: d.c.x, y: -120, vx: 0, vy: 0, r: 46, j: -1 };
     d.haz.push(h);
     return { dur: 30 + drops * per + 20, run(a) {
       const k = a.t - 30, j = Math.floor(k / per), q = k - j * per;
       if (k < 0 || j >= drops) { h.vy = 0; if (j >= drops) h.y = Math.max(-120, h.y - 8); return; }
-      if (q < 34) { h.x = lerp(h.x, d.c.x, 0.12); h.y = -120; h.vy = 0; h.warn = q; }
-      else if (q < 46) { h.vy = (DV_FLOOR - 46 + 120) / 12; h.y = -120 + h.vy * (q - 33); if (q === 45) { h.y = DV_FLOOR - 46; sfx('stomp'); d.shake = 12; dvlBurst(h.x, DV_FLOOR, 16, ['#8a7060', '#c8b090'], 5); } }
-      else if (q < per - 26) { h.vy = 0; h.y = DV_FLOOR - 46; }
-      else { h.vy = -12; h.y = Math.max(-120, h.y - 12); }
+      const tr = Math.round(per * 0.42), fe = tr + 10, st = fe + 10;
+      if (q < tr) { h.x = lerp(h.x, d.c.x, 0.2); h.y = -120; h.vy = 0; h.warn = q * 34 / tr; }
+      else if (q < fe) { h.vy = (DV_FLOOR - 46 + 120) / 10; h.y = -120 + h.vy * (q - tr + 1); if (q === fe - 1) { h.y = DV_FLOOR - 46; sfx('stomp'); d.shake = 12; dvlBurst(h.x, DV_FLOOR, 16, ['#8a7060', '#c8b090'], 5); } }
+      else if (q < st) { h.vy = 0; h.y = DV_FLOOR - 46; }
+      else { h.vy = -18; h.y = Math.max(-120, h.y - 18); }
       if (a.t === a.dur - 1) h.dead = true;
     } };
   },
   ring(d, fast) { // tridente: un anillo de fuego te rodea, gira y luego te dispara bola por bola
     d.tri = 1; sfx('dvlFire');
-    const cx = clamp(d.c.x, 200, 760), cy = 340, n = 8, pinkI = ri(0, n - 1), balls = [];
+    const cx = clamp(d.c.x, 200, 760), cy = 340, n = fast ? 12 : 10, pinkI = ri(0, n - 1), balls = [];
     for (let i = 0; i < n; i++) {
       const b = { k: 'fire', x: cx, y: cy, vx: 0, vy: 0, r: 15, pink: i === pinkI, i, go: false,
         upd(h, d) {
@@ -8874,11 +8875,11 @@ const DV_ATK = {
         } };
       b.t0 = d.t; balls.push(b); d.haz.push(b);
     }
-    const wait = fast ? 70 : 90, step = fast ? 9 : 12;
+    const wait = fast ? 45 : 60, step = fast ? 5 : 7;
     return { dur: wait + n * step + 50, run(a) {
       const k = a.t - wait;
       if (k >= 0 && k % step === 0 && k / step < n) {
-        const b = balls[k / step], ang = Math.atan2(d.c.y - 26 - b.y, d.c.x - b.x), sp = fast ? 7.5 : 6.5;
+        const b = balls[k / step], ang = Math.atan2(d.c.y - 26 - b.y, d.c.x - b.x), sp = fast ? 9.5 : 8.5;
         b.go = true; b.vx = Math.cos(ang) * sp; b.vy = Math.sin(ang) * sp; sfx('dvlFireShot', 0.05);
       }
       if (a.t > wait + 20) d.tri = 0;
@@ -8886,10 +8887,10 @@ const DV_ATK = {
   },
   balls(d, fast) { // tridente: bolas que rebotan por todo el cuarto (una es rosa)
     d.tri = 1; sfx('dvlFire');
-    const n = fast ? 4 : 3, pinkI = ri(0, n - 1);
+    const n = fast ? 6 : 4, pinkI = ri(0, n - 1);
     for (let i = 0; i < n; i++) {
-      const an = [0.6, 2.3, 1.1, 2.0][i], sp = fast ? 5.4 : 4.6;
-      d.haz.push({ k: 'orb', x: 480 + (i - (n - 1) / 2) * 70, y: 120, vx: Math.cos(an) * sp * (i % 2 ? -1 : 1), vy: Math.sin(an) * sp, r: 27, pink: i === pinkI, end: d.t + (fast ? 400 : 340), from: d.t + 30,
+      const an = [0.6, 2.3, 1.1, 2.0, 0.85, 1.7][i], sp = fast ? 6.8 : 5.8;
+      d.haz.push({ k: 'orb', x: 480 + (i - (n - 1) / 2) * 70, y: 120, vx: Math.cos(an) * sp * (i % 2 ? -1 : 1), vy: Math.sin(an) * sp, r: 27, pink: i === pinkI, end: d.t + (fast ? 460 : 400), from: d.t + 30,
         upd(h) {
           if (d.t < h.from) return;
           h.x += h.vx; h.y += h.vy;
@@ -8901,7 +8902,7 @@ const DV_ATK = {
   },
   // FASE 2 y 3
   heads(d, fast) { // escupe cabezas que rebotan sobre las plataformas
-    d.mood = 'spit'; const n = fast ? 4 : 3, pinkI = ri(0, n - 1), every = fast ? 36 : 46;
+    d.mood = 'spit'; const n = fast ? 7 : 5, pinkI = ri(0, n - 1), every = fast ? 22 : 30;
     return { dur: n * every + 30, run(a) {
       if (a.t % every !== 5 || a.t / every >= n) return;
       const i = Math.floor(a.t / every), dir = d.c.x > d.hx ? 1 : -1;
@@ -8915,21 +8916,21 @@ const DV_ATK = {
     } };
   },
   imps(d, fast) { // diablillos: se asoman arriba y se lanzan en picada contra ti
-    const n = fast ? 4 : 3, pinkI = ri(0, n - 1);
+    const n = fast ? 7 : 5, pinkI = ri(0, n - 1);
     for (let i = 0; i < n; i++) {
       const side = i % 2 ? 1 : -1, x0 = side > 0 ? W + 40 : -40, hx = 140 + (i * 223 + ri(0, 80)) % 680;
-      d.haz.push({ k: 'imp', x: x0, y: 90 + (i % 2) * 40, vx: 0, vy: 0, r: 20, hp: 3, pink: i === pinkI, t0: d.t + i * 26, st: 0,
+      d.haz.push({ k: 'imp', x: x0, y: 90 + (i % 2) * 40, vx: 0, vy: 0, r: 20, hp: 3, pink: i === pinkI, t0: d.t + i * 16, st: 0,
         upd(h) {
           const k = d.t - h.t0; if (k < 0) return;
-          if (h.st === 0) { h.x = lerp(h.x, hx, 0.08); h.y = 90 + (i % 2) * 40 + Math.sin(k * 0.2) * 6; h.vx = h.vy = 0; if (k > 60) { h.st = 1; const an = Math.atan2(d.c.y - 26 - h.y, d.c.x - h.x), sp = fast ? 8.5 : 7.5; h.vx = Math.cos(an) * sp; h.vy = Math.sin(an) * sp; sfx('screech', 0.2); } }
+          if (h.st === 0) { h.x = lerp(h.x, hx, 0.08); h.y = 90 + (i % 2) * 40 + Math.sin(k * 0.2) * 6; h.vx = h.vy = 0; if (k > 40) { h.st = 1; const an = Math.atan2(d.c.y - 26 - h.y, d.c.x - h.x), sp = fast ? 10.5 : 9; h.vx = Math.cos(an) * sp; h.vy = Math.sin(an) * sp; sfx('screech', 0.2); } }
           else { h.x += h.vx; h.y += h.vy; }
         } });
     }
-    return { dur: n * 26 + 120, run() {} };
+    return { dur: n * 16 + 90, run() {} };
   },
   demon(d, fast) { // demonio gordo: llega volando por un lado y dispara calaveras
-    const side = d.c.x > 480 ? -1 : 1, hx = side > 0 ? W - 95 : 95, shotsN = fast ? 5 : 4, every = fast ? 38 : 48;
-    const h = { k: 'demon', x: side > 0 ? W + 120 : -120, y: 230, vx: 0, vy: 0, r: 48, hp: 22, side, t0: d.t, mouth: 0,
+    const side = d.c.x > 480 ? -1 : 1, hx = side > 0 ? W - 95 : 95, shotsN = fast ? 9 : 7, every = fast ? 26 : 32;
+    const h = { k: 'demon', x: side > 0 ? W + 120 : -120, y: 230, vx: 0, vy: 0, r: 48, hp: 34, side, t0: d.t, mouth: 0,
       upd(h) {
         const k = d.t - h.t0;
         h.vx = h.vy = 0;
@@ -8938,8 +8939,8 @@ const DV_ATK = {
         h.y = 230 + Math.sin(k * 0.07) * 18;
         if (h.mouth > 0) h.mouth--;
         if (k >= 60 && k < 60 + shotsN * every && (k - 60) % every === 0) {
-          const an = Math.atan2(d.c.y - 26 - h.y, d.c.x - h.x), sp = 5.6; h.mouth = 16; sfx('dvlFireShot', 0.05);
-          d.haz.push({ k: 'skull', x: h.x + Math.cos(an) * 40, y: h.y + Math.sin(an) * 40, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, r: 13 });
+          const an = Math.atan2(d.c.y - 26 - h.y, d.c.x - h.x), sp = 6.4; h.mouth = 16; sfx('dvlFireShot', 0.05);
+          for (const da of [-0.3, 0, 0.3]) d.haz.push({ k: 'skull', x: h.x + Math.cos(an + da) * 40, y: h.y + Math.sin(an + da) * 40, vx: Math.cos(an + da) * sp, vy: Math.sin(an + da) * sp, r: 13 });
         }
         if (k > 50 + shotsN * every + 120) h.dead = true;
       } };
@@ -8948,10 +8949,14 @@ const DV_ATK = {
   },
 };
 function dvlPickAttack() {
-  const d = dvl, list = d.stage === 1 ? ['clap', 'snake', 'spider', 'ring', 'balls'] : d.stage === 2 ? ['heads', 'imps', 'demon'] : ['heads', 'imps'];
+  const d = dvl, list = d.stage === 1 ? ['clap', 'snake', 'spider', 'ring', 'balls'] : ['heads', 'imps', 'demon'];
   const fast = d.stage === 1 ? d.hp < (DV_HP + DV_P2) / 2 : d.stage === 3 || d.hp < (DV_P2 + DV_P3) / 2;
   const k = pick(list.filter(x => x !== d.last)); d.last = k;
   d.atk = { k, t: 0, ...DV_ATK[k](d, fast) };
+  // combos: mientras se transforma, su tridente también ataca; en el abismo manda dos ataques a la vez
+  const demon = d.haz.some(h => h.k === 'demon');
+  const opts = d.stage === 1 ? (['clap', 'snake', 'spider'].includes(k) ? ['ring', 'balls'] : []) : list.filter(x => x !== k && x !== d.lastX && !(x === 'demon' && (demon || k === 'demon')));
+  if (opts.length && (d.stage > 1 || fast || Math.random() < 0.65)) { const x = pick(opts); d.lastX = x; d.extra.push({ k: x, t: 0, ...DV_ATK[x](d, fast) }); }
 }
 function dvlBossUpdate() {
   const d = dvl;
@@ -8968,11 +8973,13 @@ function dvlBossUpdate() {
     for (const q of d.plats) dvlPlatUpdate(q);
   }
   if (d.stage === 3) dvlCry();
+  for (const x of d.extra) { x.t++; x.run(x); }
+  d.extra = d.extra.filter(x => x.t < x.dur);
   if (d.atk) {
     d.atk.t++; d.atk.run(d.atk);
     if (d.atk.t >= d.atk.dur) {
       d.atk = null; d.head = 'normal'; d.tri = 0; d.mood = d.stage === 3 ? 'cry' : 'grin';
-      d.next = d.stage === 1 ? (d.hp < (DV_HP + DV_P2) / 2 ? 34 : 50) : d.stage === 2 ? 40 : 70;
+      d.next = d.stage === 1 ? (d.hp < (DV_HP + DV_P2) / 2 ? 12 : 22) : d.stage === 2 ? 16 : 26;
       if (d.stage === 1 && Math.random() < 0.4) { d.mood = 'laugh'; sfx('dvlLaugh'); }
     }
   } else if (--d.next <= 0) dvlPickAttack();
@@ -8993,21 +9000,22 @@ function dvlFallUpdate() { // el piso se derrumba y suben las plataformas del ab
 }
 function dvlPlatUpdate(q) { // fase 3: una plataforma tiembla, se hunde y luego vuelve a subir
   const d = dvl;
-  if (q.st === 1) { if (++q.tt >= 60) { q.st = 2; q.tt = 0; sfx('swoosh'); } }
+  if (q.st === 1) { if (++q.tt >= 45) { q.st = 2; q.tt = 0; sfx('swoosh'); } }
   else if (q.st === 2) { q.drop += 2 + q.tt++ * 0.35; if (q.drop > 420) { q.st = 3; q.tt = 0; } }
-  else if (q.st === 3) { if (++q.tt >= 170) { q.st = 4; } }
+  else if (q.st === 3) { if (++q.tt >= 150) { q.st = 4; } }
   else if (q.st === 4) { q.drop = Math.max(0, q.drop - 8); if (q.drop === 0) { q.st = 0; q.tt = 0; } }
 }
 function dvlCry() { // fase 3: lágrimas a chorros y plataformas que se hunden
   const d = dvl; d.cryT++;
-  if (d.cryT % 5 === 0) for (const sd of [-1, 1]) {
-    const ex = d.hx + sd * 38, ey = 178, tx = d.hx + sd * (70 + (1 - Math.cos(d.cryT * 0.018 + (sd > 0 ? 0 : 1.7))) * 200), fl = 46;
+  if (d.cryT % 3 === 0) for (const sd of [-1, 1]) {
+    const ex = d.hx + sd * 38, ey = 178, tx = d.hx + sd * (70 + (1 - Math.cos(d.cryT * 0.03 + (sd > 0 ? 0 : 1.7))) * 200), fl = 46;
     d.haz.push({ k: 'tear', x: ex, y: ey, vx: (tx - ex) / fl, vy: -3, g: (430 - ey + 3 * fl) * 2 / (fl * fl), r: 9 });
     if (d.cryT % 20 === 0) sfx('dvlTear', 0.1);
   }
-  if (--d.dropT <= 0 && !d.plats.some(q => q.st)) {
-    d.dropT = 230;
-    const ok = d.plats.filter(q => q.st === 0), q = pick(ok); if (q) { q.st = 1; q.tt = 0; sfx('rumble'); }
+  if (--d.dropT <= 0 && d.plats.filter(q => q.st).length < 2) {
+    d.dropT = 120;
+    const ok = d.plats.filter(q => q.st === 0), under = ok.find(q => Math.abs(q.x - d.c.x) < q.w / 2 + 10);
+    const q = under && Math.random() < 0.5 ? under : pick(ok); if (q) { q.st = 1; q.tt = 0; sfx('rumble'); }
   }
 }
 
@@ -9356,6 +9364,7 @@ function dvlDrawCard() {
   ctx.font = 'bold 16px monospace'; ctx.fillStyle = '#e8d8b8';
   ctx.fillText('← → correr · ESPACIO / Z saltar · X / J disparar (↑ apunta arriba, ↑ + ← → en diagonal)', CX, 290);
   ctx.fillText('↓ agacharse · SHIFT / C dash · V / E disparo EX (gasta una carta)', CX, 316);
+  ctx.fillStyle = '#ff8a7a'; ctx.fillText('¡Cuidado! Cada golpe del Diablo te quita un corazón entero.', CX, 264);
   ctx.fillStyle = '#ffb0d8'; ctx.fillText('Lo ROSA se puede PARRIAR: salta y vuelve a saltar justo encima. ¡Cada parry te da una carta!', CX, 342);
   drawCuphead(CX - 230, 505, { s: 1.9, face: 1 });
   drawDevilFig(CX + 210, 515, 0.85, { mood: 'laugh', tri: 1 });
