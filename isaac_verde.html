@@ -7583,38 +7583,46 @@ function balHurt(n) { // la regla de Baldi
 }
 function balWin() { const b = bal.boss; bal = null; b.hp = 0; b.spawn = 0; p.x = CX - 170; p.y = CY + 70; p.vx = p.vy = 0; p.inv = 60; }
 
-// 1) matemáticas: 3 problemas; el tercero es imposible (como en el juego)
+// 1) matemáticas: 5 problemas contra reloj; el último es imposible (como en el juego).
+// Cada error (o si se acaba el tiempo) es un reglazo de un corazón entero, y Baldi se enoja: en la escuela te perseguirá más rápido
+const BAL_MATH_N = 5, BAL_MATH_T = [420, 390, 360, 330, 300]; // cuadros para contestar cada problema
 function balMathQ(i) {
-  if (i === 2) return { glitch: true, opts: [ri(10, 40), ri(41, 70), ri(71, 99), ri(100, 999)].sort(() => Math.random() - 0.5) };
-  let a, b, op, ans;
-  if (i === 0) { a = ri(2, 9); b = ri(2, 9); op = '+'; ans = a + b; }
-  else if (Math.random() < 0.5) { a = ri(3, 9); b = ri(2, 7); op = '×'; ans = a * b; }
-  else { b = ri(2, 9); ans = ri(2, 12); a = ans + b; op = '−'; }
-  const opts = [ans];
-  while (opts.length < 4) { const v = ans + pick([-3, -2, -1, 1, 2, 3, 10, -10]); if (v >= 0 && !opts.includes(v)) opts.push(v); }
-  return { text: `${a} ${op} ${b} = ?`, ans, opts: opts.sort(() => Math.random() - 0.5) };
+  if (i === BAL_MATH_N - 1) return { glitch: true, tl: BAL_MATH_T[i], opts: [ri(10, 40), ri(41, 70), ri(71, 99), ri(100, 999)].sort(() => Math.random() - 0.5) };
+  let a, b, c, text, ans;
+  if (i === 0) { a = ri(14, 49); b = ri(14, 49); ans = a + b; text = `${a} + ${b}`; }
+  else if (i === 1) { a = ri(6, 12); b = ri(6, 12); ans = a * b; text = `${a} × ${b}`; }
+  else if (i === 2) { b = ri(3, 9); ans = ri(4, 12); a = ans * b; text = `${a} ÷ ${b}`; }
+  else { a = ri(4, 9); b = ri(4, 9); c = ri(3, a * b - 2); ans = a * b - c; text = `${a} × ${b} − ${c}`; }
+  const opts = [ans]; // las opciones falsas se parecen mucho a la buena
+  while (opts.length < 4) { const v = ans + pick([-2, -1, 1, 2, -10, 10, -11, 11, 9, -9]); if (v >= 0 && !opts.includes(v)) opts.push(v); }
+  return { text: `${text} = ?`, ans, tl: BAL_MATH_T[i], opts: opts.sort(() => Math.random() - 0.5) };
 }
 function balMathStart() { bal.scene = 'class'; bal.m = { qi: 0, q: balMathQ(0), sel: 0, res: null, rt: 0, marks: [] }; bal.mood = 'smile'; balPhase('math'); }
-function balAnswer() {
+function balAnswer(late) {
   const u = bal, m = u.m; if (m.res) return;
-  const ok = !m.q.glitch && m.q.opts[m.sel] === m.q.ans;
-  m.res = ok ? 'ok' : 'bad'; m.rt = 0; m.marks.push(ok);
-  if (ok) { sfx('balRight'); u.mood = 'happy'; } else { sfx('balWrong'); u.anger++; u.mood = 'angry'; balSlaps(3); }
+  const ok = !late && !m.q.glitch && m.q.opts[m.sel] === m.q.ans;
+  m.res = ok ? 'ok' : late ? 'late' : 'bad'; m.rt = 0; m.marks.push(ok);
+  if (ok) { sfx('balRight'); u.mood = 'happy'; return; }
+  sfx('balWrong'); u.anger++; u.mood = 'angry'; balSlaps(3);
+  if (!m.q.glitch) balHurt(2); // el imposible sólo lo enoja
 }
 function balMathUpdate() {
   const u = bal, m = u.m;
-  if (!m.res || ++m.rt < 100) return;
-  if (++m.qi < 3) { m.q = balMathQ(m.qi); m.res = null; m.sel = 0; u.mood = u.anger > 1 ? 'angry' : 'smile'; return; }
+  if (!m.res) { if (--m.q.tl <= 0) balAnswer(true); return; }
+  if (++m.rt < 100) return;
+  if (++m.qi < BAL_MATH_N) { m.q = balMathQ(m.qi); m.res = null; m.sel = 0; u.mood = u.anger > 1 ? 'angry' : 'smile'; return; }
   const calm = u.anger <= 1;
   balTalk(calm ? ['¡Muy bien! ...Bueno, casi.', '¿Ese último problema? Sí... era un poquito difícil. Je je.', '¡Segundo minijuego! Playtime quiere saltar la cuerda contigo.']
     : ['...', 'Te equivocaste. Y más de una vez.', 'Ve con Playtime. Y no me hagas enojar más.'], balRopeIntro, 'baldi', calm ? 'smile' : 'angry');
 }
 
-// 2) saltar la cuerda con Playtime: 5 saltos seguidos; si fallas, Baldi se acerca...
+// 2) saltar la cuerda con Playtime: 10 saltos seguidos; la cuerda acelera y Playtime cambia el ritmo a cada vuelta.
+// Si fallas, Baldi se acerca... y a la segunda te da un reglazo
+const BAL_ROPE_SPD = 0.085;
 function balRopeIntro() {
   bal.scene = 'rope';
-  bal.r = { ang: 2.2, spd: 0.07, jumps: 0, need: 5, jy: 0, jv: 0, miss: 0, baldiD: 0, wait: 0, say: '', sayT: 0, slapT: 0 };
-  balTalk(['¡Hola! ¡Juguemos!', '¡Salta la cuerda 5 veces seguidas! (ESPACIO o toca la pantalla para saltar)'], () => balPhase('rope'), 'playtime');
+  bal.r = { ang: 2.2, spd: BAL_ROPE_SPD, base: BAL_ROPE_SPD, jumps: 0, need: 10, jy: 0, jv: 0, miss: 0, baldiD: 0, wait: 0, say: '', sayT: 0, slapT: 0 };
+  balTalk(['¡Hola! ¡Juguemos!', '¡Salta la cuerda 10 veces seguidas! (ESPACIO o toca la pantalla para saltar)', '¡Y no te equivoques, que Baldi está mirando!'], () => balPhase('rope'), 'playtime');
 }
 function balJump() { const r = bal.r; if (r && r.jy === 0 && r.jv === 0) { r.jv = -7.6; sfx('jump'); } }
 function balRopeUpdate() {
@@ -7628,12 +7636,12 @@ function balRopeUpdate() {
   if (Math.floor(prev / BAL_TAU + 0.5) < Math.floor(r.ang / BAL_TAU + 0.5)) sfx('balRope', 0.1); // la cuerda zumba arriba
   if (Math.floor(prev / BAL_TAU) < Math.floor(r.ang / BAL_TAU)) { // la cuerda pasa por los pies
     if (r.jy < -12) {
-      r.jumps++; sfx('balTick'); r.spd = Math.min(0.115, r.spd + 0.006);
+      r.jumps++; sfx('balTick'); r.base = Math.min(0.13, r.base + 0.005); r.spd = Math.min(0.145, r.base * rnd(0.82, 1.2)); // a veces más rápido, a veces más lento
       if (r.jumps >= r.need) balTalk(['¡Lo hiciste genial!', '¡Gracias por jugar conmigo!'], balMazeIntro, 'playtime');
     } else {
-      r.jumps = 0; r.miss++; r.baldiD++; r.wait = 90; r.spd = 0.07; sfx('balWrong');
+      r.jumps = 0; r.miss++; r.baldiD++; r.wait = 90; r.spd = r.base = BAL_ROPE_SPD; sfx('balWrong');
       r.say = pick(['¡Uy! ¡Te equivocaste! ¡Otra vez!', '¡Ay no! ¡Empieza de nuevo!']); r.sayT = 90;
-      if (r.baldiD >= 3) { r.slapT = 40; balSlaps(2); }
+      if (r.baldiD >= 2) { r.slapT = 40; balSlaps(2); }
     }
   }
 }
@@ -7641,7 +7649,7 @@ function balRopeUpdate() {
 // 3) la escuela en 3D: junta los 4 cuadernos y escapa por la SALIDA mientras Baldi te persigue
 function balMazeIntro() {
   bal.scene = 'class';
-  balTalk(['¡Último minijuego!', 'Escondí 4 cuadernos en mi escuela. Encuéntralos todos...', '...y luego busca la SALIDA.', 'Yo iré a buscarte. ¡Je je je!'], () => {
+  balTalk(['¡Último minijuego!', 'Escondí 7 cuadernos en mi escuela. Encuéntralos todos...', '...y luego busca la SALIDA.', 'Yo iré a buscarte. Y cada cuaderno me hace ir más rápido. ¡Je je je!'], () => {
     bal.scene = 'maze'; bal.z = balMazeBuild(); balPhase('maze'); stopMusic();
   }, 'baldi', bal.anger > 1 ? 'angry' : 'smile');
 }
@@ -7659,7 +7667,7 @@ function balBfs(z, sx, sy) { // distancias (en celdas) desde (sx, sy) a toda la 
   return d;
 }
 function balMazeBuild() {
-  const CW = 9, CH = 6, w = CW * 2 + 1, h = CH * 2 + 1;
+  const CW = 11, CH = 7, w = CW * 2 + 1, h = CH * 2 + 1;
   const g = Array.from({ length: h }, () => Array(w).fill(1));
   const seen = new Set(['0,0']), st = [[0, 0]]; g[1][1] = 0;
   while (st.length) { // laberinto (backtracking)
@@ -7669,15 +7677,15 @@ function balMazeBuild() {
     const [nx, ny, dx, dy] = pick(nb);
     g[cy * 2 + 1 + dy][cx * 2 + 1 + dx] = 0; g[ny * 2 + 1][nx * 2 + 1] = 0; seen.add(nx + ',' + ny); st.push([nx, ny]);
   }
-  for (let i = 0; i < 18; i++) { // atajos: así hay vueltas por donde huir de Baldi
+  for (let i = 0; i < 26; i++) { // atajos: así hay vueltas por donde huir de Baldi
     const x = ri(1, w - 2), y = ri(1, h - 2);
     if ((x % 2 === 0) !== (y % 2 === 0)) g[y][x] = 0;
   }
-  const z = { g, w, h, x: 1.5, y: 1.5, a: g[1][2] === 0 ? 0 : Math.PI / 2, notes: [], got: 0, open: false, t: 0, bob: 0, msg: '¡Encuentra los 4 cuadernos!', msgT: 200,
+  const z = { g, w, h, x: 1.5, y: 1.5, a: g[1][2] === 0 ? 0 : Math.PI / 2, notes: [], got: 0, open: false, t: 0, bob: 0, msg: '¡Encuentra los 7 cuadernos!', msgT: 200,
     zb: new Float32Array(BAL_COLS), slapT: 150, move: 0, dmap: null, catchT: 0, hbT: 0, slapAt: -99 };
   const cells = []; for (let y = 1; y < h; y += 2) for (let x = 1; x < w; x += 2) cells.push([x, y]);
   const d0 = balBfs(z, 1, 1), picked = [[1, 1]];
-  for (let i = 0; i < 4; i++) { // cuadernos repartidos: cada uno lo más lejos posible de los demás
+  for (let i = 0; i < 7; i++) { // cuadernos repartidos: cada uno lo más lejos posible de los demás
     let best = null, bd = -1;
     for (const c of cells) { const md = Math.min(...picked.map(q => Math.abs(q[0] - c[0]) + Math.abs(q[1] - c[1]))) + Math.random() * 0.5; if (md > bd) { bd = md; best = c; } }
     picked.push(best); z.notes.push({ x: best[0] + 0.5, y: best[1] + 0.5, got: false });
@@ -7686,11 +7694,12 @@ function balMazeBuild() {
   for (let y = 1; y < h; y += 2) if (d0[y * w + w - 2] > d0[ey * w + w - 2]) ey = y;
   z.exit = { x: w - 1, y: ey }; g[ey][w - 1] = 2;
   let bc = cells[cells.length - 1]; // Baldi sale de un salón a media distancia del inicio
-  for (const [x, y] of cells) if (Math.abs(d0[y * w + x] - 10) < Math.abs(d0[bc[1] * w + bc[0]] - 10)) bc = [x, y];
+  for (const [x, y] of cells) if (Math.abs(d0[y * w + x] - 9) < Math.abs(d0[bc[1] * w + bc[0]] - 9)) bc = [x, y];
   z.bx = bc[0] + 0.5; z.by = bc[1] + 0.5;
   return z;
 }
 const balWalk = v => v === 0 || v === 3;
+const BAL_OUT = 90; // cuadros que tarda Baldi en salir a buscarte
 function balFree(z, x, y) {
   const r = 0.22;
   for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) {
@@ -7720,11 +7729,11 @@ function balMazeUpdate() {
     if (z.got === z.notes.length) { z.open = true; z.g[z.exit.y][z.exit.x] = 3; sfx('balAlarm'); z.msg = '¡Ya tienes todos! ¡Corre a la SALIDA!'; z.msgT = 260; }
   }
   if (z.open && Math.floor(z.x) === z.exit.x && Math.floor(z.y) === z.exit.y) { balMazeWin(); return; }
-  if (z.t < 150) return; // Baldi tarda un poco en salir a buscarte
+  if (z.t < BAL_OUT) return; // Baldi tarda un poquito en salir a buscarte
   if (z.catchT > 0) z.catchT--;
   const dd = Math.hypot(z.bx - z.x, z.by - z.y);
   if (--z.slapT <= 0) { // ¡ZAS! cada reglazo lo acerca una celda (más rápido si está enojado y con cada cuaderno)
-    z.slapT = Math.max(24, 64 - u.anger * 7 - z.got * 8 - (z.open ? 10 : 0));
+    z.slapT = Math.max(19, 52 - u.anger * 4 - z.got * 5 - (z.open ? 8 : 0)); // al final corre casi tan rápido como tú
     balSlapSnd(clamp(1.1 - dd / 8, 0.06, 0.6)); z.slapAt = z.t;
     z.move = 1; z.dmap = balBfs(z, Math.floor(z.x), Math.floor(z.y));
   }
@@ -7741,9 +7750,9 @@ function balMazeUpdate() {
     if (dl > 0.001) { const k = Math.min(0.12, z.move, dl); z.bx += dx / dl * k; z.by += dy / dl * k; z.move -= k; } else z.move = 0;
   }
   if (dd < 0.45 && z.catchT <= 0) { // ¡te atrapó!
-    z.msg = '¡TE ATRAPÉ!'; z.msgT = 90; z.catchT = 150; z.slapT = 150; z.move = 0;
+    z.msg = '¡TE ATRAPÉ!'; z.msgT = 90; z.catchT = 120; z.slapT = 100; z.move = 0;
     const c = balFarCell(z); z.bx = c[0] + 0.5; z.by = c[1] + 0.5;
-    balHurt(2);
+    balHurt(2); // un corazón entero
   }
 }
 function balMazeWin() {
@@ -7815,7 +7824,11 @@ function balDrawMath() {
   ctx.strokeStyle = '#a8c8f0'; ctx.lineWidth = 1.5; ctx.beginPath(); for (let y = 290; y < 540; y += 30) { ctx.moveTo(60, y); ctx.lineTo(600, y); } ctx.stroke();
   ctx.strokeStyle = '#f08080'; ctx.beginPath(); ctx.moveTo(110, 226); ctx.lineTo(110, 542); ctx.stroke();
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#1a3a8a'; ctx.font = 'bold 18px "Comic Sans MS", cursive';
-  ctx.fillText(`MINIJUEGO 1 · MATEMÁTICAS · Problema ${Math.min(3, m.qi + 1)} de 3`, 124, 252);
+  ctx.fillText(`MINIJUEGO 1 · MATEMÁTICAS · Problema ${Math.min(BAL_MATH_N, m.qi + 1)} de ${BAL_MATH_N}`, 124, 252);
+  const tk = clamp(q.tl / BAL_MATH_T[Math.min(m.qi, BAL_MATH_N - 1)], 0, 1); // el reloj de cada problema
+  ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(420, 280, 160, 14);
+  ctx.fillStyle = tk > 0.5 ? '#3aa83a' : tk > 0.25 ? '#e0a020' : '#d01818'; ctx.fillRect(420, 280, 160 * tk, 14);
+  if (m.res === 'late') { ctx.font = 'bold 18px "Comic Sans MS", cursive'; ctx.fillStyle = '#d01818'; ctx.fillText('¡SE ACABÓ EL TIEMPO!', 400, 306); }
   m.marks.forEach((ok, i) => { ctx.font = 'bold 26px Arial'; ctx.fillStyle = ok ? '#1a9a2a' : '#d01818'; ctx.fillText(ok ? '✔' : '✘', 124 + i * 30, 288); });
   ctx.textAlign = 'center'; ctx.font = 'bold 50px "Comic Sans MS", cursive';
   if (q.glitch) { // el problema imposible: símbolos que cambian y tiemblan
@@ -7855,7 +7868,7 @@ function balDrawRope() {
   ctx.strokeStyle = 'rgba(0,0,0,.12)'; ctx.lineWidth = 2; ctx.beginPath(); for (let x = -400; x < W; x += 60) { ctx.moveTo(x, H); ctx.lineTo(x + 300, 420); } ctx.stroke();
   // Baldi se acerca por el pasillo cada vez que fallas
   if (r.baldiD > 0 || r.slapT > 0) {
-    const k = r.slapT > 0 ? 3 : r.baldiD, s = 0.9 + k * 0.6;
+    const k = r.slapT > 0 ? 3 : r.baldiD * 1.8, s = 0.9 + k * 0.6;
     softShadow(870, 430 + k * 14, 40 * s, 8 * s, 0.4);
     drawBaldiFig(870, 430 + k * 14, s, { mood: 'angry', slap: balSlapK() || Math.max(0, Math.sin(frame * 0.12)) * 0.6 });
   }
@@ -7877,11 +7890,11 @@ function balDrawRope() {
   // marcador
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 22px "Comic Sans MS", cursive'; ctx.fillStyle = '#1a3a8a';
   ctx.fillText('MINIJUEGO 2 · SALTAR LA CUERDA', CX, 92);
-  for (let i = 0; i < r.need; i++) { ctx.fillStyle = i < r.jumps ? '#ffd34a' : 'rgba(0,0,0,.2)'; ell(CX - 80 + i * 40, 128, 14, 14); ctx.fill(); ctx.strokeStyle = '#7a5a10'; ctx.lineWidth = 2; ctx.stroke(); }
+  for (let i = 0; i < r.need; i++) { ctx.fillStyle = i < r.jumps ? '#ffd34a' : 'rgba(0,0,0,.2)'; ell(CX - (r.need - 1) * 17 + i * 34, 128, 12, 12); ctx.fill(); ctx.strokeStyle = '#7a5a10'; ctx.lineWidth = 2; ctx.stroke(); }
   if (u.phase === 'rope' && r.jumps === 0 && r.miss === 0 && r.wait === 0) { ctx.font = '15px monospace'; ctx.fillStyle = '#333'; ctx.fillText('ESPACIO / ↑ / toca la pantalla = saltar · salta cuando la cuerda llegue al piso', CX, 548); }
   if (u.phase === 'talk' && u.who === 'playtime' && u.bub) balBubble(110, 170, 330, u.bub.lines[u.bub.i], u.bub.n, 'down');
   else if (r.sayT > 0) balBubble(110, 200, 300, r.say, 99, 'down');
-  if (r.baldiD > 0 && u.phase === 'rope') { ctx.font = 'bold 16px "Comic Sans MS", cursive'; ctx.fillStyle = '#c01818'; ctx.fillText(r.baldiD >= 2 ? '¡Baldi está muy cerca!' : 'Baldi se acerca...', 860, 150); }
+  if (r.baldiD > 0 && u.phase === 'rope') { ctx.font = 'bold 16px "Comic Sans MS", cursive'; ctx.fillStyle = '#c01818'; ctx.fillText('¡Baldi está muy cerca! ¡No falles otra vez!', CX, 160); }
 }
 function balRender3D() { // la escuela en 3D (rayos, como Wolfenstein)
   const z = bal.z, hz = H / 2 + Math.sin(z.bob) * 5;
@@ -7906,7 +7919,7 @@ function balRender3D() { // la escuela en 3D (rayos, como Wolfenstein)
   }
   // cuadernos y Baldi (recortados por las paredes)
   const spr = z.notes.filter(n => !n.got).map(n => ({ x: n.x, y: n.y, img: balNoteImg(), hw: 0.3, lift: 0.25 + Math.sin(frame * 0.06 + n.x) * 0.04 }));
-  if (z.t >= 150) {
+  if (z.t >= BAL_OUT) {
     const bc = balBaldiImg(z.t - z.slapAt < 12 ? 1 - (z.t - z.slapAt) / 12 : 0);
     spr.push({ x: z.bx, y: z.by, img: bc, hw: 0.92, lift: 0 });
   }
@@ -7961,7 +7974,6 @@ function balDrawMaze() {
     ctx.fillStyle = v === 1 ? '#c8c2a8' : v === 2 ? '#c03030' : '#40ff60'; ctx.fillRect(mx0 + x * cs, my0 + y * cs, cs, cs);
   }
   for (const n of z.notes) if (!n.got) { ctx.fillStyle = '#3a8aff'; ctx.fillRect(mx0 + n.x * cs - 2.5, my0 + n.y * cs - 2.5, 5, 5); }
-  if (z.t >= 150) { ctx.fillStyle = '#ff3030'; ell(mx0 + z.bx * cs, my0 + z.by * cs, 3.5, 3.5); ctx.fill(); }
   ctx.save(); ctx.translate(mx0 + z.x * cs, my0 + z.y * cs); ctx.rotate(z.a); ctx.fillStyle = '#ffe040'; poly([[5, 0], [-3, -3.5], [-3, 3.5]]); ctx.fill(); ctx.restore();
   // cuadernos
   ctx.drawImage(balNoteImg(), CX - 70, 12, 26, 33);
@@ -7990,8 +8002,8 @@ function balDraw() {
 
 // =====================================================================
 // DR. FETUS (Super Meat Boy): la pelea es de plataformas, como en el juego original.
-// 1) escapa trepando la torre mientras el robot gigante de Dr. Fetus sube destrozando todo
-// 2) en su laboratorio aprieta los 3 botones (cada uno dispara un cohete a su frasco) y, cuando caiga... ¡dale un golpe!
+// 1) escapa trepando la torre mientras Dr. Fetus gigante sube destrozando todo y te dispara con su lanzacohetes
+// 2) en su laboratorio aprieta los 3 botones (cada uno dispara un cohete a su frasco) y, cuando caiga... ¡atrápalo y dale un golpe!
 // Morir te regresa al último punto de control y cuesta medio corazón.
 // =====================================================================
 let fet = null;
@@ -8000,10 +8012,12 @@ const FET_TOWER = { name: 'LA TORRE', h: 64, start: [4, 62],
   plats: [[63, 1, 28], [60, 3, 9], [57, 12, 17], [54, 21, 26], [51, 14, 18], [48, 5, 10], [45, 1, 4], [35, 5, 12], [32, 15, 20], [29, 23, 27], [26, 16, 20],
     [23, 8, 13], [20, 2, 6], [17, 9, 14], [14, 17, 22], [11, 24, 28], [8, 17, 21], [5, 9, 14]],
   walls: [[5, 36, 41]], // la chimenea: se sube rebotando entre las paredes
-  saws: [{ x: 14.5, y: 57, r: 15 }, { x: 18, y: 30.4, r: 15, ax: 3, sp: 0.03 }, { x: 10.5, y: 23, r: 15 }, { x: 15.5, y: 14.5, r: 15, ay: 2.6, sp: 0.04 }, { x: 24.5, y: 11, r: 13 }],
-  cps: [[4, 62], [2, 44], [8, 22]] };
+  saws: [{ x: 14.5, y: 57, r: 15 }, { x: 18, y: 30.4, r: 15, ax: 3, sp: 0.042 }, { x: 10.5, y: 23, r: 15 }, { x: 15.5, y: 14.5, r: 15, ay: 2.6, sp: 0.055 }, { x: 24.5, y: 11, r: 13 },
+    { x: 16, y: 60.5, r: 13, ax: 3, sp: 0.035 }, { x: 12, y: 17, r: 13 }, { x: 16, y: 6, r: 14, ay: 2.5, sp: 0.04 }],
+  cps: [[4, 62], [9, 34]] }; // sólo un punto de control a la mitad
 const FET_LAB = { name: 'EL LABORATORIO', h: 18, start: [14, 16],
-  plats: [[17, 0, 29], [0, 0, 29], [14, 3, 8], [14, 21, 26], [11, 11, 18], [8, 2, 6], [8, 23, 27]], walls: [], saws: [], cps: [[14, 16]],
+  plats: [[17, 0, 29], [0, 0, 29], [14, 3, 8], [14, 21, 26], [11, 11, 18], [8, 2, 6], [8, 23, 27]], walls: [], cps: [[14, 16]],
+  saws: [{ x: 14.5, y: 16.5, r: 14, ax: 6, sp: 0.03 }, { x: 14.5, y: 5.5, r: 15, ax: 8, sp: 0.025 }], // una barre el piso y otra arriba
   btns: [[4.5, 8], [25.5, 8], [14.5, 11]] };
 const FET_JAR = { x: 480, y: 192 }; // el frasco del robot del laboratorio
 function fetBuild(def) {
@@ -8061,26 +8075,24 @@ function fetDanger(f, m, k = 0) { // ¿Meat Boy muere en este cuadro (o dentro d
   const t = f.t + k;
   const hitC = (x, y, r) => Math.hypot(clamp(x, m.x, m.x + m.w) - x, clamp(y, m.y, m.y + m.h) - y) < r;
   for (const s of f.L.saws) { const [x, y] = fetSawPos(s, t); if (hitC(x, y, s.r - 2)) return true; }
-  if (f.phase === 'tower' && m.y + m.h > f.rob - k * f.robV + 6) return true;
-  if (f.lab) {
-    for (const q of f.lab.mis) if (hitC(q.x + q.vx * k, q.y + q.vy * k, 9)) return true;
-    for (const q of f.lab.saws) if (hitC(q.x + q.vx * k, q.y + q.vy * k, q.r - 3)) return true;
-  }
+  if (f.phase === 'tower' && fetRobHit(f, m, k)) return true;
+  for (const q of f.mis) if (hitC(q.x + q.vx * k, q.y + q.vy * k, 9)) return true;
+  if (f.lab) for (const q of f.lab.saws) if (hitC(q.x + q.vx * k, q.y + q.vy * k, q.r - 3)) return true;
   return false;
 }
 function fetStart(boss) {
-  fet = { boss, t: 0, pt: 0, phase: 'card', deaths: 0, noDie: false, botIn: null, shake: 0, parts: [], smears: [], cp: 0, msg: '', msgT: 0, lab: null, robV: 0, robHold: 0 };
+  fet = { boss, t: 0, pt: 0, phase: 'card', deaths: 0, noDie: false, botIn: null, shake: 0, parts: [], smears: [], cp: 0, msg: '', msgT: 0, lab: null, robV: 0, robHold: 0, mis: [], gunT: 0 };
   fetLevel(FET_TOWER);
   playMusic('fetus', 0.3); sfx('vsSlam');
 }
 function fetLevel(def) {
   const f = fet; f.L = fetBuild(def); f.cp = 0; f.smears = []; f.m = fetMeat(def.start);
-  f.camY = def.h * FT - H; f.rob = f.m.y + f.m.h + 420; f.robV = 0; f.robHold = 60;
+  f.camY = def.h * FT - H; f.rob = f.m.y + f.m.h + 520; f.robV = 0; f.robHold = 60; f.mis = []; f.gunT = 200;
   f.phase = 'card'; f.pt = 0;
 }
 function fetLabStart() {
   fetLevel(FET_LAB);
-  fet.lab = { btn: [false, false, false], next: 0, nextT: 0, stage: 0, jar: 0, misT: 170, sawT: 300, side: 0, mis: [], saws: [], rockets: [], fetus: null };
+  fet.lab = { btn: [false, false, false], next: 0, nextT: 0, stage: 0, jar: 0, misT: 130, sawT: 200, side: 0, saws: [], rockets: [], fetus: null };
 }
 function fetDie() {
   const f = fet, m = f.m; if (m.dead) return;
@@ -8092,9 +8104,9 @@ function fetDie() {
 }
 function fetRespawn() {
   const f = fet, c = f.L.cps[f.cp];
-  f.m = fetMeat(c); f.robHold = 60;
-  if (f.phase === 'tower') f.rob = f.m.y + f.m.h + 380;
-  if (f.lab) { f.lab.mis = []; f.lab.saws = []; f.lab.misT = 120; }
+  f.m = fetMeat(c); f.robHold = 60; f.mis = [];
+  if (f.phase === 'tower') { f.rob = f.m.y + f.m.h + 460; f.gunT = 150; }
+  if (f.lab) { f.lab.saws = []; f.lab.misT = 100; }
 }
 function fetWin() { const b = fet.boss; fet = null; b.hp = 0; b.spawn = 0; p.x = CX - 170; p.y = CY + 70; p.vx = p.vy = 0; p.inv = 60; }
 const fetInput = () => { const i = modeInput(); return { x: (i.r ? 1 : 0) - (i.l ? 1 : 0), j: !!(keys.Space || keys.KeyW || keys.ArrowUp || keys.KeyZ || keys.KeyK || touchMove.y < -0.5) }; };
@@ -8128,25 +8140,30 @@ function fetUpdate() {
     if (fetDanger(f, m)) { fetDie(); if (!fet || state !== 'play') return; }
     f.L.cps.forEach((c, i) => { if (i > f.cp && m.ground && m.y + m.h <= (c[1] + 1) * FT + 2) { f.cp = i; f.msg = '¡PUNTO DE CONTROL!'; f.msgT = 100; sfx('item'); } });
   }
+  fetMisUpdate();
   if (f.phase === 'tower') {
     const gap = f.rob - (m.y + m.h);
-    f.robV = m.dead || f.robHold > 0 ? 0 : gap > 470 ? 2.4 : gap < 170 ? 0.45 : 0.68; // nunca se queda muy lejos
+    f.robV = m.dead || f.robHold > 0 ? 0 : gap > 560 ? 2.8 : gap < 300 ? 0.75 : 1.0; // nunca se queda muy lejos
     if (f.robHold > 0) f.robHold--;
     f.rob -= f.robV;
+    if (!m.dead && f.robHold <= 0 && --f.gunT <= 0) { // ¡cohete desde su lanzacohetes!
+      f.gunT = 150; const g = fetGun(f);
+      f.mis.push({ x: g.x + Math.cos(g.a) * 95, y: g.y + Math.sin(g.a) * 95, a: g.a, vx: 0, vy: 0, sp: 4.2, turn: 0.022, life: 260 }); sfx('fetMissile'); f.shake = 5;
+    }
     if (f.t % 50 === 0) sfx('rumble', 0.5);
-    f.camY = clamp(lerp(f.camY, m.y - 330, 0.12), 0, f.L.h * FT - H);
+    f.camY = clamp(lerp(f.camY, m.y - 300, 0.12), 0, f.L.h * FT - H);
     if (!m.dead && m.y < 3 * FT) { f.phase = 'trans'; f.pt = 0; sfx('win'); }
   } else fetLabUpdate();
 }
 function fetLabUpdate() {
   const f = fet, lb = f.lab, m = f.m, pc = [m.x + 11, m.y + 11];
   if (f.phase === 'lab' && !m.dead) {
-    if (--lb.misT <= 0) { // misil teledirigido desde un hombro del robot
-      lb.misT = [150, 120, 95, 80][lb.stage]; lb.side ^= 1;
-      const x = lb.side ? 590 : 370, y = 200, a = Math.atan2(pc[1] - y, pc[0] - x);
-      lb.mis.push({ x, y, a, vx: 0, vy: 0, sp: 3.2 + lb.stage * 0.35, life: 420 }); sfx('fetMissile');
+    if (--lb.misT <= 0) { // misil teledirigido desde una mano del robot
+      lb.misT = [105, 85, 68, 55][lb.stage]; lb.side ^= 1;
+      const x = lb.side ? 584 : 376, y = 250, a = Math.atan2(pc[1] - y, pc[0] - x);
+      f.mis.push({ x, y, a, vx: 0, vy: 0, sp: 3.7 + lb.stage * 0.4, turn: 0.042, life: 420 }); sfx('fetMissile');
     }
-    if (lb.stage >= 1 && --lb.sawT <= 0) { lb.sawT = lb.stage >= 2 ? 170 : 250; lb.saws.push({ x: 480, y: 230, vx: (Math.random() < 0.5 ? -1 : 1) * rnd(2, 3.2), vy: -4, r: 17, life: 560, rot: 0 }); sfx('throw'); }
+    if (--lb.sawT <= 0) { lb.sawT = [200, 150, 115, 115][lb.stage]; lb.saws.push({ x: 480, y: 230, vx: (Math.random() < 0.5 ? -1 : 1) * rnd(2, 3.2), vy: -4, r: 17, life: 560, rot: 0 }); sfx('throw'); }
     if (lb.nextT > 0 && --lb.nextT === 0) { f.msg = '¡Se encendió otro botón!'; f.msgT = 90; sfx('fetButton'); }
     f.L.btns.forEach(([bx, by], i) => {
       if (lb.btn[i] || i !== lb.next || lb.nextT > 0 || lb.rockets.length) return; // se encienden de uno en uno
@@ -8157,13 +8174,6 @@ function fetLabUpdate() {
       }
     });
   }
-  for (const q of lb.mis) {
-    const want = Math.atan2(pc[1] - q.y, pc[0] - q.x); let d = want - q.a; d = Math.atan2(Math.sin(d), Math.cos(d));
-    q.a += clamp(d, -0.035, 0.035); q.vx = Math.cos(q.a) * q.sp; q.vy = Math.sin(q.a) * q.sp; q.x += q.vx; q.y += q.vy;
-    if (--q.life <= 0 || fetSolidAt(f.L, q.x, q.y)) { q.dead = true; fetBoom(q.x, q.y, 14); }
-    if (f.t % 3 === 0) f.parts.push({ x: q.x - q.vx * 3, y: q.y - q.vy * 3, vx: rnd(-0.5, 0.5), vy: rnd(-1, 0), life: 18, r: rnd(2, 4), col: 'rgba(200,200,200,.7)', nog: true });
-  }
-  lb.mis = lb.mis.filter(q => !q.dead);
   for (const q of lb.saws) {
     q.vy += 0.3; q.x += q.vx; q.y += q.vy; q.rot += q.vx * 0.08;
     if (fetSolidAt(f.L, q.x, q.y + q.r)) { q.y = Math.floor((q.y + q.r) / FT) * FT - q.r; q.vy = -9; sfx('clink', 0.15); }
@@ -8184,7 +8194,7 @@ function fetLabUpdate() {
   if (fe) { // Dr. Fetus fuera del frasco: da saltitos hacia ti
     fe.vy += 0.4; fe.x += fe.vx; fe.y += fe.vy; fe.rot += fe.vx * 0.05;
     if (fetSolidAt(f.L, fe.x, fe.y + 12)) { fe.y = Math.floor((fe.y + 12) / FT) * FT - 12; fe.vy = 0; fe.vx *= 0.8; fe.rot *= 0.8;
-      if (--fe.hop <= 0) { fe.hop = ri(40, 70); fe.vx = Math.sign(pc[0] - fe.x || 1) * 1.8; fe.vy = -5.5; } }
+      if (--fe.hop <= 0) { fe.hop = ri(22, 40); fe.vx = Math.sign(fe.x - pc[0] || 1) * 3; fe.vy = -6.5; } } // ¡se escapa de ti a saltos!
     if (fetSolidAt(f.L, fe.x + Math.sign(fe.vx) * 12, fe.y)) fe.vx = -fe.vx;
     if (!m.dead && Math.hypot(fe.x - pc[0], fe.y - pc[1]) < 26) { // ¡PUM!
       f.phase = 'punch'; f.pt = 0; sfx('fetPunch'); f.shake = 20;
@@ -8192,13 +8202,39 @@ function fetLabUpdate() {
     }
   }
 }
+function fetMisUpdate() { // los misiles teledirigidos (de la torre y del laboratorio)
+  const f = fet, m = f.m, pc = [m.x + 11, m.y + 11];
+  for (const q of f.mis) {
+    const want = Math.atan2(pc[1] - q.y, pc[0] - q.x); let d = want - q.a; d = Math.atan2(Math.sin(d), Math.cos(d));
+    q.a += clamp(d, -q.turn, q.turn); q.vx = Math.cos(q.a) * q.sp; q.vy = Math.sin(q.a) * q.sp; q.x += q.vx; q.y += q.vy;
+    if (--q.life <= 0 || ((f.lab || q.y < f.rob - 70 * FET_ROB_S) && fetSolidAt(f.L, q.x, q.y))) { q.dead = true; fetBoom(q.x, q.y, 14); } // a su alrededor la torre ya está destrozada
+    if (f.t % 3 === 0) f.parts.push({ x: q.x - q.vx * 3, y: q.y - q.vy * 3, vx: rnd(-0.5, 0.5), vy: rnd(-1, 0), life: 18, r: rnd(2, 4), col: 'rgba(200,200,200,.7)', nog: true });
+  }
+  f.mis = f.mis.filter(q => !q.dead);
+}
+// Dr. Fetus gigante en la torre: f.rob es la línea de sus hombros, donde va destrozando la torre.
+// Debajo de esa línea mueres, y arriba asoman su frasco, su sombrero y sus manotas: tocarlos también te mata
+const FET_ROB_S = 2.6;
+const fetRobX = f => 480 + Math.sin(f.t * 0.05) * 6;
+function fetRobHit(f, m, k) {
+  const s = FET_ROB_S, line = f.rob - k * f.robV, cx = m.x + m.w / 2, dx = Math.abs(cx - fetRobX(f)), bot = m.y + m.h;
+  if (bot > line + 6) return true;
+  if (dx < 44 * s + m.w / 2 && bot > line - 68 * s + 4) return true; // el frasco
+  if (dx < 27 * s + m.w / 2 && bot > line - 101 * s + 4) return true; // el sombrero
+  const hy = line - 58 * s; // las manos
+  return Math.abs(dx - 54 * s) < 10 * s + m.w / 2 && m.y < hy + 10 * s && bot > hy - 10 * s;
+}
+function fetGun(f) { // su lanzacohetes: en la mano del lado donde estás, apuntándote
+  const m = f.m, rx = fetRobX(f), x = rx + (m.x + 11 < rx ? -54 : 54) * FET_ROB_S, y = f.rob - 58 * FET_ROB_S;
+  return { x, y, a: Math.atan2(m.y + 11 - y, m.x + 11 - x) };
+}
 function fetBoom(x, y, n) {
   const f = fet; sfx('boom', 0.08);
   for (let i = 0; i < n; i++) { const a = rnd(0, BAL_TAU), s = rnd(1, 6); f.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: ri(15, 35), r: rnd(3, 7), col: pick(['#ffb030', '#ff6010', '#ffe080', '#888']), nog: true }); }
 }
 function fetFree() { // el frasco revienta y Dr. Fetus cae al piso
   const f = fet, lb = f.lab;
-  f.phase = 'free'; lb.mis = []; lb.saws = [];
+  f.phase = 'free'; f.mis = []; lb.saws = [];
   lb.fetus = { x: FET_JAR.x, y: FET_JAR.y, vx: 0, vy: -3, rot: 0, hop: 90 };
   for (let i = 0; i < 30; i++) { const a = rnd(0, BAL_TAU), s = rnd(2, 8); f.parts.push({ x: FET_JAR.x, y: FET_JAR.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, life: ri(40, 80), r: rnd(2, 5), col: pick(['rgba(200,240,255,.8)', 'rgba(120,220,140,.8)']) }); }
   f.msg = '¡Dr. Fetus cayó! ¡Dale un golpe!'; f.msgT = 240;
@@ -8321,21 +8357,23 @@ function fetMissileDraw(x, y, a) {
   ctx.fillStyle = '#d02020'; poly([[7, -5], [14, 0], [7, 5]]); ctx.fill();
   ctx.restore();
 }
-function fetDrawRobot(top) { // el robot gigante que sube por la torre
-  const f = fet;
-  drawFetusSuit(480 + Math.sin(frame * 0.05) * 6, top + 158 * 3.2 - 30, 3.2, { laugh: f.m.dead > 0 });
-  for (const sd of [-1, 1]) { // manos gigantes agarradas a las paredes
-    const hx = 480 + sd * 380, hy = top - 26 + Math.sin(frame * 0.08 + sd) * 8;
-    ctx.fillStyle = '#e8e8e8'; ctx.strokeStyle = '#555'; ctx.lineWidth = 3;
-    ell(hx, hy, 46, 34); ctx.fill(); ctx.stroke();
-    for (let i = -1; i <= 2; i++) { ell(hx + i * 18 - sd * 6, hy - 30, 9, 16); ctx.fill(); ctx.stroke(); }
-    ctx.fillStyle = '#1a1a22'; ctx.fillRect(hx - 30, hy + 20, 60, H);
-  }
-  // barra de sierras que destroza todo a su paso
-  ctx.fillStyle = '#3a3a44'; ctx.fillRect(32, top + 10, W - 64, 14);
-  for (let x = 54; x < W - 32; x += 44) fetSawDraw(x, top + 10, 22, frame * 0.3 + x);
-  const g = ctx.createLinearGradient(0, top + 20, 0, top + 300); g.addColorStop(0, 'rgba(10,8,12,.0)'); g.addColorStop(1, 'rgba(10,8,12,.85)');
-  ctx.fillStyle = g; ctx.fillRect(32, top + 20, W - 64, H + 400);
+function fetDrawRobot(top, camY) { // Dr. Fetus gigante sube por la torre destrozándola, con su lanzacohetes
+  const f = fet, s = FET_ROB_S, rx = fetRobX(f);
+  drawFetusSuit(rx, top + 46 * s, s, { laugh: true }); // los hombros van justo en la línea que destroza la torre
+  const g = ctx.createLinearGradient(0, top, 0, top + 200); g.addColorStop(0, 'rgba(10,8,12,.55)'); g.addColorStop(1, 'rgba(10,8,12,.95)');
+  ctx.fillStyle = g; ctx.fillRect(32, top, W - 64, H + 400); // la torre destrozada debajo
+  const gn = fetGun(f), gx = gn.x, gy = gn.y - camY; // el lanzacohetes (tubo gris, como en el juego)
+  ctx.save(); ctx.translate(gx, gy); ctx.rotate(gn.a); ctx.lineJoin = 'round';
+  ctx.fillStyle = '#9a9ea6'; ctx.strokeStyle = FET_OL; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.roundRect(-55, -14, 150, 28, 5); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#c4c8ce'; ctx.fillRect(-50, -11, 140, 6);
+  ctx.fillStyle = '#6a6e76'; ctx.beginPath(); ctx.roundRect(74, -19, 24, 38, 4); ctx.roundRect(-64, -17, 20, 34, 4); ctx.fill(); ctx.stroke();
+  if (f.gunT < 30 && Math.floor(frame / 4) % 2) { ctx.fillStyle = '#ff4020'; ell(100, 0, 8, 8); ctx.fill(); } // ¡va a disparar!
+  ctx.restore();
+  ctx.fillStyle = '#1a1a1e'; ctx.strokeStyle = FET_OL; ctx.lineWidth = 2.5 * s; ell(gx, gy, 10 * s, 9.5 * s); ctx.fill(); ctx.stroke(); // su manota encima
+  ctx.fillStyle = '#4a4652'; // escombros en la línea donde destroza la torre
+  for (let x = 40; x < W - 40; x += 26) { const k = (x * 7.3) % 11; ctx.fillRect(x + Math.sin(frame * 0.2 + x) * 2, top - 6 - k * 0.8 + Math.sin(frame * 0.3 + k) * 3, 14 + k, 10 + k * 0.6); }
+  ctx.fillStyle = 'rgba(255,90,40,.55)'; ctx.fillRect(32, top - 2, W - 64, 4);
 }
 function fetDrawTiles(L, camY) {
   const y0 = Math.max(0, Math.floor(camY / FT)), y1 = Math.min(L.h - 1, Math.floor((camY + H) / FT));
@@ -8358,7 +8396,7 @@ function fetDrawCard() {
   ctx.strokeText(t, CX + (1 - easeOut(k)) * 300, 225); ctx.fillStyle = '#fff'; ctx.fillText(t, CX + (1 - easeOut(k)) * 300, 225);
   ctx.font = '900 34px Impact, "Arial Black", sans-serif'; ctx.fillStyle = '#ffe0a0'; ctx.fillText(f.L.name, CX - (1 - easeOut(k)) * 300, 285);
   ctx.font = 'bold 18px monospace'; ctx.fillStyle = '#e8c8b8';
-  ctx.fillText(f.lab ? 'Aprieta los 3 botones para romper su frasco... y luego dale su merecido.' : '¡Trepa la torre antes de que el robot de Dr. Fetus te alcance!', CX, 370);
+  ctx.fillText(f.lab ? 'Aprieta los 3 botones para romper su frasco... y luego atrápalo y dale su merecido.' : '¡Trepa la torre antes de que Dr. Fetus te alcance! Cuidado con sus cohetes.', CX, 370);
   ctx.font = '15px monospace'; ctx.fillStyle = '#a89888';
   ctx.fillText('← → correr · ESPACIO / ↑ saltar (también en las paredes) · mantén para saltar más alto', CX, 410);
   drawMeatBoy(CX - 220 - 11, 470 - 22, { face: 1 }); drawFetusSuit(CX + 220, 520, 0.6, { laugh: true });
@@ -8392,14 +8430,15 @@ function fetDraw() {
   for (const s of f.L.saws) { const [x, y] = fetSawPos(s, f.t); fetSawDraw(x, y - camY, s.r, f.t * 0.25); }
   if (lab) {
     for (const r of lb.rockets) fetMissileDraw(r.x, r.y, Math.atan2(FET_JAR.y - r.y, FET_JAR.x - r.x) - 0.3);
-    for (const q of lb.mis) fetMissileDraw(q.x, q.y, q.a);
+
     for (const q of lb.saws) fetSawDraw(q.x, q.y, q.r, q.rot);
     if (lb.fetus) drawFetusBaby(lb.fetus.x, lb.fetus.y, 1.3, { rot: lb.fetus.rot, laugh: f.phase === 'free' });
   }
   const m = f.m;
   if (!m.dead && f.phase !== 'trans') drawMeatBoy(m.x, m.y - camY, { face: m.face, sq: m.sq });
   for (const q of f.parts) { ctx.fillStyle = q.col; ell(q.x, q.y - camY, q.r, q.r); ctx.fill(); }
-  if (!lab) fetDrawRobot(f.rob - camY);
+  if (!lab) fetDrawRobot(f.rob - camY, camY);
+  for (const q of f.mis) fetMissileDraw(q.x, q.y - camY, q.a);
   ctx.restore();
   // HUD
   modeHearts();

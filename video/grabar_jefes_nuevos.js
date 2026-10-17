@@ -137,7 +137,7 @@ async function openGame(port) {
   const close = async () => { cdp.close(); browser.kill(); await sleep(500); try { fs.rmSync(profile, { recursive: true, force: true }); } catch {} };
   return { cdp, close, profile };
 }
-const STATUS = `bal ? 'baldi ' + bal.phase + (bal.z ? ' ' + bal.z.got + '/4' : '') : fet ? 'fetus ' + fet.phase + ' wp' + fet.botWp + ' muertes ' + fet.deaths + ' y' + Math.round(fet.m.y) : bossIntro ? 'intro' : 'fin'`;
+const STATUS = `bal ? 'baldi ' + bal.phase + (bal.z ? ' ' + bal.z.got + '/7' : '') : fet ? 'fetus ' + fet.phase + ' wp' + fet.botWp + ' muertes ' + fet.deaths + ' y' + Math.round(fet.m.y) : bossIntro ? 'intro' : 'fin'`;
 
 async function grabar(type, probar) {
   const { cdp, close, profile } = await openGame(PORT);
