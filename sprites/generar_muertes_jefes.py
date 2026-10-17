@@ -11,7 +11,8 @@ PX, PY = 128, 140          # pivote (centro del cuerpo), igual que en las hojas 
 DT = 1 / FPS
 OUT = (28, 16, 12, 255)    # color del contorno que usan los sprites
 ORDER = ['monstro', 'duque_moscas', 'isaac_oscuro', 'rey_koopa', 'dragon_fin', 'dr_huevon', 'rey_fantasma', 'cerebro_madre',
-         'gurdy', 'peep', 'viuda', 'pie_mama', 'satanas', 'rey_slime', 'rey_boo', 'nave_nodriza', 'ridley', 'wither', 'ganon', 'sans']
+         'gurdy', 'peep', 'viuda', 'pie_mama', 'satanas', 'rey_slime', 'rey_boo', 'nave_nodriza', 'ridley', 'wither', 'ganon', 'sans',
+         'baldi', 'dr_fetus']
 
 # ------------------------------------------------------------------ utilidades de imagen
 def load(n): return Image.open(os.path.join(DIR, f'jefe_{n}.png')).convert('RGBA')
@@ -855,10 +856,89 @@ def sans():
         frames.append(f)
     return frames, POP
 
+def glitch(im, k, seed):
+    """falla de computadora: franjas corridas de lado y los colores separados"""
+    rng = np.random.default_rng(seed); a = arr(im); out = a.copy(); y = 0
+    while y < F:
+        h = int(rng.integers(3, 14)); dx = int(rng.normal(0, 22 * k)) if rng.random() < 0.35 + 0.5 * k else 0
+        out[y:y + h] = np.roll(a[y:y + h], dx, axis=1); y += h
+    d = int(2 + 7 * k); r = np.roll(out, -d, axis=1); b = np.roll(out, d, axis=1)
+    res = out.copy(); res[..., 0] = np.maximum(out[..., 0] * 0.3, r[..., 0]); res[..., 2] = np.maximum(out[..., 2] * 0.3, b[..., 2])
+    res[..., 3] = np.maximum.reduce([out[..., 3], r[..., 3] * 0.8, b[..., 3] * 0.8])
+    res[1::3, :, :3] *= 0.8                                   # rayitas de pantalla vieja
+    return img(res)
+
+def baldi():
+    S = load('baldi'); angry, white, red = fr(S, 1, 0), fr(S, 3, 0), fr(S, 3, 1)
+    POP = 6
+    rng = np.random.default_rng(211)
+    cells = rng.random((F // 8 + 1, F // 8 + 1))
+    blocks = np.kron(cells, np.ones((8, 8)))[:F, :F]          # la estática se lo come en cuadritos
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                         # se descompone como el problema imposible: falla, tiembla, se separa en colores
+            k = (i - 1) / (POP - 2)
+            comp(f, glitch(xform(angry, 1.0, rot=shake(i, 2), dx=shake(i, 3)), k, 212 + i))
+            if i == POP - 1: comp(f, glow(PX, PY - 40, 110, (190, 255, 200), 0.45))
+        else:                                                 # se deshace en estática, de cuadrito en cuadrito
+            t = (i - POP) / (COLS - POP - 1)
+            if i == POP: comp(f, glow(PX, PY - 40, 120, (220, 255, 225), 0.8))
+            body = glitch(angry, 1.0, 230 + i)
+            a = arr(body); keep = blocks > 0.15 + 0.85 * t
+            noise = np.random.default_rng(240 + i).random((F, F)) * 255
+            st = a.copy(); st[..., 0] = st[..., 1] = st[..., 2] = noise; st[..., 3] = a[..., 3] * (blocks > 0.15 + 0.85 * t - 0.12) * (1 - t * 0.5)
+            a[..., 3] *= keep * (1 - t * 0.6)
+            comp(f, img(st), img(a))
+        frames.append(f)
+    return frames, POP
+
+def dr_fetus():
+    S = load('dr_fetus'); idle, white, red = fr(S, 0, 0), fr(S, 3, 0), fr(S, 3, 1)
+    crack = [fr(S, 4, c) for c in (1, 3, 5, 6)]; broken = fr(S, 4, 7)
+    POP = 6
+    JX, JY = PX, 150                                          # el frasco
+    jar = ellmask(JX, JY - 10, 46, 62)
+    shards = make_shards(fr(S, 4, 6), 26, 221, region=jar)
+    smoke = particles(222, 14, JX, JY, speed=(30, 90), vz=(0, 1))
+    sparks = particles(223, 18, JX, JY, speed=(120, 300), vz=(60, 180))
+    baby = dict(x=JX, y=JY, vx=70, vy=-40, vz=330, spin=600, k=0.5, i=0)
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                         # el frasco se raja más y más
+            body = crack[i - 2]
+            if i == POP - 1: body = tint(body, (255, 245, 230), 0.4)
+            comp(f, xform(body, 1.0, rot=shake(i, 2 + i), dx=shake(i, 2 + i)))
+        else:                                                 # ¡revienta! vidrios, chispas, humo, el cuerpo se cae y el fetito sale volando
+            t = (i - POP) * DT + 0.03; u = (i - POP) / (COLS - POP - 1)
+            boom(f, i, POP, (255, 230, 190), 110)
+            comp(f, soft([(JX + math.cos(j * 1.3) * 30 * (1 + u * 2), JY - 20 - 40 * u + math.sin(j * 1.3) * 18, 22 + 26 * u, 18 + 20 * u, (60, 60, 66), max(0, 0.75 - u * 0.8)) for j in range(6)], 5))
+            comp(f, fade(xform(broken, 1.0, 1.0 - 0.25 * u, rot=12 * u, dy=40 * u, py=227), max(0.0, 1 - max(0, u - 0.55) * 2.2)))
+            if i < COLS - 1: draw_shards(f, shards, t, 230, al=max(0, 1 - t * 1.5), g=500)
+            L = Layer(); al = max(0.0, 1 - u * 1.3)
+            for q in sparks:
+                x, y, h, landed = ballistic(q, t)
+                if not landed and al > 0: L.ell(x, y, 2.4, fill=(255, 200, 80, int(255 * al)))
+            x, y, h, landed = ballistic(baby, t, g=700)             # el fetito sale volando dando vueltas
+            a = math.radians(baby['spin'] * t)
+            L.ell(x, y, 12, fill=(244, 169, 164, 255), outline=(17, 17, 17, 255), w=2)
+            ex, ey = math.cos(a) * 4.5, math.sin(a) * 4.5
+            L.ell(x - ex, y - ey, 1.8, fill=(17, 17, 17, 255)); L.ell(x + ex, y + ey, 3.6, outline=(17, 17, 17, 255), w=1.6)
+            L.ell(x + math.cos(a + 1.6) * 9, y + math.sin(a + 1.6) * 9, 6, 4.5, fill=(244, 169, 164, 255), outline=(17, 17, 17, 255), w=1.5)
+            comp(f, L.get())
+        frames.append(f)
+    return frames, POP
+
 BOSSES = {'monstro': monstro, 'duque_moscas': duque_moscas, 'isaac_oscuro': isaac_oscuro, 'rey_koopa': rey_koopa,
           'dragon_fin': dragon_fin, 'dr_huevon': dr_huevon, 'rey_fantasma': rey_fantasma, 'cerebro_madre': cerebro_madre,
           'gurdy': gurdy, 'peep': peep, 'viuda': viuda, 'pie_mama': pie_mama, 'satanas': satanas, 'rey_slime': rey_slime,
-          'rey_boo': rey_boo, 'nave_nodriza': nave_nodriza, 'ridley': ridley, 'wither': wither, 'ganon': ganon, 'sans': sans}
+          'rey_boo': rey_boo, 'nave_nodriza': nave_nodriza, 'ridley': ridley, 'wither': wither, 'ganon': ganon, 'sans': sans,
+          'baldi': baldi, 'dr_fetus': dr_fetus}
 
 
 if __name__ == '__main__':

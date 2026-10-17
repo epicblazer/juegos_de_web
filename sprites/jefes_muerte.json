@@ -3,7 +3,7 @@
   "frameWidth": 256,
   "frameHeight": 256,
   "columns": 12,
-  "rows": 20,
+  "rows": 22,
   "pivot": {
     "x": 128,
     "y": 140,
@@ -150,6 +150,20 @@
       "fps": 10,
       "loop": false,
       "pop": 5
+    },
+    "baldi": {
+      "row": 20,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "dr_fetus": {
+      "row": 21,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
     }
   }
 }

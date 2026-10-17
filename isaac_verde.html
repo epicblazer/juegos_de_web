@@ -3226,6 +3226,7 @@ const SPRITE_FILES = {
   gurdy: 'sprites/jefe_gurdy.png', peep: 'sprites/jefe_peep.png', widow: 'sprites/jefe_viuda.png', momFoot: 'sprites/jefe_pie_mama.png',
   satan: 'sprites/jefe_satanas.png', kingSlime: 'sprites/jefe_rey_slime.png', kingBoo: 'sprites/jefe_rey_boo.png', mothership: 'sprites/jefe_nave_nodriza.png',
   ridley: 'sprites/jefe_ridley.png', wither: 'sprites/jefe_wither.png', ganon: 'sprites/jefe_ganon.png', sans: 'sprites/jefe_sans.png',
+  baldi: 'sprites/jefe_baldi.png', fetus: 'sprites/jefe_dr_fetus.png',
 };
 const SPR = {};
 if (typeof Image !== 'undefined') for (const [k, src] of Object.entries(SPRITE_FILES)) {
@@ -3254,10 +3255,10 @@ function drawPlayerSprite() {
 
 // Jefes: qué fila de su hoja usar según lo que están haciendo
 const BOSS_SPR = { monstro: 1.6, dukeFlies: 1.6, darkIsaac: 2.4, koopa: 1.6, dragon: 1.35, eggman: 1.6, ghostKing: 1.6, brain: 1.6,
-  gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6 };
+  gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6, baldi: 1.9, fetus: 1.9 };
 const FACES_RIGHT = ['dragon', 'ridley']; // hojas que miran a la derecha: se giran hacia donde vuelan
 // tamaño de la hoja en las cinemáticas: los jefes nuevos se igualan al tamaño de los viejos
-const cutScale = type => ['gurdy', 'peep', 'widow', 'momFoot', 'satan', 'kingSlime', 'kingBoo', 'mothership', 'ridley', 'wither', 'ganon', 'sans'].includes(type) ? Math.min(2.08 / BOSS_SPR[type], 2) : 1.3;
+const cutScale = type => ['gurdy', 'peep', 'widow', 'momFoot', 'satan', 'kingSlime', 'kingBoo', 'mothership', 'ridley', 'wither', 'ganon', 'sans', 'baldi', 'fetus'].includes(type) ? Math.min(2.08 / BOSS_SPR[type], 2) : 1.3;
 function bossFrame(e, row, frames, fps, loop) {
   if (e.animRow !== row) { e.animRow = row; e.animAt = frame; }
   const i = Math.floor((frame - e.animAt) / 60 * fps);
@@ -3322,6 +3323,8 @@ function bossAnim(e) {
       if (e.state === 'spin' && e.timer >= 20) return { row: 2, col: bossFrame(e, 2, 8, 14, true) };
       return { row: 0, col: bossFrame(e, 0, 8, 8, true) };
     case 'sans': { const r = e.state === 'tired' ? 2 : e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r === 2 ? 4 : 8, true) }; }
+    case 'baldi': { const r = e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r ? 10 : 6, true) }; }
+    case 'fetus': { const r = e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r ? 10 : 8, true) }; }
   }
   return { row: 0, col: 0 };
 }
@@ -3345,7 +3348,7 @@ function drawBossSprite(e) {
 }
 // sprites/jefes_muerte.png: una fila por jefe (12 cuadros); pop = cuadro en que revienta (ver jefes_muerte.json)
 const BOSS_DEATH = { monstro: [0, 7], dukeFlies: [1, 7], darkIsaac: [2, 6], koopa: [3, 9], dragon: [4, 6], eggman: [5, 7], ghostKing: [6, 6], brain: [7, 5],
-  gurdy: [8, 7], peep: [9, 7], widow: [10, 7], momFoot: [11, 6], satan: [12, 6], kingSlime: [13, 6], kingBoo: [14, 6], mothership: [15, 7], ridley: [16, 6], wither: [17, 6], ganon: [18, 7], sans: [19, 5] };
+  gurdy: [8, 7], peep: [9, 7], widow: [10, 7], momFoot: [11, 6], satan: [12, 6], kingSlime: [13, 6], kingBoo: [14, 6], mothership: [15, 7], ridley: [16, 6], wither: [17, 6], ganon: [18, 7], sans: [19, 5], baldi: [20, 6], fetus: [21, 6] };
 function bossDeathAnim(e, onPop) {
   const S = BOSS_SPR[e.type], D = BOSS_DEATH[e.type];
   if (!S || !D || !sprOK('bossDeath')) return false;
@@ -5991,8 +5994,12 @@ function drawBoss(e, flash) {
       ctx.strokeStyle = '#06140a'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-16, -42); ctx.lineTo(-5, -37); ctx.moveTo(16, -42); ctx.lineTo(5, -37); ctx.stroke();
       break;
     }
-    case 'baldi': { ctx.translate(e.x, y); drawBaldiFig(0, e.r + 8, 0.5, { mood: e.state === 'idle' ? 'smile' : 'angry', slap: e.state === 'idle' ? 0 : Math.max(0, Math.sin(frame * 0.25)) }); break; }
-    case 'fetus': { ctx.translate(e.x, y); drawFetusSuit(0, e.r + 8, 0.42, { laugh: e.state !== 'idle' }); break; }
+    case 'baldi': { // mood/slap/talk/look/bob: los usa la hoja de sprites para sus animaciones
+      const idle = e.state === 'idle'; ctx.translate(e.x, y + (e.bob || 0));
+      drawBaldiFig(0, e.r + 8, 0.5, { mood: e.mood || (idle ? 'smile' : 'angry'), talk: e.talk, look: e.look, slap: e.slap !== undefined ? e.slap : idle ? 0 : Math.max(0, Math.sin(frame * 0.25)) });
+      break;
+    }
+    case 'fetus': { ctx.translate(e.x, y + (e.bob || 0)); drawFetusSuit(0, e.r + 8, 0.42, { laugh: e.laugh !== undefined ? e.laugh : e.state !== 'idle', crack: e.crack, broken: e.broken, gun: e.gun }); break; }
     case 'sans': { // esqueleto bajito con chamarra azul y pantuflas
       ctx.translate(e.x, y);
       const tired = e.state === 'tired', bob = tired ? 0 : Math.sin(frame * 0.1) * 1.5;
@@ -7450,7 +7457,7 @@ function wrapText(text, maxW) { // corta el texto en renglones (con la fuente ac
 
 // ---------- dibujos (pies en (x, feet), s = escala) ----------
 function drawBaldiFig(x, feet, s, o = {}) { // Baldi como en su juego: cabeza de foco, ojos saltones, nariz larga, labios rojos, camisa verde larga, piernas azules flacas y pies naranjas
-  const mood = o.mood || 'smile', talk = o.talk && Math.floor(frame / 5) % 2, slap = o.slap || 0;
+  const mood = o.mood || 'smile', talk = o.talk === 2 ? 1 : o.talk && Math.floor(frame / 5) % 2, slap = o.slap || 0; // talk 2: boca abierta
   ctx.save(); ctx.translate(x, feet); ctx.scale(s, s); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   const SK = '#e2c890', SKL = '#f4e2b8', SKD = '#b8975e';
   const hGrad = (x0, x1, a, b) => { const g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, a); g.addColorStop(0.4, b); g.addColorStop(1, a); return g; };
@@ -8346,7 +8353,7 @@ function drawFetusJar(x, y, s, o = {}) { // frasco cuadrado con el sombrero de c
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   const W2 = 44, H2 = 34;
   ctx.save(); ctx.beginPath(); ctx.roundRect(-W2, -H2, W2 * 2, H2 * 2, 14); ctx.clip();
-  ctx.fillStyle = '#c4ccd2'; ctx.fillRect(-W2, -H2, W2 * 2, H2 * 2); // lo de atrás del frasco, gris clarito
+  if (!o.broken) { ctx.fillStyle = '#c4ccd2'; ctx.fillRect(-W2, -H2, W2 * 2, H2 * 2); } // lo de atrás del frasco, gris clarito
   fetSuitTop(H2 + 2); // el traje sube hasta adentro del frasco
   if (!o.broken) {
     fetusFace(o.laugh ? o : { ...o, laugh: false }); // la cabeza asoma por el cuello de la camisa
@@ -8389,6 +8396,16 @@ function drawFetusSuit(x, feet, s, o = {}) { // el cuerpo de traje: piernitas, z
     ctx.fillStyle = '#1a1a1e'; ctx.strokeStyle = FET_OL; ctx.lineWidth = 2.5; ell(hx, hy, 10, 9.5); ctx.fill(); ctx.stroke();
     ell(hx - sd * 8, hy - 5, 4, 5.5); ctx.fill(); ctx.stroke(); // pulgar
     ctx.strokeStyle = '#3a3a42'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(hx + sd * 2, hy - 6); ctx.quadraticCurveTo(hx + sd * 7, hy, hx + sd * 2, hy + 6); ctx.stroke();
+  }
+  if (o.gun) { // su lanzacohetes en la mano derecha (o.gun = { a: ángulo, flash: 0..1, kick: retroceso })
+    const g = o.gun, hx = 52 - (g.kick || 0) * 5, hy = -40 + wob;
+    ctx.save(); ctx.translate(hx, hy); ctx.rotate(g.a || 0); ctx.lineJoin = 'round';
+    ctx.fillStyle = '#9a9ea6'; ctx.strokeStyle = FET_OL; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.roundRect(-22, -8, 58, 16, 3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#c4c8ce'; ctx.fillRect(-19, -6, 52, 3.5);
+    ctx.fillStyle = '#6a6e76'; ctx.beginPath(); ctx.roundRect(30, -11, 12, 22, 3); ctx.roundRect(-27, -10, 9, 20, 3); ctx.fill(); ctx.stroke();
+    if (g.flash) { ctx.fillStyle = `rgba(255,170,40,${g.flash})`; ell(50, 0, 12 * g.flash, 9 * g.flash); ctx.fill(); ctx.fillStyle = `rgba(255,245,200,${g.flash})`; ell(46, 0, 6 * g.flash, 4.5 * g.flash); ctx.fill(); }
+    ctx.restore();
+    ctx.fillStyle = '#1a1a1e'; ctx.strokeStyle = FET_OL; ctx.lineWidth = 2.5; ell(hx, hy, 10, 9.5); ctx.fill(); ctx.stroke(); // la mano encima
   }
   drawFetusJar(0, -80, 1, o);
   ctx.restore();
@@ -8572,8 +8589,17 @@ const SHEET_ROWS = {
   wither: [['idle', 8], ['skulls', 10], ['idle', 8, () => ({ armor: 0.55 })], null, ['skulls', 10, () => ({ armor: 0.55 })]],
   ganon: [['idle', 8], ['trident', 10, i => ({ timer: i < 3 ? 10 : 40 })], ['spin', 14, () => ({ timer: 30 })], null, ['idle', 8]],
   sans: [['idle', 8], ['bones', 8], ['tired', 4], null, ['idle', 8]],
+  // Baldi: 0 quieto sonriendo · 1 enojado pegándose con la regla · 2 hablando contento · 4 caminando enojado
+  baldi: [['idle', 6, i => ({ bob: Math.sin(i / 8 * BAL_TAU) * 1.2, look: Math.sin(i / 8 * BAL_TAU) * 0.6 })],
+    ['slap', 10, i => ({ mood: 'angry', slap: (1 - Math.cos(i / 8 * BAL_TAU)) / 2 })],
+    ['idle', 8, i => ({ mood: 'happy', talk: i % 2 ? 2 : 0, slap: 0 })], null,
+    ['chase', 10, i => ({ mood: 'angry', bob: -Math.abs(Math.sin(i / 8 * BAL_TAU)) * 2.5, slap: 0.25 + 0.2 * Math.sin(i / 8 * BAL_TAU) })]],
+  // Dr. Fetus: 0 quieto · 1 riéndose con las manos arriba · 2 disparando el lanzacohetes · 4 el frasco se raja y revienta
+  fetus: [['idle', 8], ['laugh', 10, () => ({ laugh: true })],
+    ['shoot', 10, i => ({ laugh: false, gun: { a: -0.22, flash: i === 3 ? 1 : i === 4 ? 0.5 : 0, kick: i === 3 ? 1 : i === 4 ? 0.5 : 0 } })], null,
+    ['idle', 6, i => ({ laugh: false, crack: [0, 1, 1, 2, 2, 3, 3, 3][i], broken: i === 7 })]],
 };
-const SHEET_SCALE = { gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6 };
+const SHEET_SCALE = { gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6, baldi: 1.9, fetus: 1.9 };
 window.exportarHojaJefe = type => {
   const F = 256, SS = 2, S = SHEET_SCALE[type], spec = SHEET_ROWS[type];
   const sheet = mkCanvas(F * 8, F * 5), sx = sheet.getContext('2d');
@@ -8589,7 +8615,7 @@ window.exportarHojaJefe = type => {
     try { drawBoss(e, hit > 0); } finally { ctx = prevCtx; }
     // mismo sombreado que en el juego: luz arriba a la izquierda, borde oscuro
     tx.setTransform(SS, 0, 0, SS, 0, 0); tx.globalCompositeOperation = 'source-atop';
-    const [cy, rr] = type === 'sans' ? [100, 95] : [140, (e.r + 12) * S]; // Sans es alto: la luz se centra en su cara
+    const [cy, rr] = type === 'sans' ? [100, 95] : type === 'baldi' ? [70, 110] : [140, (e.r + 12) * S]; // Sans y Baldi son altos: la luz se centra en su cara
     const g = tx.createRadialGradient(128 - rr * 0.35, cy - rr * 0.45, rr * 0.05, 128, cy, rr * 1.25);
     g.addColorStop(0, 'rgba(255,248,232,.38)'); g.addColorStop(0.38, 'rgba(255,255,255,0)'); g.addColorStop(0.78, 'rgba(0,0,0,.32)'); g.addColorStop(1, 'rgba(0,0,0,.6)');
     if (!hit) { tx.fillStyle = g; tx.fillRect(0, 0, F, F); }
