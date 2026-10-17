@@ -3,7 +3,7 @@
   "frameWidth": 256,
   "frameHeight": 256,
   "columns": 12,
-  "rows": 23,
+  "rows": 24,
   "pivot": {
     "x": 128,
     "y": 140,
@@ -167,6 +167,13 @@
     },
     "diablo": {
       "row": 22,
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "pop": 6
+    },
+    "flowey": {
+      "row": 23,
       "frames": 12,
       "fps": 10,
       "loop": false,

@@ -7,7 +7,7 @@ const fs = require('fs'), path = require('path'), os = require('os');
 
 const DIR = __dirname, GAME = path.join(DIR, '..', 'isaac_verde.html');
 const JEFES = { gurdy: 'gurdy', peep: 'peep', widow: 'viuda', momFoot: 'pie_mama', satan: 'satanas', kingSlime: 'rey_slime',
-  kingBoo: 'rey_boo', mothership: 'nave_nodriza', ridley: 'ridley', wither: 'wither', ganon: 'ganon', sans: 'sans', baldi: 'baldi', fetus: 'dr_fetus', devil: 'diablo' };
+  kingBoo: 'rey_boo', mothership: 'nave_nodriza', ridley: 'ridley', wither: 'wither', ganon: 'ganon', sans: 'sans', baldi: 'baldi', fetus: 'dr_fetus', devil: 'diablo', flowey: 'flowey' };
 const PORT = 9335;
 
 function findBrowser() {

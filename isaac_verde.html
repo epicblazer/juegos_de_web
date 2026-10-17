@@ -369,6 +369,13 @@ const SFX = {
   dvlBell() { [880, 1320].forEach((f, i) => { tone({ f, type: 'sine', dur: 1.2, vol: 0.14, delay: i * 0.02 }); tone({ f: f * 2.76, type: 'sine', dur: 0.4, vol: 0.04 }); }); },
   dvlWallop() { [523, 659, 784, 1046].forEach((f, i) => { tone({ f, type: 'sawtooth', dur: 0.32, vol: 0.07, delay: i * 0.05 }); tone({ f: f * 1.005, type: 'square', dur: 0.32, vol: 0.04, delay: i * 0.05 }); }); noise({ dur: 0.4, vol: 0.3, freq: 3000, type: 'highpass' }); },
   dvlKO() { [392, 523, 659, 784, 1046].forEach((f, i) => tone({ f, type: 'square', dur: 0.25, vol: 0.09, delay: i * 0.07 })); noise({ dur: 1.4, vol: 0.25, freq: 5000, type: 'highpass', delay: 0.3 }); tone({ f: 80, f2: 40, type: 'sine', dur: 0.6, vol: 0.5 }); },
+  // Flowey (Undertale)
+  floweyVoice() { tone({ f: 330 + Math.random() * 40, type: 'square', dur: 0.04, vol: 0.06 }); },
+  floweyLaugh() { for (let i = 0; i < 8; i++) { tone({ f: 260 - i * 14 + (i % 2) * 30, f2: 180 - i * 10, type: 'sawtooth', dur: 0.09, vol: 0.12, delay: i * 0.11 }); noise({ dur: 0.07, vol: 0.05, freq: 1200, delay: i * 0.11 }); } },
+  fwStatic() { noise({ dur: 0.6, vol: 0.22, freq: 3000, type: 'highpass' }); noise({ dur: 0.6, vol: 0.12, freq: 600 }); },
+  fwSave() { [784, 1046, 1318, 1568].forEach((f, i) => tone({ f, type: 'triangle', dur: 0.25, vol: 0.1, delay: i * 0.08 })); },
+  fwSoul() { [523, 659, 784, 1046].forEach((f, i) => tone({ f, type: 'sine', dur: 0.5, vol: 0.1, delay: i * 0.05 })); },
+  fwHit() { noise({ dur: 0.3, vol: 0.4, freq: 2000, f2: 200 }); tone({ f: 180, f2: 60, type: 'square', dur: 0.3, vol: 0.18 }); },
   start() { [262, 330, 392, 523].forEach((f, i) => tone({ f, type: 'square', dur: 0.15, vol: 0.15, delay: i * 0.08 })); },
 };
 const lastPlay = {};
@@ -631,6 +638,16 @@ const BOSS_SONGS = {
     mel: ['0.2.3.4.7...6.4.', '3.4.5.7.a...9.7.', '4.6.7.9.b...a.9.', '7.6.4.3.2.1.0...'],
     arp: '0.24.7.4', bass: 'x5o5', drums: 'k - h s k h - s k - h s k h s r',
     v: { leadType: 'brass', leadVol: 0.075, leadLen: 1.6, leadCut: 3400, arpType: 'bell', arpVol: 0.03, bassType: 'triangle', bassVol: 0.3, bassLen: 1.8, padVol: 0.025 } },
+  flowey: { // "Your Best Nightmare": rápida, distorsionada y oscura
+    bpm: 144, key: 45, scale: 'minor', prog: [0, 0, 5, 6], crash: 4,
+    mel: ['0.3.7.3.a.7.3.7.', '0.3.7.3.b.a.7.5.', '5.8.c.8.a.8.7.5.', '6.5.3.2.0.......'],
+    arp: '0.7.3.7.', bass: 'xxox', drums: 'k h s h k h s h k k s h k h s s',
+    v: { leadType: 'sawtooth', leadVol: 0.05, leadLen: 1.2, arpType: 'square', arpVol: 0.025, bassType: 'sawtooth', bassVol: 0.1, bassLen: 0.9 } },
+  floweyFin: { // "Finale": las almas se rebelan, esperanzadora
+    bpm: 100, key: 55, scale: 'major', prog: [0, 4, 5, 3], pad: true,
+    mel: ['4...3.2.4...7...', '9...7.6.7...4...', '5...4.3.5...9...', '7.......9...b...'],
+    arp: '0.2.4.7.', bass: 'x.o.', drums: 'k - h - s - h - k - h - s - r r',
+    v: { leadType: 'brass', leadVol: 0.07, leadLen: 3, arpType: 'bell', arpVol: 0.03, bassType: 'triangle', bassVol: 0.25, bassLen: 2 } },
   sans: { // hueso duro: riff chiptune que no para
     bpm: 124, key: 50, scale: 'minor', prog: [0, 0, 6, 5],
     mel: ['0.07..6.5.4.3.4.', '0.07..6.5.4.3.4.', '6.67..6.5.4.3.4.', '5.57..6.5.4.3.4.'],
@@ -1652,8 +1669,8 @@ const BOSS_POOLS = [
   ['monstro', 'widow', 'momFoot', 'kingBoo', 'mothership', 'baldi'],
   ['dukeFlies', 'momFoot', 'kingBoo', 'mothership', 'ridley', 'koopa', 'baldi'],
   ['ridley', 'wither', 'ganon', 'eggman', 'koopa', 'momFoot', 'fetus'],
-  ['wither', 'ganon', 'sans', 'dragon', 'ghostKing', 'brain', 'fetus', 'devil'],
-  ['satan', 'sans', 'ganon', 'wither', 'brain', 'devil'],
+  ['wither', 'ganon', 'sans', 'dragon', 'ghostKing', 'brain', 'fetus', 'devil', 'flowey'],
+  ['satan', 'sans', 'ganon', 'wither', 'brain', 'devil', 'flowey'],
 ];
 let runBosses = []; // jefes que ya salieron en esta partida
 function pickFloorBoss() {
@@ -1705,7 +1722,8 @@ const BDEF = {
   sans: { name: 'Sans', ref: 'Undertale', r: 22, hp: 150, sc: 1.25 },
   baldi: { name: 'Baldi', ref: "Baldi's Basics in Education and Learning", r: 24, hp: 150, sc: 1.3 }, // se le gana con 3 minijuegos
   fetus: { name: 'Dr. Fetus', ref: 'Super Meat Boy', r: 30, hp: 200, sc: 1.2 }, // pelea de plataformas
-  devil: { name: 'El Diablo', ref: 'Cuphead', r: 34, hp: 250, sc: 1.2 }, // pelea de correr y disparar con Cuphead
+  devil: { name: 'El Diablo', ref: 'Cuphead', r: 34, hp: 250, sc: 1.2 },
+  flowey: { name: 'Flowey', ref: 'Undertale', r: 26, hp: 200, sc: 1.2 }, // la pelea de "Photoshop Flowey" como en Undertale // pelea de correr y disparar con Cuphead
 };
 const GHOST_COLORS = ['#ff2a2a', '#ffb8de', '#2affff', '#ffb852'];
 function mkEnemy(type, x, y) {
@@ -1736,7 +1754,7 @@ function freeSpot(r) {
 }
 function enterRoom() {
   cur.visited = true;
-  enemies = []; tears = []; particles = []; hazards = []; spawnQ = []; fxAnims = []; bossIntro = null; ut = null; bal = null; fet = null; dvl = null; deathCut = null; endingAt = 0;
+  enemies = []; tears = []; particles = []; hazards = []; spawnQ = []; fxAnims = []; bossIntro = null; ut = null; bal = null; fet = null; dvl = null; fw = null; deathCut = null; endingAt = 0;
   p.shield = p.shieldMax; // el Escudo Divino se recarga en cada sala
   if (cur.type === 'devil' || cur.type === 'angel') {
     if (!cur.seen) {
@@ -1754,6 +1772,7 @@ function enterRoom() {
     playMusic(isFinalLevel() ? 'final' : bossMusic(floorBoss), 0.9); // cada jefe tiene su propia canción
     if (retro.on) { showMsg(b.name, b.noHomage ? b.ref : 'Jefe · homenaje a ' + b.ref); sfx(floorBoss === 'dragon' ? 'screech' : 'roar'); }
     else if (floorBoss === 'sans') utStart(b); // contra Sans la pelea es como en Undertale
+    else if (floorBoss === 'flowey') fwStart(b); // contra Flowey también: la pelea de "Photoshop Flowey"
     else bossIntro = { t: 0, boss: b }; // presentación del jefe (ver drawBossIntro)
   } else {
     sfx('doorClose');
@@ -2850,6 +2869,7 @@ function onKey(c) {
   if (bal && state === 'play') { balKey(c); return; }
   if (fet && state === 'play') { fetKey(c); return; }
   if (dvl && state === 'play') { dvlKey(c); return; }
+  if (fw && state === 'play') { fwKey(c); return; }
   if (bossIntro && (isConfirm(c) || c.startsWith('Arrow')) && bossIntro.t > 40 && bossIntro.t < INTRO.out) { bossIntro.t = INTRO.out; return; } // saltar
   if (state === 'win') { if (isConfirm(c)) { state = 'play'; winPending = false; nextFloor(); } else if (c === 'KeyR') enterSelect(); return; }
   if (c === 'KeyR') startGame();
@@ -2873,6 +2893,7 @@ function update() {
   if (bal) { balUpdate(); return; } // minijuegos de Baldi
   if (fet) { fetUpdate(); return; } // plataformas contra Dr. Fetus
   if (dvl) { dvlUpdate(); return; } // correr y disparar contra el Diablo (Cuphead)
+  if (fw) { fwUpdate(); return; } // batalla de Flowey (estilo Undertale)
   if (bossIntro) { updateBossIntro(); updateParticles(); return; } // el juego se congela durante la presentación
 
   let ix = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), iy = (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
@@ -2979,13 +3000,13 @@ function update() {
   const bossDown = enemies.some(e => e.boss && e.hp <= 0);
   for (const e of enemies) if (e.hp <= 0) {
     const col = { fly: '#222', ghost: e.color, slime: '#5c5', slimeMini: '#5c5', creeper: '#4caf50', skeleton: '#ddd', invader: '#7cfc00', goomba: '#8a4a1e',
-      spider: '#222', widow: '#2a1a2a', peep: '#e8c838', kingSlime: '#3a6ae0', kingBoo: '#eef', sans: '#fff', baldi: '#4caf50', fetus: '#f4a8b4', devil: '#141016', mothership: '#aaa', wither: '#333', ridley: '#6a3a8a' }[e.type] || (e.boss ? '#a03030' : '#8a1a1a');
+      spider: '#222', widow: '#2a1a2a', peep: '#e8c838', kingSlime: '#3a6ae0', kingBoo: '#eef', sans: '#fff', baldi: '#4caf50', fetus: '#f4a8b4', devil: '#141016', flowey: '#ffd800', mothership: '#aaa', wither: '#333', ridley: '#6a3a8a' }[e.type] || (e.boss ? '#a03030' : '#8a1a1a');
     const blood = { slime: '#3aa02a', slimeMini: '#3aa02a', fly: '#5a0a0a', dragon: '#4a0a5a', brain: '#a83060', goomba: '#6a3a10', peep: '#c8a820', kingSlime: '#2a5ad0', ridley: '#4a0a5a', spider: '#2a1010' }[e.type];
     const x = e.x, y = e.y, z = e.z, r = e.r, boss = e.boss, type = e.type;
     const splat = () => { // reventón: partículas, mancha en el suelo y, si es jefe, sacudida y sonido
       burst(x, y - z, col, boss ? 60 : 16, boss ? 7 : 4);
       if (['eggman', 'mothership', 'wither'].includes(type)) addDecal('scorch', x, y, 70);
-      else if (!['ghost', 'ghostKing', 'invader', 'skeleton', 'creeper', 'kingBoo', 'sans'].includes(type))
+      else if (!['ghost', 'ghostKing', 'invader', 'skeleton', 'creeper', 'kingBoo', 'sans', 'flowey'].includes(type))
  addDecal('blood', x, y + r * 0.4, boss ? 65 : 14 + r * 0.7, blood || '#8a0a0a');
       if (boss) { shake = 18; sfx('bossDie'); }
     };
@@ -3254,7 +3275,7 @@ const SPRITE_FILES = {
   gurdy: 'sprites/jefe_gurdy.png', peep: 'sprites/jefe_peep.png', widow: 'sprites/jefe_viuda.png', momFoot: 'sprites/jefe_pie_mama.png',
   satan: 'sprites/jefe_satanas.png', kingSlime: 'sprites/jefe_rey_slime.png', kingBoo: 'sprites/jefe_rey_boo.png', mothership: 'sprites/jefe_nave_nodriza.png',
   ridley: 'sprites/jefe_ridley.png', wither: 'sprites/jefe_wither.png', ganon: 'sprites/jefe_ganon.png', sans: 'sprites/jefe_sans.png',
-  baldi: 'sprites/jefe_baldi.png', fetus: 'sprites/jefe_dr_fetus.png', devil: 'sprites/jefe_diablo.png',
+  baldi: 'sprites/jefe_baldi.png', fetus: 'sprites/jefe_dr_fetus.png', devil: 'sprites/jefe_diablo.png', flowey: 'sprites/jefe_flowey.png',
 };
 const SPR = {};
 if (typeof Image !== 'undefined') for (const [k, src] of Object.entries(SPRITE_FILES)) {
@@ -3283,10 +3304,10 @@ function drawPlayerSprite() {
 
 // Jefes: qué fila de su hoja usar según lo que están haciendo
 const BOSS_SPR = { monstro: 1.6, dukeFlies: 1.6, darkIsaac: 2.4, koopa: 1.6, dragon: 1.35, eggman: 1.6, ghostKing: 1.6, brain: 1.6,
-  gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6, baldi: 1.9, fetus: 1.9, devil: 1.15 };
+  gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6, baldi: 1.9, fetus: 1.9, devil: 1.15, flowey: 1.6 };
 const FACES_RIGHT = ['dragon', 'ridley']; // hojas que miran a la derecha: se giran hacia donde vuelan
 // tamaño de la hoja en las cinemáticas: los jefes nuevos se igualan al tamaño de los viejos
-const cutScale = type => ['gurdy', 'peep', 'widow', 'momFoot', 'satan', 'kingSlime', 'kingBoo', 'mothership', 'ridley', 'wither', 'ganon', 'sans', 'baldi', 'fetus', 'devil'].includes(type) ? Math.min(2.08 / BOSS_SPR[type], 2) : 1.3;
+const cutScale = type => ['gurdy', 'peep', 'widow', 'momFoot', 'satan', 'kingSlime', 'kingBoo', 'mothership', 'ridley', 'wither', 'ganon', 'sans', 'baldi', 'fetus', 'devil', 'flowey'].includes(type) ? Math.min(2.08 / BOSS_SPR[type], 2) : 1.3;
 function bossFrame(e, row, frames, fps, loop) {
   if (e.animRow !== row) { e.animRow = row; e.animAt = frame; }
   const i = Math.floor((frame - e.animAt) / 60 * fps);
@@ -3354,6 +3375,7 @@ function bossAnim(e) {
     case 'baldi': { const r = e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r ? 10 : 6, true) }; }
     case 'fetus': { const r = e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r ? 10 : 8, true) }; }
     case 'devil': { const r = e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r ? 10 : 8, true) }; }
+    case 'flowey': { const r = e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, 8, true) }; }
   }
   return { row: 0, col: 0 };
 }
@@ -3377,7 +3399,7 @@ function drawBossSprite(e) {
 }
 // sprites/jefes_muerte.png: una fila por jefe (12 cuadros); pop = cuadro en que revienta (ver jefes_muerte.json)
 const BOSS_DEATH = { monstro: [0, 7], dukeFlies: [1, 7], darkIsaac: [2, 6], koopa: [3, 9], dragon: [4, 6], eggman: [5, 7], ghostKing: [6, 6], brain: [7, 5],
-  gurdy: [8, 7], peep: [9, 7], widow: [10, 7], momFoot: [11, 6], satan: [12, 6], kingSlime: [13, 6], kingBoo: [14, 6], mothership: [15, 7], ridley: [16, 6], wither: [17, 6], ganon: [18, 7], sans: [19, 5], baldi: [20, 6], fetus: [21, 6], devil: [22, 6] };
+  gurdy: [8, 7], peep: [9, 7], widow: [10, 7], momFoot: [11, 6], satan: [12, 6], kingSlime: [13, 6], kingBoo: [14, 6], mothership: [15, 7], ridley: [16, 6], wither: [17, 6], ganon: [18, 7], sans: [19, 5], baldi: [20, 6], fetus: [21, 6], devil: [22, 6], flowey: [23, 6] };
 function bossDeathAnim(e, onPop) {
   const S = BOSS_SPR[e.type], D = BOSS_DEATH[e.type];
   if (!S || !D || !sprOK('bossDeath')) return false;
@@ -4385,7 +4407,7 @@ const CREDITS = [
   ['cast', 'gurdy', 'Gurdy', 'Sótano'], ['cast', 'peep', 'Peep', 'Sótano'], ['cast', 'widow', 'La Viuda', 'Cuevas'],
   ['cast', 'momFoot', 'Pie de Mamá', 'Cuevas'], ['cast', 'kingSlime', 'Rey Slime', 'Sótano'], ['cast', 'kingBoo', 'Rey Boo', 'Cuevas'],
   ['cast', 'mothership', 'Nave Nodriza', 'Cuevas'], ['cast', 'ridley', 'Ridley', 'Profundidades'], ['cast', 'wither', 'Wither', 'Profundidades'],
-  ['cast', 'ganon', 'Ganon', 'Profundidades'], ['cast', 'sans', 'Sans', 'Útero'], ['cast', 'baldi', 'Baldi', 'Su escuela'], ['cast', 'fetus', 'Dr. Fetus', 'Su laboratorio'], ['cast', 'devil', 'El Diablo', 'Inkwell Hell'], ['cast', 'satan', 'Satanás', 'Útero'],
+  ['cast', 'ganon', 'Ganon', 'Profundidades'], ['cast', 'sans', 'Sans', 'Útero'], ['cast', 'baldi', 'Baldi', 'Su escuela'], ['cast', 'fetus', 'Dr. Fetus', 'Su laboratorio'], ['cast', 'devil', 'El Diablo', 'Inkwell Hell'], ['cast', 'flowey', 'Flowey', 'El Subsuelo'], ['cast', 'satan', 'Satanás', 'Útero'],
   ['cast', 'darkIsaac', '???', '¿eres tú?'],
   ['cast', 'officer', 'El Coronel', 'como él mismo'], ['gap', 50],
   ['h', 'HOMENAJE A'], ['n', 'The Binding of Isaac'], ['n', 'Super Mario'], ['n', 'The Legend of Zelda'], ['n', 'Sonic the Hedgehog'],
@@ -6031,6 +6053,7 @@ function drawBoss(e, flash) {
     }
     case 'fetus': { ctx.translate(e.x, y + (e.bob || 0)); drawFetusSuit(0, e.r + 8, 0.42, { laugh: e.laugh !== undefined ? e.laugh : e.state !== 'idle', crack: e.crack, broken: e.broken, gun: e.gun }); break; }
     case 'devil': { ctx.translate(e.x, y + (e.bob || 0)); drawDevilFig(0, e.r + 10, 0.6, { mood: e.mood || (e.state === 'idle' ? 'grin' : 'laugh'), tri: e.tri !== undefined ? e.tri : e.state !== 'idle', head: e.head, arms: e.arms, white: flash, lx: e.lx, ly: e.ly }); break; }
+    case 'flowey': { ctx.translate(e.x, y + (e.bob || 0)); if (flash) ctx.filter = 'brightness(0) invert(1)'; drawFlowey(0, e.r + 8, 1.3, e.face || (e.state === 'idle' ? 'happy' : 'evil'), { still: e.still }); break; }
     case 'sans': { // esqueleto bajito con chamarra azul y pantuflas
       ctx.translate(e.x, y);
       const tired = e.state === 'tired', bob = tired ? 0 : Math.sin(frame * 0.1) * 1.5;
@@ -6855,6 +6878,7 @@ function draw() {
   if (bal && state === 'play') { balDraw(); return; }
   if (fet && state === 'play') { fetDraw(); return; }
   if (dvl && state === 'play') { dvlDraw(); return; }
+  if (fw && state === 'play') { fwDraw(); return; }
   ctx.save();
   if (shake) ctx.translate(rnd(-shake, shake), rnd(-shake, shake));
   drawRoom();
@@ -9515,6 +9539,635 @@ function dvlDraw() {
   modePause();
 }
 
+
+// cinemática de muerte de Flowey: como la primera vez que lo conoces, "pétalos de la amistad" que se cierran sobre ti
+KO_FIN.flowey = {
+  line: '"En este mundo, es MATAR o MORIR."', flash: '255,255,255',
+  ev: { 8: () => sfx('floweyVoice'), 36: () => sfx('fwStatic'), 50: () => sfx('utDing'), 100: c => { sfx('utHurt'); sfx('kill'); shake = 14; koBits(c, KO_I.x, KO_I.y - 60, 30, { color: ['#ffffff', '#ffe680'], spd: 8, g: 0.2, glow: true, life: 50 }); }, 130: () => sfx('floweyLaugh') },
+  draw(b, t) {
+    const I = KO_I, B = KO_B, by = B.y + 68;
+    softShadow(B.x, I.y + 6, 60, 14, 0.6);
+    drawKOBoss(b, B.x, by, t < 36 ? 0 : 1, koCyc(8, 8), { scale: 1.3 });
+    drawKOPlayer(I.x, I.y, t);
+    if (t >= 46 && t < 104) { // el anillo de pétalos blancos aparece, gira y se cierra
+      const k = easeIn(koK(t, 62, 100)), r = lerp(150, 0, k), al = koK(t, 46, 58);
+      ctx.save(); ctx.globalAlpha *= al; ctx.fillStyle = '#fff';
+      for (let i = 0; i < 20; i++) { const a = i / 20 * BAL_TAU + t * 0.03; ctx.save(); ctx.translate(I.x + Math.cos(a) * r, I.y - 60 + Math.sin(a) * r * 0.8); ctx.rotate(t * 0.2 + i); ell(0, 0, 9, 5.5); ctx.fill(); ctx.restore(); }
+      ctx.restore();
+    }
+  },
+};
+// =====================================================================
+// FLOWEY (Undertale): la pelea contra "Photoshop Flowey", como en el final neutral del juego original.
+// Flowey se roba las SEIS almas humanas y se transforma: una tele con su cara, ojos en tallos que disparan rayos,
+// manos con dedos-pistola, lanzallamas, bombas X, enredaderas con espinas y sus "pétalos de la amistad".
+// No hay menú: cada tanto aparece un ALMA humana con su propio ataque (y cambia el color de tu corazón);
+// alcanza el botón ACTUAR para pedirle ayuda: el alma te cura y se rebela contra Flowey.
+// Si tu corazón se rompe, Flowey CARGA SU PARTIDA y sigues... pero Isaac pierde un corazón entero.
+// Con las seis almas libres, se vuelven contra él y al final decides: LUCHAR o PIEDAD.
+// =====================================================================
+let fw = null;
+const FW_BOX = { x0: 330, y0: 270, x1: 630, y1: 478 };
+const FW_TV = { x: 480, y: 104, w: 196, h: 140 }; // la tele (su cara)
+const FW_EYES = [[292, 150], [668, 150]]; // los ojos en tallos (lanzan rayos)
+const FW_FONT = 'bold 18px "Courier New", monospace';
+const FW_SOULS = [
+  { name: 'PACIENCIA', col: '#42fcff', item: 'cuchillo de juguete', mode: 'red' },
+  { name: 'VALENTÍA', col: '#fca600', item: 'guante duro', mode: 'red' },
+  { name: 'INTEGRIDAD', col: '#2a5cff', item: 'zapatillas de ballet', mode: 'blue' },
+  { name: 'PERSEVERANCIA', col: '#d535d9', item: 'cuaderno roto', mode: 'purple' },
+  { name: 'AMABILIDAD', col: '#00c000', item: 'sartén quemada', mode: 'green' },
+  { name: 'JUSTICIA', col: '#ffff00', item: 'pistola vacía', mode: 'yellow' },
+];
+const FW_SEQ = ['pellets', 'guns', 0, 'flames', 'xbombs', 1, 'lasers', 2, 'vines', 3, 'guns', 4, 'mix', 5]; // números: almas
+const FW_INTRO = [['¡Hola! Soy FLOWEY.', 'happy'], ['FLOWEY la FLOR.', 'happy'], ['Llegaste muy lejos, ¿eh?', 'sly'], ['Pero yo no soy un jefe cualquiera...', 'sly'],
+  ['En este mundo, es MATAR o MORIR.', 'evil'], ['Y ahora... ¡tengo las SEIS almas humanas!', 'evil'], ['Je je je je je...', 'evil']];
+const FW_TALK = { 0: ['¿De verdad creíste que podías ganarme?', '¡Yo soy el DIOS de este mundo!'], 3: ['¿No lo entiendes?', 'Todo esto es solo una pesadilla...', '...¡y NUNCA vas a despertar!'],
+  6: ['¡Ustedes me obedecen a MÍ!'], 8: ['Je je je... ¿sigues vivo?'], 10: ['¡Esto ya no es divertido!'], 12: ['¡¡MUERE DE UNA VEZ!!'] };
+const FW_HELPED = ['¡¿Q-qué?! ¿Qué fue eso?', '¡¿Por qué me desobedecen?!', '¡No! ¡NO!', '¡Dejen de ayudarle!', '¡Ugh! ¡Almas inútiles!', '¡¿Q-qué está pasando?!'];
+const FW_LOAD = [['¿Wow, de verdad pensaste que eso funcionaría?'], ['¡Je je je! ¡Puedo cargar mi partida las veces que quiera!'], ['¿Otra vez? Qué aburrido...'], ['¡ARCHIVO CARGADO! ¡Ja ja ja!']];
+const FW_FINAL = ['¡¿Q-qué?! ¡¿Qué están haciendo?!', '¡No! ¡Esperen! ¡Por favor!', '¡NOOOOOOOO!'];
+const FW_SPARE = ['...', '...¿Por qué...?', '...¿Por qué eres amable conmigo...?', '...No lo entiendo.', '...Nunca lo entenderé.'];
+const FW_WORDS = ['INÚTIL', 'DÉBIL', 'TONTO', 'SOLO', 'MIEDO', 'PERDIDO'];
+const fwLines = b => [b.y0 + (b.y1 - b.y0) * 0.25, (b.y0 + b.y1) / 2, b.y0 + (b.y1 - b.y0) * 0.75]; // las cuerdas del alma morada
+const fwLin = (x, y, vx, vy) => t => [x + vx * t, y + vy * t];
+function fPel(f, r, o = {}) { fw.objs.push({ k: 'pel', f, r, t: 0, life: 700, col: 'w', shape: 'petal', dmg: 5, ...o }); }
+function fRect(f, o = {}) { fw.objs.push({ k: 'rect', f, t: 0, life: 700, col: 'w', dmg: 5, ...o }); }
+function fBeam(x, y, ang, o = {}) { fw.objs.push({ k: 'beam', x, y, ang, t: 0, warn: 30, fire: 14, w: 26, col: 'w', dmg: 8, life: (o.warn || 30) + (o.fire || 14) + 2, ...o }); }
+
+// ---------- los ataques de Flowey ----------
+const FW_ATK = {
+  pellets: { dur: 430, run(t, b) { // "pétalos de la amistad": anillos que se cierran sobre ti (con un hueco) y lluvia de pétalos
+    if (t % 95 === 10 && t < 330) {
+      const cx = fw.soul.x, cy = fw.soul.y, n = 20, gap = ri(0, n - 1), sp = rnd(-0.025, 0.025);
+      for (let i = 0; i < n; i++) {
+        if (i === gap || i === (gap + 1) % n) continue;
+        const a0 = i / n * BAL_TAU;
+        fPel(tt => { const r = 150 - Math.max(0, tt - 28) * 1.6; return [cx + Math.cos(a0 + sp * tt) * r, cy + Math.sin(a0 + sp * tt) * r]; }, 7, { life: 120 });
+      }
+      sfx('floweyLaugh', 0.3); fw.face = 'laugh'; fw.faceT = 40;
+    }
+    if (t > 40 && t < 380 && t % 12 === 0) fPel(fwLin(rnd(b.x0 - 80, b.x1 + 80), b.y0 - 20, rnd(-1.3, 1.3), 2.8), 6);
+  } },
+  guns: { dur: 400, run(t, b) { // manos con dedos-pistola a los lados: ráfagas de 3 balas apuntadas
+    if (t > 20 && t < 370 && t % 22 === 0) {
+      const side = (t / 22) % 2 ? 1 : 0, hx = side ? b.x1 + 74 : b.x0 - 74, hy = clamp(fw.soul.y + rnd(-40, 40), b.y0 + 10, b.y1 - 10);
+      fw.hand[side] = { y: hy, t: fw.t };
+      const a = Math.atan2(fw.soul.y - hy, fw.soul.x - hx);
+      for (const da of [-0.3, 0, 0.3]) fPel(fwLin(hx + Math.cos(a) * 30, hy + Math.sin(a) * 30, Math.cos(a + da) * 4.6, Math.sin(a + da) * 4.6), 6, { shape: 'ball', dmg: 4 });
+      sfx('shoot');
+    }
+  } },
+  flames: { dur: 380, run(t, b) { // lanzallamas en las esquinas de arriba: chorros de fuego que barren la caja
+    if (t > 20 && t < 350 && t % 3 === 0) for (const side of [0, 1]) {
+      const nx = side ? b.x1 + 46 : b.x0 - 46, ny = b.y0 - 40, base = Math.atan2((b.y0 + b.y1) / 2 - ny, (b.x0 + b.x1) / 2 - nx);
+      const a = base + Math.sin(t * 0.028 + side * 2.2) * 0.62 + rnd(-0.05, 0.05);
+      fw.flame[side] = a;
+      if (Math.floor(t / 40) % 3 !== 2) fPel(fwLin(nx, ny, Math.cos(a) * 4.8, Math.sin(a) * 4.8), 7, { shape: 'fire', dmg: 4, life: 120 });
+    }
+    if (t % 24 === 0) sfx('flame', 0.2);
+  } },
+  xbombs: { dur: 430, run(t, b) { // bombas X: bajan flotando, parpadean y explotan en cruz
+    if (t > 10 && t < 340 && t % 34 === 10) {
+      const x = rnd(b.x0 + 24, b.x1 - 24), y0 = b.y0 - 10, vy = rnd(1.1, 1.8), tb = ri(56, 76);
+      fw.objs.push({ k: 'xb', f: tt => [x, y0 + vy * Math.min(tt, tb)], tb, t: 0, life: tb + 20 });
+    }
+  } },
+  lasers: { dur: 400, run(t, b) { // los ojos en tallos lanzan rayos (primero una línea de aviso)
+    if (t > 10 && t < 350 && t % 26 === 10) {
+      const [ex, ey] = FW_EYES[(t / 26 | 0) % 2], a = Math.atan2(fw.soul.y - ey, fw.soul.x - ex) + rnd(-0.06, 0.06);
+      fBeam(ex, ey, a); fw.eyeT[(t / 26 | 0) % 2] = fw.t; sfx('gbCharge', 0.05);
+    }
+    if (t > 120 && t < 350 && t % 70 === 0) fBeam(FW_TV.x, FW_TV.y + 80, Math.PI / 2 + rnd(-0.3, 0.3), { w: 40, warn: 36 }); // y uno gordo desde la tele
+  } },
+  vines: { dur: 400, run(t, b) { // enredaderas con espinas que cruzan la caja de lado a lado
+    if (t > 10 && t < 350 && t % 28 === 10) {
+      const n = (t / 28 | 0) % 3 === 2 ? 2 : 1;
+      for (let i = 0; i < n; i++) {
+        const side = Math.random() < 0.5 ? 0 : 1, y = rnd(b.y0 + 14, b.y1 - 34), h = 22, warn = 26, w = b.x1 - b.x0;
+        fRect(tt => { const k = tt - warn; if (k < 0) return null; const ext = w * Math.min(1, k / 8, clamp((30 - k) / 10, 0, 1)); return ext <= 0 ? null : [side ? b.x1 - ext : b.x0, y, ext, h]; },
+          { shape: 'vine', side, y, h, warn, life: warn + 40, dmg: 6 });
+      }
+      sfx('utBone', 0.05);
+    }
+  } },
+  mix: { dur: 520, run(t, b) { // todo junto
+    if (t % 60 === 20 && t < 460) FW_ATK.lasers.run(10, b);
+    if (t % 3 === 0 && t > 30 && t < 470) FW_ATK.flames.run(t, b);
+    if (t % 68 === 10 && t < 460) FW_ATK.xbombs.run(10, b);
+  } },
+};
+// ---------- las almas humanas (cada una con su ataque y su color de corazón) ----------
+const FW_SOUL_RUN = [
+  (t, b) => { // PACIENCIA (celeste): cuchillos celestes: si te MUEVES te cortan
+    if (t % 54 === 6) { const a = rnd(-0.5, 0.5) + (Math.random() < 0.5 ? 0 : Math.PI), cx = (b.x0 + b.x1) / 2 + rnd(-60, 60), cy = (b.y0 + b.y1) / 2 + rnd(-40, 40);
+      fBeam(cx - Math.cos(a) * 300, cy - Math.sin(a) * 300, a, { col: 'cyan', w: 44, warn: 24, fire: 14, dmg: 6, shape: 'knife' }); sfx('slash', 0.1); }
+    if (t % 40 === 20) fPel(fwLin(rnd(b.x0, b.x1), b.y0 - 10, 0, 2.6), 7, { shape: 'knife', dmg: 5 });
+  },
+  (t, b) => { // VALENTÍA (naranja): guantazos naranjas: si te QUEDAS QUIETO te pegan
+    if (t % 46 === 6) { const y = rnd(b.y0 + 30, b.y1 - 30); fRect(tt => { const k = tt - 22; return k < 0 || k > 16 ? null : [b.x0, y - 40, b.x1 - b.x0, 80]; }, { col: 'orange', shape: 'glove', y, warn: 22, life: 40, dmg: 6 }); }
+    if (t % 30 === 15) { const fromL = Math.random() < 0.5, y = rnd(b.y0 + 15, b.y1 - 15); fPel(fwLin(fromL ? b.x0 - 20 : b.x1 + 20, y, fromL ? 4 : -4, 0), 12, { shape: 'glove', dmg: 5, flip: !fromL }); }
+  },
+  (t, b) => { // INTEGRIDAD (azul): gravedad; zapatillas de ballet que se deslizan: salta
+    if (t % 34 === 6) { const fromR = (t / 34 | 0) % 2 === 0, hgt = [20, 30, 24][(t / 34 | 0) % 3], x0 = fromR ? b.x1 + 4 : b.x0 - 40;
+      fRect(tt => [x0 + (fromR ? -4 : 4) * tt, b.y1 - hgt, 36, hgt], { shape: 'shoe', flip: fromR, dmg: 5 }); }
+    if (t % 80 === 46) fRect(tt => [b.x1 + 4 - 4 * tt, b.y0, 40, b.y1 - b.y0 - 46], { shape: 'shoe2', dmg: 5 }); // las altas: quédate abajo
+  },
+  (t, b) => { // PERSEVERANCIA (morado): en las cuerdas; las palabras del cuaderno vuelan hacia ti
+    const ls = fwLines(b);
+    if (t % 26 === 6) { const l = ri(0, 2), word = pick(FW_WORDS), w = word.length * 13 + 10, sp = rnd(3.2, 4.2);
+      fRect(tt => [b.x1 + 4 - sp * tt, ls[l] - 11, w, 22], { shape: 'word', word, dmg: 5 }); }
+  },
+  null, // AMABILIDAD (verde): no te puedes mover; usa el escudo contra los huevos estrellados (se maneja aparte)
+  null, // JUSTICIA (amarillo): dispara hacia arriba con Z (se maneja aparte)
+];
+
+// ---------- el corazón ----------
+function fwSoulStep(s, inp, b) {
+  const ox = s.x, oy = s.y, H = 11;
+  if (s.mode === 'red' || s.mode === 'blue') utSoulStep(s, inp, b);
+  else if (s.mode === 'yellow') { s.mode = 'red'; utSoulStep(s, inp, b); s.mode = 'yellow'; }
+  else if (s.mode === 'purple') {
+    const ls = fwLines(b);
+    if (inp.u && !s.pu) s.line = Math.max(0, s.line - 1);
+    if (inp.d && !s.pd) s.line = Math.min(2, s.line + 1);
+    s.pu = inp.u; s.pd = inp.d;
+    s.y += clamp(ls[s.line] - s.y, -7, 7);
+    s.x = clamp(s.x + ((inp.r ? 1 : 0) - (inp.l ? 1 : 0)) * UT_SP, b.x0 + H, b.x1 - H);
+  } else if (s.mode === 'green') { if (inp.u) s.sh = 0; else if (inp.d) s.sh = 1; else if (inp.l) s.sh = 2; else if (inp.r) s.sh = 3; }
+  s.moved = s.x !== ox || s.y !== oy;
+}
+function fwHit(o, x, y, tt, moved) { // ¿el corazón en (x, y) choca con o en el cuadro tt? (cuánto daño)
+  const ok = o.col === 'cyan' ? moved : o.col === 'orange' ? !moved : true;
+  if (o.k === 'pel') { if (tt > o.life) return 0; const [px, py] = o.f(tt); return ok && Math.hypot(px - x, py - y) < o.r + 5 ? o.dmg : 0; }
+  if (o.k === 'rect') { const r = o.f(tt); if (!r) return 0; return ok && x > r[0] - 5 && x < r[0] + r[2] + 5 && y > r[1] - 5 && y < r[1] + r[3] + 5 ? o.dmg : 0; }
+  if (o.k === 'beam') {
+    const k = tt - o.warn; if (k < 0 || k > o.fire) return 0;
+    const c = Math.cos(o.ang), s = Math.sin(o.ang), dx = x - o.x, dy = y - o.y;
+    return ok && dx * c + dy * s > 0 && Math.abs(dy * c - dx * s) < o.w / 2 + 3 ? o.dmg : 0;
+  }
+  if (o.k === 'xb') {
+    if (tt < o.tb) { const [bx, by] = o.f(tt); return Math.hypot(bx - x, by - y) < 15 ? 6 : 0; }
+    if (tt < o.tb + 18) { const [bx, by] = o.f(o.tb); return Math.abs(x - bx) < 15 || Math.abs(y - by) < 15 ? 8 : 0; }
+  }
+  return 0;
+}
+function fwHurt(n) {
+  const f = fw; if (f.inv > 0) return;
+  f.hp -= n; f.inv = 40; sfx('utHurt', 0.07); f.shake = Math.max(f.shake, 3);
+  if (f.hp <= 0) { f.hp = 0; fwPhase('broken'); f.objs = []; f.shards = null; stopMusic(); }
+}
+
+// ---------- flujo de la pelea ----------
+function fwStart(boss) {
+  stopMusic();
+  fw = { boss, phase: 'intro', t: 0, pt: 0, hp: 60, maxHp: 60, inv: 0, objs: [], seg: 0, st: 0, act: null, freed: 0, crack: 0, face: 'grin', faceT: 0,
+    bub: null, text: '', textN: 0, shake: 0, loads: 0, hand: [{ y: 370, t: -99 }, { y: 370, t: -99 }], flame: [0.6, 2.5], eyeT: [-99, -99], mouth: 0,
+    soul: { x: 480, y: 374, mode: 'red', g: 0, vg: 0, ground: false, slam: false, moved: false, line: 1, sh: 0 }, shots: [], btn: 3, noDie: false, botIn: null,
+    il: 0, glitch: 0, souls: [], choice: null };
+  fw.bub = { lines: FW_INTRO.map(l => l[0]), i: 0, n: 0, next: () => fwPhase('trans') };
+}
+const fwPhase = ph => { fw.phase = ph; fw.pt = 0; };
+function fwSay(lines, next) { fw.bub = { lines, i: 0, n: 0, next }; }
+function fwNextLine() {
+  const b = fw.bub; if (!b) return;
+  if (b.n < b.lines[b.i].length) { b.n = b.lines[b.i].length; return; }
+  if (++b.i >= b.lines.length) { fw.bub = null; b.next(); } else b.n = 0;
+}
+function fwBegin(i) { // empieza el segmento i de la pelea (si Flowey tiene algo que decir, primero habla)
+  const f = fw; f.seg = i; f.objs = []; f.act = null; f.shots = [];
+  const s = f.soul; s.x = 480; s.y = 374; s.vg = 0; s.ground = false; s.slam = false; s.line = 1; s.sh = 0; s.g = 0;
+  const go = () => {
+    const k = FW_SEQ[i]; f.st = 0;
+    if (typeof k === 'number') { s.mode = FW_SOULS[k].mode; if (s.mode === 'purple') s.y = fwLines(FW_BOX)[1]; fwPhase('soul'); sfx('fwSoul'); if (s.mode !== 'red') sfx('utDing'); }
+    else { s.mode = 'red'; fwPhase('atk'); }
+  };
+  if (FW_TALK[i] && !f.loaded) { s.mode = 'red'; fwPhase('talk'); fwSay(FW_TALK[i], go); } else go();
+  f.loaded = false;
+}
+function fwKey(c) {
+  const f = fw;
+  if (modeKeyPause(c)) return;
+  const ok = isConfirm(c) || c === 'KeyZ' || c === 'KeyJ', lf = c === 'ArrowLeft' || c === 'KeyA', rt = c === 'ArrowRight' || c === 'KeyD';
+  if (f.bub && (ok || c === 'KeyX')) { fwNextLine(); return; }
+  if (f.phase === 'help' && ok) { f.textN = f.text.length; return; }
+  if (f.phase === 'mercy') {
+    if (lf || rt) { f.btn = f.btn === 0 ? 3 : 0; sfx('utMove'); }
+    else if (ok) { sfx('utOk'); if (f.btn === 0) { f.choice = 'kill'; fwPhase('kill'); sfx('slash'); } else { f.choice = 'spare'; fwPhase('spare'); fwSay(FW_SPARE, () => fwPhase('sink')); } }
+    return;
+  }
+  if ((f.phase === 'soul') && f.soul.mode === 'yellow' && ok && f.shots.length < 4) { f.shots.push({ x: f.soul.x, y: f.soul.y - 12 }); sfx('blip', 0.05); }
+}
+function fwInput() { return { l: keys.ArrowLeft || keys.KeyA || touchMove.x < -0.3, r: keys.ArrowRight || keys.KeyD || touchMove.x > 0.3, u: keys.ArrowUp || keys.KeyW || touchMove.y < -0.3, d: keys.ArrowDown || keys.KeyS || touchMove.y > 0.3 }; }
+function fwUpdate() {
+  const f = fw; f.t++; f.pt++;
+  if (f.shake > 0.3) f.shake *= 0.85; else f.shake = 0;
+  if (f.inv > 0) f.inv--;
+  if (f.faceT > 0 && --f.faceT === 0) f.face = 'grin';
+  if (f.glitch > 0) f.glitch--;
+  if (window.__fwBot) window.__fwBot(f); // lo usa video/grabar_jefes_nuevos.js para jugar solo
+  if (!fw) return;
+  const b = f.bub;
+  if (b && b.n < b.lines[b.i].length) { const a = Math.floor(b.n); b.n = Math.min(b.lines[b.i].length, b.n + 0.5); if (Math.floor(b.n) > a && /\S/.test(b.lines[b.i][a])) sfx('floweyVoice', 0.05); }
+  if (f.textN < f.text.length) { const a = Math.floor(f.textN); f.textN = Math.min(f.text.length, f.textN + 0.55); if (Math.floor(f.textN) > a && /\S/.test(f.text[a])) sfx('utText', 0.05); }
+  const s = f.soul, ph = f.phase, BX = FW_BOX;
+  if (ph === 'intro' || ph === 'spare' || ph === 'wilt') return;
+  if (ph === 'trans') { // las seis almas giran alrededor de Flowey, se las traga y se transforma
+    if (f.pt === 1) { sfx('floweyLaugh'); }
+    if (f.pt === 60 || f.pt === 120) sfx('fwSoul');
+    if (f.pt === 170) { sfx('fwStatic'); f.glitch = 60; f.shake = 14; }
+    if (f.pt === 230) { sfx('fwSave'); }
+    if (f.pt === 300) { playMusic('flowey'); sfx('floweyLaugh'); f.face = 'laugh'; f.faceT = 80; fwBegin(0); }
+    return;
+  }
+  if (ph === 'broken') { // tu corazón se rompe...
+    if (f.pt === 30) sfx('utCrack');
+    if (f.pt === 80) { sfx('utShatter'); f.shards = Array.from({ length: 6 }, () => ({ x: s.x, y: s.y, vx: rnd(-2.5, 2.5), vy: rnd(-4, -1), r: rnd(0, 6) })); }
+    if (f.shards) for (const q of f.shards) { q.x += q.vx; q.y += q.vy; q.vy += 0.12; q.r += 0.2; }
+    if (f.pt >= 170) { // ...y Flowey carga su partida. A Isaac le cuesta un corazón entero.
+      fwPhase('load'); sfx('fwStatic'); f.glitch = 40; f.loads++;
+      if (!f.noDie) { p.inv = 0; p.shield = 0; hurt(2); if (!fw || state !== 'play') return; }
+    }
+    return;
+  }
+  if (ph === 'load') {
+    if (f.pt === 60) sfx('fwSave');
+    if (f.pt === 120) { f.hp = f.maxHp; f.face = 'laugh'; f.faceT = 60; sfx('floweyLaugh'); fwPhase('loadTalk'); fwSay(FW_LOAD[(f.loads - 1) % FW_LOAD.length], () => { f.loaded = true; fwBegin(f.seg); playMusic('flowey'); }); }
+    return;
+  }
+  if (ph === 'help') { // el alma te cura y se rebela contra Flowey
+    if (f.pt === 1) { f.hp = f.maxHp; sfx('utHeal'); }
+    if (f.pt === 150) { sfx('fwHit'); f.shake = 12; f.crack++; f.face = 'hurt'; f.faceT = 70; f.glitch = 20; }
+    if (f.pt >= 170 && f.textN >= f.text.length && !f.bub && !f.helpSaid) { f.helpSaid = true; fwSay([FW_HELPED[f.freed - 1]], () => { f.text = ''; f.helpSaid = false; if (f.seg + 1 >= FW_SEQ.length) fwFinal(); else fwBegin(f.seg + 1); }); }
+    return;
+  }
+  if (ph === 'final') { // las seis almas se le echan encima
+    if (f.pt % 22 === 0 && f.pt < 260) { sfx('fwHit', 0.1); f.shake = 10; f.face = f.pt % 44 ? 'hurt' : 'static'; f.faceT = 20; f.glitch = 8; f.fhp = Math.max(0, 1 - f.pt / 250); }
+    if (f.pt === 280) { sfx('boom'); sfx('fwStatic'); f.shake = 24; f.glitch = 50; }
+    if (f.pt === 380) { fwPhase('wilt'); fwSay(['...', 'P-por favor...', '...no me mates...'], () => { fwPhase('mercy'); f.btn = 3; }); }
+    return;
+  }
+  if (ph === 'kill') { if (f.pt === 20) { sfx('utHit'); f.shake = 8; } if (f.pt === 60) sfx('kill'); if (f.pt >= 170) fwPhase('out'); return; }
+  if (ph === 'sink') { if (f.pt >= 110) fwPhase('out'); return; }
+  if (ph === 'out') { if (f.pt >= 70) fwWin(); return; }
+  if (ph === 'mercy') return;
+  if (ph === 'talk' || ph === 'loadTalk') { fwSoulStep(s, f.botIn || fwInput(), BX); return; }
+  // atk / soul
+  f.st++;
+  fwSoulStep(s, f.botIn || fwInput(), BX);
+  if (s.landed) { sfx('utSlam'); f.shake = 5; }
+  if (ph === 'atk') { const a = FW_ATK[FW_SEQ[f.seg]]; a.run(f.st, BX); if (f.st >= a.dur) { fwBegin(f.seg + 1); return; } }
+  else fwSoulSeg(FW_SEQ[f.seg]);
+  if (!fw || fw.phase === 'help') return;
+  for (const o of f.objs) {
+    o.t++;
+    if (o.k === 'beam' && o.t === o.warn) { sfx(o.shape === 'knife' ? 'slash' : 'gbFire', 0.05); f.shake = Math.max(f.shake, 2); }
+    if (o.k === 'xb' && o.t === o.tb) { sfx('boom', 0.06); f.shake = Math.max(f.shake, 4); }
+    if (o.k === 'rect' && o.t > 20) { const r = o.f(o.t); if (r && (r[0] + r[2] < BX.x0 - 120 || r[0] > BX.x1 + 120)) o.dead = true; }
+    if (o.k === 'pel' && o.t > 20) { const [x, y] = o.f(o.t); if (x < BX.x0 - 160 || x > BX.x1 + 160 || y > BX.y1 + 40 || y < BX.y0 - 200) o.dead = true; }
+    if (o.t > o.life) o.dead = true;
+    if (o.dead) continue;
+    if (o.k === 'egg') { // huevos estrellados contra el escudo verde
+      const d = o.d0 - o.sp * o.t;
+      if (d < 34 && !o.blk && s.sh === o.dir) { o.dead = true; sfx('block', 0.05); f.objs.push({ k: 'pop', x: 480 + FW_D4[o.dir][0] * 34, y: 374 + FW_D4[o.dir][1] * 34, t: 0, life: 14 }); }
+      else if (d < 8) { o.dead = true; fwHurt(6); }
+      continue;
+    }
+    if (o.k === 'tgt') {
+      o.y += o.vy;
+      if (Math.abs(o.x - s.x) < 22 && Math.abs(o.y - s.y) < 18) { o.dead = true; fwHurt(7); }
+      if (o.y > BX.y1 + 10) o.dead = true;
+      continue;
+    }
+    const dmg = fwHit(o, s.x, s.y, o.t, s.moved);
+    if (dmg) fwHurt(dmg);
+    if (!fw || fw.phase === 'broken') return;
+  }
+  f.objs = f.objs.filter(o => !o.dead);
+  for (const q of f.shots) { q.y -= 9; for (const o of f.objs) if (o.k === 'tgt' && Math.abs(o.x - q.x) < 18 && Math.abs(o.y - q.y) < 18) { q.dead = true; if (--o.hp <= 0) { o.dead = true; sfx('kill', 0.05); } break; } if (q.y < BX.y0) q.dead = true; }
+  f.shots = f.shots.filter(q => !q.dead);
+}
+const FW_D4 = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // arriba, abajo, izquierda, derecha
+function fwSoulSeg(k) { // el ataque del alma k y el botón ACTUAR
+  const f = fw, b = FW_BOX, t = f.st, s = f.soul;
+  if (k === 4) { if (t % 26 === 6) { const dir = ri(0, 3); f.objs.push({ k: 'egg', dir, d0: 220, sp: t > 300 ? 4.2 : 3.4, t: 0, life: 200 }); } }
+  else if (k === 5) { if (t % 30 === 6) f.objs.push({ k: 'tgt', x: rnd(b.x0 + 20, b.x1 - 20), y: b.y0 + 4, vy: rnd(0.9, 1.5), hp: 2, t: 0, life: 999 }); }
+  else FW_SOUL_RUN[k](t, b);
+  if (t === 150) { // aparece el botón ACTUAR dentro de la caja
+    f.act = k === 4 ? { x: 480 + (Math.random() < 0.5 ? -110 : 110), y: 374, vx: 0, vy: 0 }
+      : k === 3 ? { x: b.x0 + 60, y: fwLines(b)[ri(0, 2)], vx: 0.8, vy: 0 }
+      : k === 2 ? { x: b.x1 - 60, y: b.y1 - 26, vx: -0.7, vy: 0 }
+      : { x: rnd(b.x0 + 60, b.x1 - 60), y: rnd(b.y0 + 30, b.y1 - 30), vx: rnd(-1, 1), vy: rnd(-0.8, 0.8) };
+    sfx('utDing');
+  }
+  const a = f.act;
+  if (a) {
+    if (k === 4) a.x += clamp(480 - a.x, -0.7, 0.7); // con el alma verde no te mueves: el botón se acerca a ti
+    else { a.x += a.vx; a.y += a.vy; if (a.x < b.x0 + 46 || a.x > b.x1 - 46) a.vx *= -1; if (a.y < b.y0 + 18 || a.y > b.y1 - 18) a.vy *= -1; }
+    if (Math.abs(s.x - a.x) < 46 && Math.abs(s.y - a.y) < 18) { // ¡ACTUAR! pides ayuda
+      const sl = FW_SOULS[k]; f.freed++; f.objs = []; f.act = null; f.shots = []; sfx('utOk'); sfx('fwSoul');
+      fwPhase('help'); f.text = `* Pediste ayuda...\n* El ALMA de la\n  ${sl.name}\n  te recordó.\n* ¡Tus PV se recuperaron!`; f.textN = 0;
+    }
+  }
+}
+function fwFinal() { const f = fw; fwPhase('final'); f.objs = []; f.fhp = 1; playMusic('floweyFin'); f.face = 'hurt'; f.faceT = 60; fwSay([FW_FINAL[0]], () => fwSay([FW_FINAL[1]], () => fwSay([FW_FINAL[2]], () => {}))); }
+function fwWin() { const b = fw.boss; fw = null; b.hp = 0; b.spawn = 0; p.x = CX - 170; p.y = CY + 70; p.vx = p.vy = 0; p.inv = 60; }
+
+// ---------- dibujo ----------
+// Flowey chiquito: pétalos amarillos, cara blanca, tallo y hojas. face: happy, sly, evil, wilt, hurt
+function drawFlowey(x, y, s, face = 'happy', o = {}) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const wilt = face === 'wilt', sway = o.still ? 0 : Math.sin(frame * 0.06) * 1.5;
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(wilt ? 14 : 4, -18, wilt ? 12 + sway : sway, wilt ? -24 : -36); ctx.stroke();
+  ctx.strokeStyle = '#1aa01a'; ctx.lineWidth = 3.4; ctx.stroke();
+  ctx.fillStyle = '#28b428'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.4;
+  for (const sd of [-1, 1]) { ctx.save(); ctx.translate(sd * 3, -8); ctx.rotate(sd * (wilt ? 0.9 : 0.5)); ell(sd * 9, 0, 9, 4); ctx.fill(); ctx.stroke(); ctx.restore(); }
+  ctx.translate(wilt ? 12 + sway : sway, wilt ? -28 : -44); if (wilt) ctx.rotate(0.7);
+  ctx.fillStyle = face === 'evil' && o.dark ? '#c8a000' : '#ffd800';
+  for (let i = 0; i < 6; i++) { const a = i / 6 * BAL_TAU + 0.26; ctx.save(); ctx.rotate(a); ell(0, -14, 7, 9); ctx.fill(); ctx.stroke(); ctx.restore(); }
+  ctx.fillStyle = '#fff'; ell(0, 0, 11, 10.5); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#000';
+  if (face === 'evil') { // la cara malvada: ojos huecos y sonrisota con dientes
+    ell(-4, -2.5, 2.6, 3.6); ctx.fill(); ell(4, -2.5, 2.6, 3.6); ctx.fill();
+    ctx.fillStyle = '#fff'; ell(-4, -2.5, 0.8, 0.8); ctx.fill(); ell(4, -2.5, 0.8, 0.8); ctx.fill();
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(-8, 2); ctx.quadraticCurveTo(0, 13, 8, 2); ctx.quadraticCurveTo(0, 6, -8, 2); ctx.fill();
+    ctx.fillStyle = '#fff'; for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i * 2.6 - 1, 4.2); ctx.lineTo(i * 2.6, 6.4 - Math.abs(i) * 0.4); ctx.lineTo(i * 2.6 + 1, 4.2); ctx.fill(); }
+  } else if (face === 'wilt' || face === 'hurt') {
+    ctx.lineWidth = 1.4; ctx.strokeStyle = '#000'; ctx.beginPath(); ctx.moveTo(-6, -3); ctx.lineTo(-2, -2); ctx.moveTo(6, -3); ctx.lineTo(2, -2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 6, 3, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+  } else if (face === 'sly') {
+    ctx.fillRect(-6, -3, 4, 1.8); ctx.fillRect(2, -3, 4, 1.8); ell(-4, -1.6, 1.4, 1.3); ctx.fill(); ell(4, -1.6, 1.4, 1.3); ctx.fill();
+    ctx.lineWidth = 1.3; ctx.strokeStyle = '#000'; ctx.beginPath(); ctx.moveTo(-4, 4); ctx.quadraticCurveTo(2, 6, 6, 2); ctx.stroke();
+  } else { ell(-3.5, -2, 1.5, 3); ctx.fill(); ell(3.5, -2, 1.5, 3); ctx.fill(); ctx.lineWidth = 1.3; ctx.strokeStyle = '#000'; ctx.beginPath(); ctx.arc(0, 2.5, 4, 0.2, Math.PI - 0.2); ctx.stroke(); }
+  ctx.restore();
+}
+const fwTvCv = mkCanvas(48, 36), fwTvX = fwTvCv.getContext('2d');
+function fwDrawTvFace(face, crack) { // la cara en la tele, en pixeles
+  const prev = ctx; ctx = fwTvX; const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (face === 'static') { for (let y = 0; y < 36; y += 2) for (let x = 0; x < 48; x += 2) { const v = ri(30, 230); R(x, y, 2, 2, `rgb(${v},${v},${v})`); } ctx = prev; return; }
+  R(0, 0, 48, 36, '#cfd6c8');
+  const B = '#111';
+  if (face === 'laugh') {
+    for (const ex of [11, 31]) { R(ex, 11, 2, 2, B); R(ex + 2, 9, 2, 2, B); R(ex + 4, 11, 2, 2, B); }
+    R(10, 17, 28, 14, B); R(12, 31, 24, 2, B); for (let x = 12; x < 36; x += 4) { R(x, 17, 3, 3, '#eee'); R(x, 27, 3, 3, '#eee'); }
+  } else if (face === 'hurt') {
+    for (const ex of [11, 31]) { R(ex, 8, 2, 2, B); R(ex + 4, 8, 2, 2, B); R(ex + 2, 10, 2, 2, B); R(ex, 12, 2, 2, B); R(ex + 4, 12, 2, 2, B); }
+    for (let x = 12; x < 36; x += 2) R(x, 23 + ((x / 2) % 2) * 2, 2, 2, B);
+  } else { // grin: ojos negros enormes con pupilitas y sonrisota con dientes
+    for (const ex of [10, 30]) { R(ex, 6, 8, 12, B); R(ex - 1, 8, 10, 8, B); R(ex + 3, 10, 2, 2, '#fff'); }
+    R(6, 21, 36, 4, B); R(8, 25, 32, 4, B); R(11, 29, 26, 3, B); R(4, 19, 4, 3, B); R(40, 19, 4, 3, B);
+    for (let x = 9; x < 39; x += 4) { R(x, 22, 2, 3, '#eee'); R(x + 1, 27, 2, 2, '#eee'); }
+    if (face === 'angry') { R(9, 3, 10, 2, B); R(30, 3, 10, 2, B); }
+  }
+  ctx = prev;
+}
+function fwDrawHand(x, y, ang, flip, recoil) { // mano pálida con el dedo-pistola apuntando
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.translate(-recoil * 8, 0); ctx.lineJoin = 'round';
+  ctx.fillStyle = '#d8d0c4'; ctx.strokeStyle = '#2a2622'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(-30, -16, 34, 32, 10); ctx.fill(); ctx.stroke(); // puño
+  ctx.beginPath(); ctx.roundRect(0, -12, 34, 10, 5); ctx.fill(); ctx.stroke(); // índice
+  ctx.beginPath(); ctx.roundRect(-14, flip ? 12 : -28, 9, 18, 4); ctx.fill(); ctx.stroke(); // pulgar levantado
+  ctx.strokeStyle = 'rgba(0,0,0,.3)'; ctx.lineWidth = 1.2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(-26, -2 + i * 6); ctx.lineTo(-4, -2 + i * 6); ctx.stroke(); }
+  ctx.fillStyle = '#8a8478'; ctx.fillRect(-60, -10, 30, 20); // la muñeca/tubo
+  if (recoil > 0.5) { ctx.fillStyle = 'rgba(255,240,180,.9)'; ell(40, -7, 8, 6); ctx.fill(); }
+  ctx.restore();
+}
+function fwDrawEye(x, y, lookX, lookY, charge) {
+  ctx.save(); ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#3a5a2a'; ctx.lineWidth = 16; ctx.beginPath(); ctx.moveTo(x + (x < 480 ? 30 : -30), y + 120); ctx.quadraticCurveTo(x, y + 70, x, y + 20); ctx.stroke(); // el tallo
+  ctx.strokeStyle = '#5a8a3a'; ctx.lineWidth = 8; ctx.stroke();
+  ctx.fillStyle = '#f2ecdc'; ctx.strokeStyle = '#2a2622'; ctx.lineWidth = 2.5; ell(x, y, 28, 24); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(200,40,40,.5)'; ctx.lineWidth = 1; for (let i = 0; i < 5; i++) { const a = i * 1.3; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 26, y + Math.sin(a) * 22); ctx.lineTo(x + Math.cos(a + 0.2) * 14, y + Math.sin(a + 0.2) * 12); ctx.stroke(); } // venitas
+  const ix = x + lookX * 10, iy = y + lookY * 8;
+  ctx.fillStyle = charge ? `rgb(255,${200 - charge * 150},${120 - charge * 100})` : '#b02a2a'; ell(ix, iy, 11, 11); ctx.fill();
+  ctx.fillStyle = '#000'; ell(ix, iy, 5, 5); ctx.fill(); ctx.fillStyle = '#fff'; ell(ix - 3, iy - 3, 2, 2); ctx.fill();
+  if (charge) { ctx.globalCompositeOperation = 'lighter'; koGlow(ix, iy, 30 * charge, 'rgba(255,255,255,.8)'); }
+  ctx.restore();
+}
+function fwDrawFlytrap(x, y, side) {
+  const o = 0.3 + Math.abs(Math.sin(frame * 0.05 + side)) * 0.5;
+  ctx.save(); ctx.translate(x, y); ctx.scale(side ? -1 : 1, 1);
+  ctx.strokeStyle = '#2a5a1a'; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(-60, 120); ctx.quadraticCurveTo(-40, 40, 0, 10); ctx.stroke();
+  for (const sg of [-1, 1]) {
+    ctx.save(); ctx.rotate(sg * o); ctx.fillStyle = '#3a8a2a'; ctx.strokeStyle = '#1a3a12'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(30, sg * 34, 64, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#c02a3a'; ctx.beginPath(); ctx.moveTo(4, 0); ctx.quadraticCurveTo(30, sg * 22, 58, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f4f0e0'; for (let i = 0; i < 6; i++) { const px = 10 + i * 9; ctx.beginPath(); ctx.moveTo(px - 2, sg * (6 + Math.sin(i) * 2)); ctx.lineTo(px, sg * -4); ctx.lineTo(px + 2, sg * (6 + Math.sin(i) * 2)); ctx.fill(); }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+function drawOmegaFlowey(f) { // el cuerpo gigante de Flowey alrededor de la caja
+  const b = FW_BOX, s = f.soul;
+  const g = ctx.createRadialGradient(480, 200, 40, 480, 260, 560); g.addColorStop(0, '#1a2416'); g.addColorStop(1, '#000'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // tubos y raíces al fondo
+  for (const [x, w] of [[150, 26], [212, 18], [748, 18], [810, 26], [400, 14], [560, 14]]) {
+    const pg = ctx.createLinearGradient(x - w / 2, 0, x + w / 2, 0); pg.addColorStop(0, '#2a2e2a'); pg.addColorStop(0.5, '#6a706a'); pg.addColorStop(1, '#2a2e2a');
+    ctx.fillStyle = pg; ctx.fillRect(x - w / 2, 0, w, 250); ctx.fillStyle = '#4a4e48'; for (let y = 30; y < 250; y += 70) ctx.fillRect(x - w / 2 - 4, y, w + 8, 10);
+  }
+  ctx.strokeStyle = '#2a4a1e'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+  for (let i = 0; i < 9; i++) { const x0 = 60 + i * 105; ctx.beginPath(); ctx.moveTo(x0, H); ctx.bezierCurveTo(x0 + 30, H - 60, x0 - 40 + (i % 3) * 30, H - 120, x0 + 10, H - 170 - (i % 2) * 40); ctx.stroke(); }
+  // cactus a los lados
+  for (const [x, sd] of [[60, 1], [900, -1]]) {
+    ctx.fillStyle = '#3a7a3a'; ctx.strokeStyle = '#123a12'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(x - 18, 190, 36, 330, 18); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.roundRect(x + sd * 14, 270, 40 * sd, 16, 8); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.roundRect(x + sd * 44, 220, 16 * sd, 66, 8); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#e8e8c8'; ctx.lineWidth = 1; for (let y = 205; y < 510; y += 16) { ctx.beginPath(); ctx.moveTo(x - 18, y); ctx.lineTo(x - 25, y - 3); ctx.moveTo(x + 18, y + 8); ctx.lineTo(x + 25, y + 5); ctx.stroke(); }
+  }
+  fwDrawFlytrap(120, 360, 0); fwDrawFlytrap(840, 360, 1);
+  // lanzallamas en las esquinas de la caja
+  const nozzles = [[b.x0 - 46, b.y0 - 40], [b.x1 + 46, b.y0 - 40]];
+  nozzles.forEach(([x, y], i) => {
+    const a = f.flame[i];
+    ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.fillStyle = '#5a5e5a'; ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(-44, -12, 50, 24, 4); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#2a2a2a'; ell(6, 0, 4, 10); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = '#4a4e48'; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(x - Math.cos(a) * 40, y - Math.sin(a) * 40); ctx.lineTo(i ? 790 : 170, 0); ctx.stroke();
+  });
+  // ojos en tallos
+  FW_EYES.forEach(([x, y], i) => { const a = Math.atan2(s.y - y, s.x - x), ch = clamp(1 - (f.t - f.eyeT[i]) / 30, 0, 1); fwDrawEye(x, y, Math.cos(a), Math.sin(a), f.t - f.eyeT[i] < 44 ? Math.max(ch, 0.3) : 0); });
+  // manos con dedos-pistola
+  [0, 1].forEach(i => { const h = f.hand[i], x = i ? b.x1 + 74 : b.x0 - 74, y = h.y + Math.sin(frame * 0.05 + i) * 4, a = Math.atan2(s.y - y, s.x - x), rc = clamp(1 - (f.t - h.t) / 10, 0, 1); fwDrawHand(x, y, a, i === 1, rc); });
+  // boca con dientes de humano debajo de la tele
+  const mo = f.face === 'laugh' ? 10 + Math.abs(Math.sin(frame * 0.5)) * 14 : f.face === 'hurt' ? 16 : 4, my = FW_TV.y + FW_TV.h / 2 + 32;
+  ctx.fillStyle = '#b06a6a'; ctx.strokeStyle = '#3a1a1a'; ctx.lineWidth = 2; ell(480, my, 92, 18 + mo * 0.6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#2a0808'; ell(480, my, 78, 4 + mo * 0.6); ctx.fill();
+  ctx.fillStyle = '#f4ecd8'; ctx.strokeStyle = '#8a7a6a'; ctx.lineWidth = 1;
+  for (let i = -6; i <= 6; i++) { const x = 480 + i * 11, w = 10 - Math.abs(i) * 0.4, h = 9 - Math.abs(i) * 0.4; ctx.fillRect(x - w / 2, my - 3 - mo * 0.6 - h + 4, w, h); ctx.strokeRect(x - w / 2, my - 3 - mo * 0.6 - h + 4, w, h); ctx.fillRect(x - w / 2, my + mo * 0.6 - 1, w, h - 1); ctx.strokeRect(x - w / 2, my + mo * 0.6 - 1, w, h - 1); }
+  // la tele
+  const T = FW_TV, tx = T.x - T.w / 2, ty = T.y - T.h / 2;
+  ctx.fillStyle = '#6a6e68'; ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(tx - 16, ty - 14, T.w + 32, T.h + 28, 14); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#4a4e48'; ctx.fillRect(tx - 16, ty + T.h + 6, T.w + 32, 8);
+  fwDrawTvFace(f.glitch > 0 && Math.random() < 0.5 ? 'static' : f.face, f.crack);
+  ctx.save(); ctx.imageSmoothingEnabled = false; ctx.beginPath(); ctx.roundRect(tx, ty, T.w, T.h, 18); ctx.clip();
+  ctx.drawImage(fwTvCv, tx, ty, T.w, T.h);
+  ctx.fillStyle = 'rgba(0,40,0,.18)'; for (let y = ty + (frame % 4); y < ty + T.h; y += 4) ctx.fillRect(tx, y, T.w, 1.5); // líneas de la tele
+  const sg = ctx.createRadialGradient(tx + 50, ty + 30, 10, T.x, T.y, 140); sg.addColorStop(0, 'rgba(255,255,255,.18)'); sg.addColorStop(1, 'rgba(0,0,0,.35)'); ctx.fillStyle = sg; ctx.fillRect(tx, ty, T.w, T.h);
+  if (f.crack) { ctx.strokeStyle = 'rgba(20,20,20,.85)'; ctx.lineWidth = 2; for (let i = 0; i < f.crack; i++) { const cx = tx + 30 + (i * 53) % (T.w - 50), cy = ty + 20 + (i * 37) % (T.h - 40); ctx.beginPath(); ctx.moveTo(cx, cy); for (let j = 0; j < 5; j++) ctx.lineTo(cx + Math.cos(i + j * 1.7) * (14 + j * 8), cy + Math.sin(i * 2 + j) * (10 + j * 6)); ctx.stroke(); } }
+  ctx.restore();
+}
+function fwDrawObj(o) {
+  const t = o.t;
+  if (o.k === 'pel') {
+    if (t > o.life) return;
+    const [x, y] = o.f(t), ok = o.col === 'cyan' ? '#42fcff' : o.col === 'orange' ? '#fca600' : '#fff';
+    if (o.shape === 'fire') { ctx.fillStyle = `rgba(255,${120 + (t * 9) % 120},40,.95)`; ell(x, y, o.r + 2, o.r + 2); ctx.fill(); ctx.fillStyle = '#ffe080'; ell(x, y, o.r * 0.5, o.r * 0.5); ctx.fill(); return; }
+    if (o.shape === 'ball') { ctx.fillStyle = '#fff'; ell(x, y, o.r, o.r); ctx.fill(); ctx.fillStyle = '#c8c8c8'; ell(x + 1.5, y + 1.5, o.r * 0.5, o.r * 0.5); ctx.fill(); return; }
+    if (o.shape === 'knife') { ctx.save(); ctx.translate(x, y); ctx.fillStyle = '#ddd'; poly([[0, 14], [-4, -2], [4, -2]]); ctx.fill(); ctx.fillStyle = '#8a5a2a'; ctx.fillRect(-3, -12, 6, 10); ctx.restore(); return; }
+    if (o.shape === 'glove') { ctx.save(); ctx.translate(x, y); if (o.flip) ctx.scale(-1, 1); ctx.fillStyle = '#e83030'; ell(0, 0, 13, 11); ctx.fill(); ctx.fillRect(-18, -6, 8, 12); ctx.fillStyle = '#fff'; ctx.fillRect(-20, -7, 4, 14); ctx.restore(); return; }
+    // pétalo blanco (las "balas de la amistad"), girando
+    ctx.save(); ctx.translate(x, y); ctx.rotate(t * 0.2); ctx.fillStyle = ok; ell(0, 0, o.r, o.r * 0.62); ctx.fill(); ctx.restore(); return;
+  }
+  if (o.k === 'rect') {
+    const r = o.f(t);
+    if (o.shape === 'vine' && t < o.warn) { if (Math.floor(t / 3) % 2) { ctx.strokeStyle = '#3aff3a'; ctx.lineWidth = 2; ctx.strokeRect(FW_BOX.x0 + 6, o.y, FW_BOX.x1 - FW_BOX.x0 - 12, o.h); } return; }
+    if (o.shape === 'glove' && !r) { if (t < o.warn && Math.floor(t / 3) % 2) { ctx.strokeStyle = '#fca600'; ctx.lineWidth = 2; ctx.strokeRect(FW_BOX.x0 + 6, o.y - 40, FW_BOX.x1 - FW_BOX.x0 - 12, 80); } return; }
+    if (!r) return;
+    const [x, y, w, h] = r;
+    if (o.shape === 'vine') {
+      ctx.fillStyle = '#1e7a1e'; ctx.fillRect(x, y + 5, w, h - 10); ctx.fillStyle = '#3ab83a'; ctx.fillRect(x, y + 8, w, 3);
+      ctx.fillStyle = '#e8f0d0'; for (let i = x + 4; i < x + w; i += 12) { poly([[i, y + 5], [i + 4, y - 2], [i + 8, y + 5]]); ctx.fill(); poly([[i + 2, y + h - 5], [i + 6, y + h + 2], [i + 10, y + h - 5]]); ctx.fill(); }
+    } else if (o.shape === 'glove') { ctx.fillStyle = 'rgba(252,166,0,.85)'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#ffd080'; for (let i = 0; i < 4; i++) ell(x + 40 + i * 70, y + h / 2, 22, 20), ctx.fill(); }
+    else if (o.shape === 'shoe' || o.shape === 'shoe2') {
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill(); ctx.fillStyle = '#f8b8d8';
+      ctx.fillRect(x + 4, y + h - 8, w - 8, 4); ctx.strokeStyle = '#f8b8d8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + w / 2, y); ctx.lineTo(x + w / 2 - 10, y - 10); ctx.moveTo(x + w / 2, y); ctx.lineTo(x + w / 2 + 10, y - 10); ctx.stroke();
+    } else if (o.shape === 'word') { ctx.fillStyle = '#fff'; ctx.font = 'bold 20px "Courier New", monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(o.word, x + 4, y + h / 2); }
+    else { ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h); }
+    return;
+  }
+  if (o.k === 'beam') {
+    const k = t - o.warn, c = Math.cos(o.ang), s = Math.sin(o.ang), col = o.col === 'cyan' ? '66,252,255' : o.col === 'orange' ? '252,166,0' : '255,255,255';
+    ctx.save(); ctx.lineCap = 'butt';
+    if (k < 0) { if (Math.floor(t / 3) % 2) { ctx.strokeStyle = `rgba(${col},.8)`; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x + c * 1400, o.y + s * 1400); ctx.stroke(); } }
+    else if (k <= o.fire) {
+      const w = o.w * Math.min(1, k / 3, (o.fire - k + 2) / 6);
+      ctx.strokeStyle = `rgba(${col},.35)`; ctx.lineWidth = w * 1.4; ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x + c * 1400, o.y + s * 1400); ctx.stroke();
+      ctx.strokeStyle = `rgb(${col})`; ctx.lineWidth = w; ctx.stroke();
+    }
+    ctx.restore(); return;
+  }
+  if (o.k === 'xb') {
+    const [x, y] = o.f(Math.min(t, o.tb));
+    if (t < o.tb) { // la bomba con su X, parpadeando antes de explotar
+      const blink = t > o.tb - 24 && Math.floor(t / 3) % 2;
+      ctx.fillStyle = blink ? '#ff3030' : '#fff'; ell(x, y, 12, 12); ctx.fill();
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 6, y - 6); ctx.lineTo(x + 6, y + 6); ctx.moveTo(x + 6, y - 6); ctx.lineTo(x - 6, y + 6); ctx.stroke();
+      if (t > o.tb - 24) { ctx.strokeStyle = 'rgba(255,60,60,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(FW_BOX.x0, y); ctx.lineTo(FW_BOX.x1, y); ctx.moveTo(x, FW_BOX.y0); ctx.lineTo(x, FW_BOX.y1); ctx.stroke(); }
+    } else { const w = 30 * (1 - (t - o.tb) / 20); ctx.fillStyle = '#fff'; ctx.fillRect(FW_BOX.x0, y - w / 2, FW_BOX.x1 - FW_BOX.x0, w); ctx.fillRect(x - w / 2, FW_BOX.y0, w, FW_BOX.y1 - FW_BOX.y0); }
+    return;
+  }
+  if (o.k === 'egg') { const d = o.d0 - o.sp * t, [dx, dy] = FW_D4[o.dir], x = 480 + dx * d, y = 374 + dy * d; ctx.fillStyle = '#fff'; ell(x, y, 13, 11); ctx.fill(); ctx.fillStyle = '#ffc020'; ell(x, y, 5.5, 5.5); ctx.fill(); return; }
+  if (o.k === 'pop') { ctx.strokeStyle = `rgba(0,255,0,${1 - t / 14})`; ctx.lineWidth = 3; ell(o.x, o.y, 8 + t, 8 + t); ctx.stroke(); return; }
+  if (o.k === 'tgt') { ctx.save(); ctx.translate(o.x, o.y); ctx.scale(0.7, 0.7); drawFlowey(0, 22, 1, 'evil', { still: true }); ctx.restore(); if (o.hp < 2) { ctx.strokeStyle = '#ff0'; ctx.lineWidth = 2; ell(o.x, o.y, 16, 16); ctx.stroke(); } }
+}
+function fwDrawSoulHeart(x, y, mode, sh) {
+  const col = { red: '#ff0000', blue: '#0060ff', purple: '#d535d9', green: '#00c000', yellow: '#ffff00' }[mode] || '#ff0000';
+  if (mode === 'yellow') { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI); utHeart(0, 0, col); ctx.restore(); }
+  else utHeart(x, y, col);
+  if (mode === 'green') { // el escudo
+    const [dx, dy] = FW_D4[sh]; ctx.strokeStyle = '#00ff40'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, 30, Math.atan2(dy, dx) - 0.7, Math.atan2(dy, dx) + 0.7); ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,255,64,.3)'; ctx.lineWidth = 1; ell(x, y, 30, 30); ctx.stroke();
+  }
+}
+function fwDrawStats() {
+  const f = fw, y = 506;
+  ctx.font = 'bold 20px "Courier New", monospace'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = '#fff';
+  ctx.fillText(p.char.name.split(' ')[0].toUpperCase().slice(0, 8) + '   LV 9', 250, y);
+  ctx.font = 'bold 13px "Courier New", monospace'; ctx.fillText('HP', 486, y);
+  const bx = 514, bw = 90, bh = 22;
+  ctx.fillStyle = '#c00000'; ctx.fillRect(bx, y - bh / 2, bw, bh); ctx.fillStyle = '#ffff00'; ctx.fillRect(bx, y - bh / 2, bw * f.hp / f.maxHp, bh);
+  ctx.font = 'bold 20px "Courier New", monospace'; ctx.fillStyle = '#fff'; ctx.fillText(`${String(Math.max(0, f.hp)).padStart(2, '0')} / ${f.maxHp}`, bx + bw + 14, y);
+  modeHearts(); // los corazones de Isaac: cada vez que Flowey carga su partida, pierdes uno
+}
+function fwDrawButtons(sel) {
+  ['LUCHAR', 'ACTUAR', 'OBJETO', 'PIEDAD'].forEach((name, i) => {
+    const x = [134, 318, 510, 694][i], y = 516, on = i === 0 || i === 3, s = on && sel === i, col = !on ? '#5a3a10' : s ? '#ffff00' : '#ff8c1a';
+    ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.strokeRect(x + 1.5, y + 1.5, 129, 47);
+    ctx.fillStyle = col; ctx.font = 'bold 21px "Courier New", monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(name, x + 38, y + 26);
+    if (s) utHeart(x + 20, y + 25, '#ff0000');
+  });
+}
+function fwBubble(x, y, text, n) { ctx.save(); utBubble(x, y, text, n); ctx.restore(); }
+function fwDraw() {
+  const f = fw, ph = f.phase, s = f.soul, b = FW_BOX;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  if (f.shake) ctx.translate(Math.round(rnd(-f.shake, f.shake)), Math.round(rnd(-f.shake, f.shake)));
+  if (ph === 'intro' || (ph === 'trans' && f.pt < 170)) { // Flowey chiquito sobre el pasto, y luego se traga las almas
+    ctx.fillStyle = '#1a3a12'; ell(480, 330, 70, 14); ctx.fill();
+    const face = ph === 'intro' ? FW_INTRO[Math.min(f.bub ? f.bub.i : 6, 6)][1] : 'evil';
+    drawFlowey(480, 330, 4.2, face);
+    if (ph === 'trans') FW_SOULS.forEach((sl, i) => { // las seis almas giran cada vez más cerca
+      const k = clamp(f.pt / 160, 0, 1), a = i / 6 * BAL_TAU + f.pt * (0.03 + k * 0.1), r = lerp(240, 10, easeIn(k));
+      ctx.save(); ctx.translate(480 + Math.cos(a) * r, 230 + Math.sin(a) * r * 0.7); ctx.scale(1.6, 1.6); utHeart(0, 0, sl.col); ctx.restore();
+    });
+    if (f.bub) fwBubble(560, 120, f.bub.lines[f.bub.i], f.bub.n);
+  } else if (ph === 'trans') { // estática... ARCHIVO GUARDADO... ¡y aparece!
+    if (f.pt < 230) koStatic(0.9, f.pt);
+    else { ctx.globalAlpha = clamp((f.pt - 230) / 50, 0, 1); drawOmegaFlowey(f); ctx.globalAlpha = 1; }
+    if (f.pt >= 200 && f.pt < 290) { ctx.fillStyle = '#fff'; ctx.font = 'bold 26px "Courier New", monospace'; ctx.textAlign = 'center'; ctx.fillText('* Archivo guardado.', CX, 300); }
+  } else if (ph === 'wilt' || ph === 'mercy' || ph === 'spare' || ph === 'sink' || ph === 'kill' || ph === 'out') { // Flowey chiquito, marchito, en la oscuridad
+    const k = ph === 'kill' ? clamp((f.pt - 60) / 80, 0, 1) : 0, sink = ph === 'sink' ? easeIn(clamp(f.pt / 90, 0, 1)) : ph === 'out' && f.choice === 'spare' ? 1 : 0;
+    if (!(ph === 'out' && f.choice === 'kill')) {
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, 330); ctx.clip();
+      ctx.globalAlpha = 1 - k; drawFlowey(480, 330 + sink * 190, 3.6, 'wilt'); ctx.restore();
+    }
+    if (k > 0) for (let i = 0; i < 40; i++) { ctx.fillStyle = `rgba(220,220,220,${1 - k})`; ell(480 + Math.sin(i * 7.3) * 40 * (1 + k), 250 - k * 120 * ((i % 5) / 5 + 0.5) + Math.cos(i) * 30, 2, 2); ctx.fill(); } // se hace polvo
+    if (ph === 'kill' && f.pt < 30) { ctx.strokeStyle = '#ff2020'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(530, 180); ctx.lineTo(lerp(530, 430, Math.min(1, f.pt / 12)), lerp(180, 300, Math.min(1, f.pt / 12))); ctx.stroke(); }
+    ctx.fillStyle = '#1a3a12'; ell(480, 332, 70, 12); ctx.fill();
+    if (f.bub) fwBubble(560, 120, f.bub.lines[f.bub.i], f.bub.n);
+    if (ph === 'mercy') { ctx.font = UT_FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('* Flowey ya no puede pelear.', 134, 400); fwDrawButtons(f.btn); }
+    if (ph === 'kill' && f.pt > 80) { ctx.font = UT_FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('* Flowey se hizo polvo.', 134, 400); }
+    if (ph === 'out') { ctx.fillStyle = `rgba(0,0,0,${clamp(f.pt / 60, 0, 1)})`; ctx.fillRect(0, 0, W, H); }
+  } else if (ph === 'load') { // Flowey carga su partida: la pantalla de archivo
+    if (f.pt < 40) koStatic(0.9, f.pt);
+    else {
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeRect(190, 170, 580, 170);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 24px "Courier New", monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText('FLOWEY', 220, 210); ctx.fillText('LV 9999', 450, 210); ctx.fillText('99:99', 640, 210); ctx.fillText('???', 220, 255);
+      ctx.fillStyle = Math.floor(f.pt / 8) % 2 ? '#ffff00' : '#fff'; ctx.fillText('Continuar', 240, 305); ctx.fillStyle = '#5a5a5a'; ctx.fillText('Reiniciar', 520, 305);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(f.pt > 60 ? '* Archivo cargado.' : '* Cargando...', CX, 400);
+    }
+  } else { // la pelea
+    drawOmegaFlowey(f);
+    if (ph === 'final') FW_SOULS.forEach((sl, i) => { // las almas se le echan encima
+      const a = i / 6 * BAL_TAU + f.pt * 0.06, r = 150 + Math.sin(f.pt * 0.2 + i) * 20, x = FW_TV.x + Math.cos(a) * r, y = FW_TV.y + 40 + Math.sin(a) * r * 0.5;
+      if (f.pt % 22 < 6 && i === (f.pt / 22 | 0) % 6) { ctx.strokeStyle = sl.col; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(FW_TV.x, FW_TV.y); ctx.stroke(); }
+      ctx.save(); ctx.translate(x, y); ctx.scale(1.8, 1.8); utHeart(0, 0, sl.col); ctx.restore();
+    });
+    if (ph === 'final' && f.pt > 280) { ctx.fillStyle = `rgba(255,255,255,${clamp(1 - (f.pt - 280) / 90, 0, 1)})`; ctx.fillRect(0, 0, W, H); }
+    if (ph !== 'final') {
+      // la caja
+      ctx.fillStyle = '#000'; ctx.fillRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 5; ctx.strokeRect(b.x0 + 2.5, b.y0 + 2.5, b.x1 - b.x0 - 5, b.y1 - b.y0 - 5);
+      if (s.mode === 'purple' && (ph === 'soul')) { ctx.strokeStyle = '#d535d9'; ctx.lineWidth = 2; for (const ly of fwLines(b)) { ctx.beginPath(); ctx.moveTo(b.x0 + 5, ly); ctx.lineTo(b.x1 - 5, ly); ctx.stroke(); } }
+      ctx.save(); ctx.beginPath(); ctx.rect(b.x0 + 5, b.y0 + 5, b.x1 - b.x0 - 10, b.y1 - b.y0 - 10); ctx.clip();
+      for (const o of f.objs) if (o.k !== 'beam' && !(o.k === 'pel' && o.shape === 'fire')) fwDrawObj(o);
+      if (f.act) { const a = f.act; ctx.strokeStyle = '#ff8c1a'; ctx.lineWidth = 3; ctx.strokeRect(a.x - 46, a.y - 16, 92, 32); ctx.fillStyle = '#ff8c1a'; ctx.font = 'bold 17px "Courier New", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('ACTUAR', a.x + 6, a.y + 1); }
+      for (const q of f.shots) { ctx.fillStyle = '#ffff00'; ctx.fillRect(q.x - 2, q.y - 8, 4, 12); }
+      if (ph === 'help' && f.text) { ctx.font = FW_FONT; ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; f.text.slice(0, Math.floor(f.textN)).split('\n').forEach((l, i) => ctx.fillText(l, b.x0 + 14, b.y0 + 18 + i * 34)); }
+      ctx.restore();
+      for (const o of f.objs) if (o.k === 'beam' || (o.k === 'pel' && o.shape === 'fire')) fwDrawObj(o); // rayos y fuego: también fuera de la caja
+      if (ph === 'soul' || ph === 'help') { // el alma humana flotando arriba de la caja (y luego volando contra la tele)
+        const sl = FW_SOULS[FW_SEQ[f.seg]], k = ph === 'help' ? easeIn(clamp((f.pt - 110) / 40, 0, 1)) : 0;
+        if (k < 1 && sl) { const x = lerp(480, FW_TV.x, k), y = lerp(b.y0 - 22 + Math.sin(frame * 0.08) * 3, FW_TV.y, k); ctx.save(); ctx.translate(x, y); ctx.scale(1.4, 1.4); utHeart(0, 0, sl.col); ctx.restore();
+          if (ph === 'soul') { ctx.font = 'bold 12px "Courier New", monospace'; ctx.fillStyle = sl.col; ctx.textAlign = 'center'; ctx.fillText(sl.name, 480, b.y0 - 44); } }
+      }
+      const blink = f.inv > 0 && Math.floor(f.inv / 3) % 2;
+      if ((ph === 'atk' || ph === 'soul' || ph === 'talk' || ph === 'loadTalk') && !blink) fwDrawSoulHeart(s.x, s.y, s.mode, s.sh);
+    }
+    if (f.bub) fwBubble(FW_TV.x + FW_TV.w / 2 + 34, 40, f.bub.lines[f.bub.i], f.bub.n);
+    if (ph !== 'final') fwDrawStats();
+  }
+  if (ph === 'broken') {
+    ctx.fillStyle = '#000'; ctx.fillRect(-20, -20, W + 40, H + 40);
+    if (!f.shards) { const sp = f.pt >= 30 ? 3 : 0; utHeart(s.x - sp, s.y, '#ff0000', sp ? -1 : 0); if (sp) utHeart(s.x + sp, s.y, '#ff0000', 1); }
+    else for (const q of f.shards) { ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.r); ctx.fillStyle = '#ff0000'; ctx.fillRect(-3, -3, 6, 6); ctx.restore(); }
+  }
+  if (f.glitch > 0 && ph !== 'trans' && ph !== 'load') { for (let i = 0; i < 6; i++) { const y = rnd(0, H), h = rnd(4, 20); ctx.drawImage(cv, 0, y * DPR, W * DPR, h * DPR, rnd(-30, 30), y, W, h); } }
+  ctx.restore();
+  modePause();
+}
+
 // ---------- Grabar la cinemática de muerte de un jefe (la usa video/grabar_muertes.js) ----------
 let grabando = false; // en los videos no sale "ENTER para saltar"
 // ---------- Exportar la hoja de sprites de un jefe dibujado por código (la usa sprites/exportar_jefes.js) ----------
@@ -9547,8 +10200,10 @@ const SHEET_ROWS = {
     ['laugh', 10, i => ({ mood: 'laugh', tri: 1, bob: -Math.abs(Math.sin(i / 8 * BAL_TAU * 2)) * 2 })],
     ['trident', 10, i => ({ mood: i < 3 ? 'grin' : 'angry', tri: i >= 2 ? 1 : 0, ly: -0.6 })], null,
     ['ram', 8, i => ({ head: 'ram', tri: 0, arms: i >= 3 ? 'out' : null, bob: Math.sin(i / 8 * BAL_TAU) * 1.5 })]],
+  // Flowey: 0 sonriendo y meciéndose · 1 cara malvada · 2 sonrisita burlona · 4 marchito
+  flowey: [['idle', 8, () => ({ face: 'happy' })], ['evil', 8, () => ({ face: 'evil' })], ['idle', 8, () => ({ face: 'sly' })], null, ['idle', 6, () => ({ face: 'wilt' })]],
 };
-const SHEET_SCALE = { gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6, baldi: 1.9, fetus: 1.9, devil: 1.15 };
+const SHEET_SCALE = { gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6, baldi: 1.9, fetus: 1.9, devil: 1.15, flowey: 1.6 };
 window.exportarHojaJefe = type => {
   const F = 256, SS = 2, S = SHEET_SCALE[type], spec = SHEET_ROWS[type];
   const sheet = mkCanvas(F * 8, F * 5), sx = sheet.getContext('2d');

@@ -12,7 +12,7 @@ DT = 1 / FPS
 OUT = (28, 16, 12, 255)    # color del contorno que usan los sprites
 ORDER = ['monstro', 'duque_moscas', 'isaac_oscuro', 'rey_koopa', 'dragon_fin', 'dr_huevon', 'rey_fantasma', 'cerebro_madre',
          'gurdy', 'peep', 'viuda', 'pie_mama', 'satanas', 'rey_slime', 'rey_boo', 'nave_nodriza', 'ridley', 'wither', 'ganon', 'sans',
-         'baldi', 'dr_fetus', 'diablo']
+         'baldi', 'dr_fetus', 'diablo', 'flowey']
 
 # ------------------------------------------------------------------ utilidades de imagen
 def load(n): return Image.open(os.path.join(DIR, f'jefe_{n}.png')).convert('RGBA')
@@ -974,11 +974,42 @@ def diablo():
         frames.append(f)
     return frames, POP
 
+def flowey():
+    S = load('flowey'); idle, white, red = fr(S, 0, 0), fr(S, 3, 0), fr(S, 3, 1)
+    evil, wilt = fr(S, 1, 0), fr(S, 4, 0)
+    POP = 6
+    nz = smooth_noise(261, 6)
+    petals = particles(262, 12, PX, PY - 40, speed=(40, 140), vz=(120, 260))
+    dust = particles(263, 36, PX, PY - 10, speed=(10, 60), vz=(0, 1))
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                         # pone su cara malvada... y se va marchitando, temblando
+            body = evil if i < 4 else wilt
+            comp(f, xform(body, 1.0, rot=shake(i, 2 + i), dx=shake(i, 2)))
+        else:                                                 # se le caen los pétalos y se hace polvo, como los monstruos de su juego
+            t = (i - POP) * DT + 0.03; u = (i - POP) / (COLS - POP - 1)
+            if i == POP: comp(f, glow(PX, PY - 40, 90, (255, 245, 200), 0.6))
+            body = tint(wilt, (230, 230, 230), 0.4 + 0.5 * u)
+            th = np.clip((YY - (230 - 200 * u)) / 40, 0, 1) * 0.6 + nz * 0.4
+            a = arr(body); a[..., 3] *= (th < 0.55); comp(f, img(a))
+            L = Layer()
+            for q in petals:
+                x, y, h, landed = ballistic(q, t, g=500)
+                al = max(0.0, 1 - u * 1.1)
+                if al > 0: L.ell(x, y, 7, 4 if not landed else 3, fill=(255, 216, 0, int(255 * al)), outline=(40, 30, 0, int(255 * al)), w=1.2)
+            motes(L, dust, i, POP, (220, 220, 220), up=1.2, spread=2, al=1 - u * 0.6)
+            comp(f, L.get(1))
+        frames.append(f)
+    return frames, POP
+
 BOSSES = {'monstro': monstro, 'duque_moscas': duque_moscas, 'isaac_oscuro': isaac_oscuro, 'rey_koopa': rey_koopa,
           'dragon_fin': dragon_fin, 'dr_huevon': dr_huevon, 'rey_fantasma': rey_fantasma, 'cerebro_madre': cerebro_madre,
           'gurdy': gurdy, 'peep': peep, 'viuda': viuda, 'pie_mama': pie_mama, 'satanas': satanas, 'rey_slime': rey_slime,
           'rey_boo': rey_boo, 'nave_nodriza': nave_nodriza, 'ridley': ridley, 'wither': wither, 'ganon': ganon, 'sans': sans,
-          'baldi': baldi, 'dr_fetus': dr_fetus, 'diablo': diablo}
+          'baldi': baldi, 'dr_fetus': dr_fetus, 'diablo': diablo, 'flowey': flowey}
 
 
 if __name__ == '__main__':

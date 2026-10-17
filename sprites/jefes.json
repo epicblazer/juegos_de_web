@@ -47,7 +47,8 @@
     "sans": "se hace polvo de abajo hacia arriba",
     "baldi": "falla como el problema imposible: tiembla, se separa en colores y se deshace en estática",
     "dr_fetus": "el frasco se raja y revienta en vidrios; el traje se cae entre humo y el fetito sale volando",
-    "diablo": "¡A KNOCKOUT!: tiembla, se pone negro y se derrite en un charco de tinta que salpica"
+    "diablo": "¡A KNOCKOUT!: tiembla, se pone negro y se derrite en un charco de tinta que salpica",
+    "flowey": "se marchita, se le caen los pétalos y se hace polvo, como los monstruos de su juego"
   },
   "bosses": {
     "monstro": {
@@ -604,6 +605,35 @@
           "row": 4,
           "frames": 8,
           "fps": 8,
+          "loop": true
+        }
+      }
+    },
+    "flowey": {
+      "image": "jefe_flowey.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "malvado": {
+          "row": 1,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "burlon": {
+          "row": 2,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "marchito": {
+          "row": 4,
+          "frames": 8,
+          "fps": 6,
           "loop": true
         }
       }

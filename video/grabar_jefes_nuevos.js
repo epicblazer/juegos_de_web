@@ -1,13 +1,13 @@
-// Graba las peleas contra Baldi, Dr. Fetus y el Diablo jugadas por un bot: video/pelea_baldi.mp4, video/pelea_dr_fetus.mp4 y video/pelea_diablo.mp4
+// Graba las peleas contra Baldi, Dr. Fetus, el Diablo y Flowey jugadas por un bot: video/pelea_baldi.mp4, video/pelea_dr_fetus.mp4, video/pelea_diablo.mp4 y video/pelea_flowey.mp4
 // Abre el juego en Chrome/Edge sin ventana, entra al cuarto del jefe y un bot juega la pelea completa.
-// Uso:  node video/grabar_jefes_nuevos.js [baldi|fetus|devil]  (sin nada graba Baldi y Dr. Fetus)
+// Uso:  node video/grabar_jefes_nuevos.js [baldi|fetus|devil|flowey]  (sin nada graba Baldi y Dr. Fetus)
 //       node video/grabar_jefes_nuevos.js fetus --probar       (sin video: juega a toda velocidad y dice cómo le fue al bot)
 // Necesita Google Chrome o Microsoft Edge, y ffmpeg (en el PATH o con: pip install imageio-ffmpeg)
 const { spawn, execFileSync } = require('child_process');
 const fs = require('fs'), path = require('path'), os = require('os');
 
 const DIR = __dirname, GAME = path.join(DIR, '..', 'isaac_verde.html');
-const OUT = { baldi: 'pelea_baldi.mp4', fetus: 'pelea_dr_fetus.mp4', devil: 'pelea_diablo.mp4' };
+const OUT = { baldi: 'pelea_baldi.mp4', fetus: 'pelea_dr_fetus.mp4', devil: 'pelea_diablo.mp4', flowey: 'pelea_flowey.mp4' };
 const PORT = 9335;
 
 function findBrowser() {
@@ -146,6 +146,39 @@ const BOTS = `(() => {
     d.botPlan = best;
     d.botIn = { ...best, ...fire, j: pinkNear ? !c.jh : best.j };
   };
+  // ---------- el corazón contra Flowey ----------
+  const FDIRS = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  window.__fwBot = f => {
+    f.noDie = true; // en el video, cuando Flowey carga su partida, Isaac no pierde corazones
+    f.botW = (f.botW || 0) + 1;
+    const press = c => { f.botW = 0; fwKey(c); };
+    if (f.bub) { const b = f.bub; if (b.n >= b.lines[b.i].length && f.botW > 50) press('Enter'); }
+    if (f.phase === 'mercy') { if (f.botW > 70) press(f.btn !== 3 ? 'ArrowRight' : 'Enter'); return; } // PIEDAD
+    if (!['atk', 'soul', 'talk', 'loadTalk'].includes(f.phase)) { f.botIn = null; return; }
+    const s = f.soul, b = FW_BOX;
+    if (f.seg === 4 && f.phase === 'atk' && !f.loads) { if (f.hp > 8) f.hp = 8; f.botIn = { l: false, r: false, u: false, d: false }; return; } // se deja romper el corazón una vez a propósito: así se ve cuando Flowey carga su partida
+    if (s.mode === 'green') { // escudo hacia el huevo más cercano
+      let near = null; for (const o of f.objs) if (o.k === 'egg') { const d = o.d0 - o.sp * o.t; if (d > 20 && (!near || d < near.d)) near = { d, dir: o.dir }; }
+      const dir = near ? near.dir : 0; f.botIn = { u: dir === 0, d: dir === 1, l: dir === 2, r: dir === 3 }; return;
+    }
+    if (s.mode === 'yellow' && f.t % 8 === 0) fwKey('KeyZ');
+    if (f.botIn && f.t % 2) return;
+    let tx = 480, ty = 374;
+    if (f.act) { tx = f.act.x; ty = f.act.y; }
+    else if (s.mode === 'yellow') { let lo = null; for (const o of f.objs) if (o.k === 'tgt' && (!lo || o.y > lo.y)) lo = o; if (lo) { tx = lo.x; ty = b.y1 - 20; } }
+    let best = 0, bs = 1e9;
+    FDIRS.forEach(([dx, dy], i) => {
+      const inp = { l: dx < 0, r: dx > 0, u: dy < 0, d: dy > 0 }, c = { ...s }; let sc = 0;
+      for (let k = 1; k <= 22; k++) {
+        fwSoulStep(c, inp, b);
+        for (const o of f.objs) { if (fwHit(o, c.x, c.y, o.t + k, c.moved)) sc += (30 - k) * 2; if (o.k === 'tgt' && Math.abs(o.x - c.x) < 24 && Math.abs(o.y + o.vy * k - c.y) < 20) sc += 30 - k; }
+      }
+      sc += Math.hypot(c.x - tx, c.y - ty) * (f.act ? 0.06 : 0.02);
+      if (i === f.botPrev) sc -= 0.4;
+      if (sc < bs) { bs = sc; best = i; }
+    });
+    f.botPrev = best; const [dx, dy] = FDIRS[best]; f.botIn = { l: dx < 0, r: dx > 0, u: dy < 0, d: dy > 0 };
+  };
   return true;
 })()`;
 
@@ -170,7 +203,7 @@ async function openGame(port) {
   const close = async () => { cdp.close(); browser.kill(); await sleep(500); try { fs.rmSync(profile, { recursive: true, force: true }); } catch {} };
   return { cdp, close, profile };
 }
-const STATUS = `dvl ? 'diablo ' + dvl.phase + ' fase' + dvl.stage + ' vida ' + Math.round(dvl.hp) + ' golpes ' + dvl.hits + ' parries ' + dvl.parries : bal ? 'baldi ' + bal.phase + (bal.z ? ' ' + bal.z.got + '/7' : '') : fet ? 'fetus ' + fet.phase + ' wp' + fet.botWp + ' muertes ' + fet.deaths + ' y' + Math.round(fet.m.y) : bossIntro ? 'intro' : 'fin'`;
+const STATUS = `fw ? 'flowey ' + fw.phase + ' seg' + fw.seg + ' almas ' + fw.freed + ' cargas ' + fw.loads + ' pv ' + fw.hp : dvl ? 'diablo ' + dvl.phase + ' fase' + dvl.stage + ' vida ' + Math.round(dvl.hp) + ' golpes ' + dvl.hits + ' parries ' + dvl.parries : bal ? 'baldi ' + bal.phase + (bal.z ? ' ' + bal.z.got + '/7' : '') : fet ? 'fetus ' + fet.phase + ' wp' + fet.botWp + ' muertes ' + fet.deaths + ' y' + Math.round(fet.m.y) : bossIntro ? 'intro' : 'fin'`;
 
 async function grabar(type, probar) {
   const { cdp, close, profile } = await openGame(PORT);
