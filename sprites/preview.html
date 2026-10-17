@@ -23,7 +23,7 @@ const BOSS_COMMON = { 'daño': [3, 3, 14, 0.6] }; // las muertes están en jefes
 const DEATHS = { title: 'Muertes de jefes', src: 'jefes_muerte.png', size: 256, anims: {
   monstro: [0, 12, 10, 1], duque_moscas: [1, 12, 10, 1], isaac_oscuro: [2, 12, 10, 1], rey_koopa: [3, 12, 10, 1],
   dragon_fin: [4, 12, 10, 1], dr_huevon: [5, 12, 10, 1], rey_fantasma: [6, 12, 10, 1], cerebro_madre: [7, 12, 10, 1],
-  gurdy: [8, 12, 10, 1], peep: [9, 12, 10, 1], viuda: [10, 12, 10, 1], pie_mama: [11, 12, 10, 1], satanas: [12, 12, 10, 1], rey_slime: [13, 12, 10, 1], rey_boo: [14, 12, 10, 1], nave_nodriza: [15, 12, 10, 1], ridley: [16, 12, 10, 1], wither: [17, 12, 10, 1], ganon: [18, 12, 10, 1], sans: [19, 12, 10, 1], baldi: [20, 12, 10, 1], dr_fetus: [21, 12, 10, 1] } };
+  gurdy: [8, 12, 10, 1], peep: [9, 12, 10, 1], viuda: [10, 12, 10, 1], pie_mama: [11, 12, 10, 1], satanas: [12, 12, 10, 1], rey_slime: [13, 12, 10, 1], rey_boo: [14, 12, 10, 1], nave_nodriza: [15, 12, 10, 1], ridley: [16, 12, 10, 1], wither: [17, 12, 10, 1], ganon: [18, 12, 10, 1], sans: [19, 12, 10, 1], baldi: [20, 12, 10, 1], dr_fetus: [21, 12, 10, 1], diablo: [22, 12, 10, 1] } };
 const SHEETS = [
   { title: 'Movimiento', src: 'isaac_movimiento.png', size: 160, anims: {
     idle_down: [0, 4, 6], idle_up: [1, 4, 6], idle_left: [2, 4, 6], idle_right: [3, 4, 6],
@@ -55,6 +55,7 @@ const SHEETS = [
   { title: 'Jefe: Sans', src: 'jefe_sans.png', size: 256, anims: { idle: [0, 8, 8], atacar: [1, 8, 8], dormido: [2, 8, 4], ...BOSS_COMMON } },
   { title: 'Jefe: Baldi', src: 'jefe_baldi.png', size: 256, anims: { idle: [0, 8, 6], reglazo: [1, 8, 10], hablar: [2, 8, 8], perseguir: [4, 8, 10], ...BOSS_COMMON } },
   { title: 'Jefe: Dr. Fetus', src: 'jefe_dr_fetus.png', size: 256, anims: { idle: [0, 8, 8], reir: [1, 8, 10], disparar: [2, 8, 10], frasco_roto: [4, 8, 6], ...BOSS_COMMON } },
+  { title: 'Jefe: El Diablo', src: 'jefe_diablo.png', size: 256, anims: { idle: [0, 8, 8], carcajada: [1, 8, 10], tridente: [2, 8, 10], carnero: [4, 8, 8], ...BOSS_COMMON } },
   DEATHS,
 ];
 const views = [], root = document.getElementById('root');

@@ -12,7 +12,7 @@ DT = 1 / FPS
 OUT = (28, 16, 12, 255)    # color del contorno que usan los sprites
 ORDER = ['monstro', 'duque_moscas', 'isaac_oscuro', 'rey_koopa', 'dragon_fin', 'dr_huevon', 'rey_fantasma', 'cerebro_madre',
          'gurdy', 'peep', 'viuda', 'pie_mama', 'satanas', 'rey_slime', 'rey_boo', 'nave_nodriza', 'ridley', 'wither', 'ganon', 'sans',
-         'baldi', 'dr_fetus']
+         'baldi', 'dr_fetus', 'diablo']
 
 # ------------------------------------------------------------------ utilidades de imagen
 def load(n): return Image.open(os.path.join(DIR, f'jefe_{n}.png')).convert('RGBA')
@@ -934,11 +934,51 @@ def dr_fetus():
         frames.append(f)
     return frames, POP
 
+def diablo():
+    S = load('diablo'); idle, white, red = fr(S, 0, 0), fr(S, 3, 0), fr(S, 3, 1)
+    laugh = fr(S, 1, 2)
+    POP = 6
+    FY = 197                                                  # sus pezuñas (ahí queda el charco)
+    INK = (14, 10, 16)
+    drops = particles(251, 22, PX, PY - 20, speed=(60, 200), vz=(150, 330))
+    sparks = particles(252, 16, PX, PY - 40, speed=(120, 280), vz=(80, 200))
+    rng = np.random.default_rng(253); drips = [(rng.uniform(PX - 30, PX + 30), rng.uniform(0.6, 1.4), rng.uniform(3, 6)) for _ in range(9)]
+    frames = []
+    for i in range(COLS):
+        f = blank()
+        if i == 0: comp(f, white)
+        elif i == 1: comp(f, red)
+        elif i < POP:                                         # A KNOCKOUT!: tiembla, se estira y se va poniendo negro como tinta
+            k = (i - 2) / (POP - 3)
+            body = tint(laugh if i % 2 else idle, INK, 0.35 + 0.5 * k)
+            comp(f, xform(body, 1.0 - 0.05 * k, 1.0 + 0.08 * k, rot=shake(i, 2 + i), dx=shake(i, 3), py=FY))
+            if i == POP - 1: comp(f, glow(PX, PY - 30, 110, (255, 230, 190), 0.5))
+        else:                                                 # ¡SPLASH! se derrite en un charco de tinta que salpica
+            t = (i - POP) * DT + 0.03; u = (i - POP) / (COLS - POP - 1)
+            boom(f, i, POP, (255, 225, 170), 105)
+            pud = Layer(); pud.ell(PX, FY, 30 + 50 * min(1, u * 2), 7 + 6 * min(1, u * 2), fill=INK + (int(255 * max(0, 1 - max(0, u - 0.6) * 2.4)),)); comp(f, pud.get(1))
+            if u < 0.85:                                      # el cuerpo se escurre hacia el charco
+                body = tint(idle, INK, 0.9)
+                comp(f, fade(xform(body, 1.0 + 0.6 * u, max(0.05, 1 - 1.05 * u), py=FY), max(0.0, 1 - u * 0.9)))
+            L = Layer(); al = max(0.0, 1 - u * 1.2)
+            for x, sp, r in drips:                            # chorreones de tinta
+                y0 = FY - 140 * (1 - u); y1 = min(FY, y0 + 40 * sp * u + 20)
+                if al > 0 and u < 0.85: L.line([(x, y0), (x, y1)], fill=INK + (int(255 * al),), w=r)
+            for q in drops:                                   # gotas de tinta que salen volando
+                x, y, h, landed = ballistic(q, t)
+                if al > 0: L.ell(x, y, 4 if not landed else 6, 4 if not landed else 2.5, fill=INK + (int(255 * al),))
+            for q in sparks:
+                x, y, h, landed = ballistic(q, t)
+                if not landed and u < 0.5: L.ell(x, y, 2.4, fill=(255, 200, 90, int(255 * (1 - u * 2))))
+            comp(f, L.get())
+        frames.append(f)
+    return frames, POP
+
 BOSSES = {'monstro': monstro, 'duque_moscas': duque_moscas, 'isaac_oscuro': isaac_oscuro, 'rey_koopa': rey_koopa,
           'dragon_fin': dragon_fin, 'dr_huevon': dr_huevon, 'rey_fantasma': rey_fantasma, 'cerebro_madre': cerebro_madre,
           'gurdy': gurdy, 'peep': peep, 'viuda': viuda, 'pie_mama': pie_mama, 'satanas': satanas, 'rey_slime': rey_slime,
           'rey_boo': rey_boo, 'nave_nodriza': nave_nodriza, 'ridley': ridley, 'wither': wither, 'ganon': ganon, 'sans': sans,
-          'baldi': baldi, 'dr_fetus': dr_fetus}
+          'baldi': baldi, 'dr_fetus': dr_fetus, 'diablo': diablo}
 
 
 if __name__ == '__main__':

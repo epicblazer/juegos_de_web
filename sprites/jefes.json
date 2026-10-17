@@ -46,7 +46,8 @@
     "ganon": "se convierte en piedra y la estatua se desmorona",
     "sans": "se hace polvo de abajo hacia arriba",
     "baldi": "falla como el problema imposible: tiembla, se separa en colores y se deshace en estática",
-    "dr_fetus": "el frasco se raja y revienta en vidrios; el traje se cae entre humo y el fetito sale volando"
+    "dr_fetus": "el frasco se raja y revienta en vidrios; el traje se cae entre humo y el fetito sale volando",
+    "diablo": "¡A KNOCKOUT!: tiembla, se pone negro y se derrite en un charco de tinta que salpica"
   },
   "bosses": {
     "monstro": {
@@ -575,6 +576,35 @@
           "frames": 8,
           "fps": 6,
           "loop": false
+        }
+      }
+    },
+    "diablo": {
+      "image": "jefe_diablo.png",
+      "animations": {
+        "idle": {
+          "row": 0,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
+        },
+        "carcajada": {
+          "row": 1,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        },
+        "tridente": {
+          "row": 2,
+          "frames": 8,
+          "fps": 10,
+          "loop": true
+        },
+        "carnero": {
+          "row": 4,
+          "frames": 8,
+          "fps": 8,
+          "loop": true
         }
       }
     }

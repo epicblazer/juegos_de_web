@@ -3254,7 +3254,7 @@ const SPRITE_FILES = {
   gurdy: 'sprites/jefe_gurdy.png', peep: 'sprites/jefe_peep.png', widow: 'sprites/jefe_viuda.png', momFoot: 'sprites/jefe_pie_mama.png',
   satan: 'sprites/jefe_satanas.png', kingSlime: 'sprites/jefe_rey_slime.png', kingBoo: 'sprites/jefe_rey_boo.png', mothership: 'sprites/jefe_nave_nodriza.png',
   ridley: 'sprites/jefe_ridley.png', wither: 'sprites/jefe_wither.png', ganon: 'sprites/jefe_ganon.png', sans: 'sprites/jefe_sans.png',
-  baldi: 'sprites/jefe_baldi.png', fetus: 'sprites/jefe_dr_fetus.png',
+  baldi: 'sprites/jefe_baldi.png', fetus: 'sprites/jefe_dr_fetus.png', devil: 'sprites/jefe_diablo.png',
 };
 const SPR = {};
 if (typeof Image !== 'undefined') for (const [k, src] of Object.entries(SPRITE_FILES)) {
@@ -3283,10 +3283,10 @@ function drawPlayerSprite() {
 
 // Jefes: qué fila de su hoja usar según lo que están haciendo
 const BOSS_SPR = { monstro: 1.6, dukeFlies: 1.6, darkIsaac: 2.4, koopa: 1.6, dragon: 1.35, eggman: 1.6, ghostKing: 1.6, brain: 1.6,
-  gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6, baldi: 1.9, fetus: 1.9 };
+  gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6, baldi: 1.9, fetus: 1.9, devil: 1.15 };
 const FACES_RIGHT = ['dragon', 'ridley']; // hojas que miran a la derecha: se giran hacia donde vuelan
 // tamaño de la hoja en las cinemáticas: los jefes nuevos se igualan al tamaño de los viejos
-const cutScale = type => ['gurdy', 'peep', 'widow', 'momFoot', 'satan', 'kingSlime', 'kingBoo', 'mothership', 'ridley', 'wither', 'ganon', 'sans', 'baldi', 'fetus'].includes(type) ? Math.min(2.08 / BOSS_SPR[type], 2) : 1.3;
+const cutScale = type => ['gurdy', 'peep', 'widow', 'momFoot', 'satan', 'kingSlime', 'kingBoo', 'mothership', 'ridley', 'wither', 'ganon', 'sans', 'baldi', 'fetus', 'devil'].includes(type) ? Math.min(2.08 / BOSS_SPR[type], 2) : 1.3;
 function bossFrame(e, row, frames, fps, loop) {
   if (e.animRow !== row) { e.animRow = row; e.animAt = frame; }
   const i = Math.floor((frame - e.animAt) / 60 * fps);
@@ -3353,6 +3353,7 @@ function bossAnim(e) {
     case 'sans': { const r = e.state === 'tired' ? 2 : e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r === 2 ? 4 : 8, true) }; }
     case 'baldi': { const r = e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r ? 10 : 6, true) }; }
     case 'fetus': { const r = e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r ? 10 : 8, true) }; }
+    case 'devil': { const r = e.state === 'idle' ? 0 : 1; return { row: r, col: bossFrame(e, r, 8, r ? 10 : 8, true) }; }
   }
   return { row: 0, col: 0 };
 }
@@ -3376,7 +3377,7 @@ function drawBossSprite(e) {
 }
 // sprites/jefes_muerte.png: una fila por jefe (12 cuadros); pop = cuadro en que revienta (ver jefes_muerte.json)
 const BOSS_DEATH = { monstro: [0, 7], dukeFlies: [1, 7], darkIsaac: [2, 6], koopa: [3, 9], dragon: [4, 6], eggman: [5, 7], ghostKing: [6, 6], brain: [7, 5],
-  gurdy: [8, 7], peep: [9, 7], widow: [10, 7], momFoot: [11, 6], satan: [12, 6], kingSlime: [13, 6], kingBoo: [14, 6], mothership: [15, 7], ridley: [16, 6], wither: [17, 6], ganon: [18, 7], sans: [19, 5], baldi: [20, 6], fetus: [21, 6] };
+  gurdy: [8, 7], peep: [9, 7], widow: [10, 7], momFoot: [11, 6], satan: [12, 6], kingSlime: [13, 6], kingBoo: [14, 6], mothership: [15, 7], ridley: [16, 6], wither: [17, 6], ganon: [18, 7], sans: [19, 5], baldi: [20, 6], fetus: [21, 6], devil: [22, 6] };
 function bossDeathAnim(e, onPop) {
   const S = BOSS_SPR[e.type], D = BOSS_DEATH[e.type];
   if (!S || !D || !sprOK('bossDeath')) return false;
@@ -6029,7 +6030,7 @@ function drawBoss(e, flash) {
       break;
     }
     case 'fetus': { ctx.translate(e.x, y + (e.bob || 0)); drawFetusSuit(0, e.r + 8, 0.42, { laugh: e.laugh !== undefined ? e.laugh : e.state !== 'idle', crack: e.crack, broken: e.broken, gun: e.gun }); break; }
-    case 'devil': { ctx.translate(e.x, y + (e.bob || 0)); drawDevilFig(0, e.r + 10, 0.6, { mood: e.mood || (e.state === 'idle' ? 'grin' : 'laugh'), tri: e.tri !== undefined ? e.tri : e.state !== 'idle', head: e.head, arms: e.arms, flash, lx: e.lx, ly: e.ly }); break; }
+    case 'devil': { ctx.translate(e.x, y + (e.bob || 0)); drawDevilFig(0, e.r + 10, 0.6, { mood: e.mood || (e.state === 'idle' ? 'grin' : 'laugh'), tri: e.tri !== undefined ? e.tri : e.state !== 'idle', head: e.head, arms: e.arms, white: flash, lx: e.lx, ly: e.ly }); break; }
     case 'sans': { // esqueleto bajito con chamarra azul y pantuflas
       ctx.translate(e.x, y);
       const tired = e.state === 'tired', bob = tired ? 0 : Math.sin(frame * 0.1) * 1.5;
@@ -9075,7 +9076,7 @@ function drawDevilHead(o = {}) { // centro (0, 0): cabeza ~56 de ancho; cuernos,
   ctx.fillStyle = '#16101a';
   for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 22, -12); ctx.lineTo(sd * 44, -24); ctx.lineTo(sd * 26, 6); ctx.closePath(); ctx.fill(); ctx.stroke(); } // orejas
   const g = ctx.createRadialGradient(-9, -14, 2, 0, 0, 36); g.addColorStop(0, '#3e3440'); g.addColorStop(1, '#0a070a');
-  ctx.fillStyle = o.flash ? '#5e4e66' : g; // al recibir un balazo se aclara un poco
+  ctx.fillStyle = o.white ? '#fff' : o.flash ? '#5e4e66' : g; // al recibir un balazo se aclara un poco
   ctx.beginPath(); ctx.moveTo(0, -30); ctx.bezierCurveTo(22, -30, 30, -12, 28, 6); ctx.bezierCurveTo(26, 22, 14, 32, 0, 36); ctx.bezierCurveTo(-14, 32, -26, 22, -28, 6); ctx.bezierCurveTo(-30, -12, -22, -30, 0, -30); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#0a070a'; ctx.beginPath(); ctx.moveTo(-5, 32); ctx.lineTo(0, 46); ctx.lineTo(5, 32); ctx.fill(); // chivita
   // ojos
@@ -9141,7 +9142,7 @@ function drawTrident(x, y0, y1, glow) {
 // el Diablo de cuerpo entero (pies en (x, feet)); o.sit: sentado en su trono · o.head: 'normal' | 'ram' | 'none' · o.tri: tridente en alto
 function drawDevilFig(x, feet, s, o = {}) {
   ctx.save(); ctx.translate(x, feet); ctx.scale(s, s); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  const B = o.flash ? '#4a3c52' : '#141016', sit = o.sit, hipY = sit ? -40 : -50;
+  const B = o.white ? '#fff' : o.flash ? '#4a3c52' : '#141016', sit = o.sit, hipY = sit ? -40 : -50;
   ctx.strokeStyle = B; ctx.lineWidth = 3.4; // cola
   ctx.beginPath(); ctx.moveTo(-4, hipY + 2); ctx.bezierCurveTo(-46, hipY + 10, -50, hipY - 40 + Math.sin(frame * 0.05) * 6, -32, hipY - 54); ctx.stroke();
   ctx.fillStyle = B; ctx.save(); ctx.translate(-32, hipY - 54); ctx.rotate(-0.6); ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(6, 4); ctx.lineTo(-6, 4); ctx.closePath(); ctx.fill(); ctx.restore();
@@ -9151,7 +9152,7 @@ function drawDevilFig(x, feet, s, o = {}) {
   ctx.fillStyle = '#3a3036'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.2;
   for (const sd of [-1, 1]) { const fx = sit ? sd * 20 : sd * 9; ctx.beginPath(); ctx.moveTo(fx - 6, 0); ctx.lineTo(fx - 4, -6); ctx.lineTo(fx + 4, -6); ctx.lineTo(fx + 7, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); }
   // cuerpo
-  const bg = ctx.createRadialGradient(-6, hipY - 34, 2, 0, hipY - 26, 34); bg.addColorStop(0, o.flash ? '#6a5a72' : '#3a3240'); bg.addColorStop(1, B);
+  const bg = ctx.createRadialGradient(-6, hipY - 34, 2, 0, hipY - 26, 34); bg.addColorStop(0, o.white ? '#fff' : o.flash ? '#6a5a72' : '#3a3240'); bg.addColorStop(1, B);
   ctx.fillStyle = bg; ctx.beginPath(); ctx.moveTo(-12, hipY - 58); ctx.quadraticCurveTo(-22, hipY - 20, -12, hipY + 2); ctx.quadraticCurveTo(0, hipY + 8, 12, hipY + 2); ctx.quadraticCurveTo(22, hipY - 20, 12, hipY - 58); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-6, hipY - 40); ctx.quadraticCurveTo(0, hipY - 36, 6, hipY - 40); ctx.stroke(); // pecho
   // brazos
@@ -9172,7 +9173,7 @@ function drawDevilFig(x, feet, s, o = {}) {
   ctx.strokeStyle = B; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(0, sh); ctx.lineTo(0, sh - 10); ctx.stroke();
   if (o.head === 'ram') { ctx.save(); ctx.translate(0, sh - 40); drawRamHead(); ctx.restore(); }
   else if (o.head === 'none') { ctx.strokeStyle = B; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(0, sh - 6); ctx.quadraticCurveTo(o.neckX || 0, sh - 60, (o.neckX || 0) * 2, -400); ctx.stroke(); } // el cuello se estira fuera de cuadro
-  else { ctx.save(); ctx.translate(0, sh - 40); drawDevilHead({ mood: o.mood, lx: o.lx, ly: o.ly, flash: o.flash }); ctx.restore(); }
+  else { ctx.save(); ctx.translate(0, sh - 40); drawDevilHead({ mood: o.mood, lx: o.lx, ly: o.ly, flash: o.flash, white: o.white }); ctx.restore(); }
   ctx.restore();
 }
 function drawDvlThrone(x, feet, s) {
@@ -9356,8 +9357,8 @@ function dvlDrawCard() {
   ctx.fillText('← → correr · ESPACIO / Z saltar · X / J disparar (↑ apunta arriba, ↑ + ← → en diagonal)', CX, 290);
   ctx.fillText('↓ agacharse · SHIFT / C dash · V / E disparo EX (gasta una carta)', CX, 316);
   ctx.fillStyle = '#ffb0d8'; ctx.fillText('Lo ROSA se puede PARRIAR: salta y vuelve a saltar justo encima. ¡Cada parry te da una carta!', CX, 342);
-  drawCuphead(CX - 230, 500, { s: 2.4, face: 1 });
-  drawDevilFig(CX + 210, 520, 1.25, { mood: 'laugh', tri: 1 });
+  drawCuphead(CX - 230, 505, { s: 1.9, face: 1 });
+  drawDevilFig(CX + 210, 515, 0.85, { mood: 'laugh', tri: 1 });
   ctx.restore();
 }
 function dvlDraw() {
@@ -9453,8 +9454,13 @@ const SHEET_ROWS = {
   fetus: [['idle', 8], ['laugh', 10, () => ({ laugh: true })],
     ['shoot', 10, i => ({ laugh: false, gun: { a: -0.22, flash: i === 3 ? 1 : i === 4 ? 0.5 : 0, kick: i === 3 ? 1 : i === 4 ? 0.5 : 0 } })], null,
     ['idle', 6, i => ({ laugh: false, crack: [0, 1, 1, 2, 2, 3, 3, 3][i], broken: i === 7 })]],
+  // El Diablo: 0 quieto sonriendo · 1 carcajada con el tridente en alto · 2 levanta el tridente que brilla · 4 se vuelve carnero y estira los brazos
+  devil: [['idle', 8, i => ({ mood: 'grin', tri: 0, bob: Math.sin(i / 8 * BAL_TAU) * 1.5, lx: Math.sin(i / 8 * BAL_TAU) * 0.8 })],
+    ['laugh', 10, i => ({ mood: 'laugh', tri: 1, bob: -Math.abs(Math.sin(i / 8 * BAL_TAU * 2)) * 2 })],
+    ['trident', 10, i => ({ mood: i < 3 ? 'grin' : 'angry', tri: i >= 2 ? 1 : 0, ly: -0.6 })], null,
+    ['ram', 8, i => ({ head: 'ram', tri: 0, arms: i >= 3 ? 'out' : null, bob: Math.sin(i / 8 * BAL_TAU) * 1.5 })]],
 };
-const SHEET_SCALE = { gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6, baldi: 1.9, fetus: 1.9 };
+const SHEET_SCALE = { gurdy: 1.5, peep: 1.6, widow: 1.5, momFoot: 1.3, satan: 1.05, kingSlime: 1.6, kingBoo: 1.55, mothership: 1.45, ridley: 0.95, wither: 1.45, ganon: 1.4, sans: 1.6, baldi: 1.9, fetus: 1.9, devil: 1.15 };
 window.exportarHojaJefe = type => {
   const F = 256, SS = 2, S = SHEET_SCALE[type], spec = SHEET_ROWS[type];
   const sheet = mkCanvas(F * 8, F * 5), sx = sheet.getContext('2d');
@@ -9470,7 +9476,7 @@ window.exportarHojaJefe = type => {
     try { drawBoss(e, hit > 0); } finally { ctx = prevCtx; }
     // mismo sombreado que en el juego: luz arriba a la izquierda, borde oscuro
     tx.setTransform(SS, 0, 0, SS, 0, 0); tx.globalCompositeOperation = 'source-atop';
-    const [cy, rr] = type === 'sans' ? [100, 95] : type === 'baldi' ? [70, 110] : [140, (e.r + 12) * S]; // Sans y Baldi son altos: la luz se centra en su cara
+    const [cy, rr] = type === 'sans' ? [100, 95] : type === 'baldi' ? [70, 110] : type === 'devil' ? [108, 110] : [140, (e.r + 12) * S]; // Sans y Baldi son altos: la luz se centra en su cara
     const g = tx.createRadialGradient(128 - rr * 0.35, cy - rr * 0.45, rr * 0.05, 128, cy, rr * 1.25);
     g.addColorStop(0, 'rgba(255,248,232,.38)'); g.addColorStop(0.38, 'rgba(255,255,255,0)'); g.addColorStop(0.78, 'rgba(0,0,0,.32)'); g.addColorStop(1, 'rgba(0,0,0,.6)');
     if (!hit) { tx.fillStyle = g; tx.fillRect(0, 0, F, F); }
