@@ -7449,47 +7449,54 @@ function wrapText(text, maxW) { // corta el texto en renglones (con la fuente ac
 }
 
 // ---------- dibujos (pies en (x, feet), s = escala) ----------
-function drawBaldiFig(x, feet, s, o = {}) { // Baldi: pelón, camisa verde, jeans y su regla
+function drawBaldiFig(x, feet, s, o = {}) { // Baldi como en el juego: cabezón pelón con UN pelito, cuello largo, camisa verde, jeans y su regla
   const mood = o.mood || 'smile', talk = o.talk && Math.floor(frame / 5) % 2, slap = o.slap || 0;
   ctx.save(); ctx.translate(x, feet); ctx.scale(s, s); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  const OL = '#2a1a10', SK = '#f2c9a0';
+  const OL = '#111', SK = '#f3cfa6', SKD = '#d9a77c', SH = '#2eb84a', SHD = '#1f8a34';
   ctx.strokeStyle = OL; ctx.lineWidth = 2;
-  ctx.fillStyle = '#3a2a1a'; ctx.beginPath(); ctx.roundRect(-17, -7, 15, 7, 2); ctx.roundRect(2, -7, 15, 7, 2); ctx.fill();
-  ctx.fillStyle = '#3a5aa8'; ctx.beginPath(); ctx.roundRect(-14, -42, 12, 36, 2); ctx.roundRect(2, -42, 12, 36, 2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.roundRect(-18, -84, 36, 46, 7); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#3a8a3e'; ctx.fillRect(-1, -80, 2, 40);
-  ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.roundRect(-27, -80, 10, 30, 4); ctx.fill(); ctx.stroke(); // brazo izquierdo
-  ctx.fillStyle = SK; ell(-22, -48, 5.5, 5.5); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#4a2c14'; ctx.beginPath(); ctx.roundRect(-17, -7, 15, 7, 3); ctx.roundRect(2, -7, 15, 7, 3); ctx.fill(); ctx.stroke(); // zapatos
+  ctx.fillStyle = '#3460b8'; ctx.beginPath(); ctx.roundRect(-13, -42, 11, 36, 2); ctx.roundRect(2, -42, 11, 36, 2); ctx.fill(); ctx.stroke(); // jeans
+  ctx.fillStyle = SK; ctx.beginPath(); ctx.rect(-4.5, -96, 9, 18); ctx.fill(); ctx.stroke(); // su cuello largo
+  ctx.fillStyle = SH; ctx.beginPath(); ctx.moveTo(-17, -80); ctx.quadraticCurveTo(0, -84, 17, -80); ctx.lineTo(16, -38); ctx.lineTo(-16, -38); ctx.closePath(); ctx.fill(); ctx.stroke(); // camisa verde
+  ctx.strokeStyle = SHD; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-6, -81); ctx.quadraticCurveTo(0, -75, 6, -81); ctx.moveTo(-14, -42); ctx.lineTo(14, -42); ctx.stroke();
+  ctx.strokeStyle = OL; ctx.lineWidth = 2;
+  ctx.fillStyle = SH; ctx.beginPath(); ctx.roundRect(-26, -80, 10, 32, 4); ctx.fill(); ctx.stroke(); // brazo izquierdo (manga larga)
+  ctx.fillStyle = SK; ell(-21, -46, 5.5, 5.5); ctx.fill(); ctx.stroke(); // la mano donde se pega con la regla
   ctx.save(); ctx.translate(21, -78); ctx.rotate(lerp(-2.5, 0.55, slap)); // brazo derecho con la regla
-  ctx.fillStyle = '#d8b070'; ctx.fillRect(-3.5, 22, 7, 52); ctx.strokeStyle = '#7a5a20'; ctx.lineWidth = 1.2; ctx.strokeRect(-3.5, 22, 7, 52);
-  ctx.beginPath(); for (let i = 28; i < 74; i += 6) { ctx.moveTo(-3.5, i); ctx.lineTo(-0.5, i); } ctx.stroke();
+  ctx.fillStyle = '#e8c86a'; ctx.fillRect(-4, 22, 8, 56); ctx.strokeStyle = '#6a4a10'; ctx.lineWidth = 1.2; ctx.strokeRect(-4, 22, 8, 56);
+  ctx.beginPath(); for (let i = 28; i < 78; i += 5) { ctx.moveTo(-4, i); ctx.lineTo(i % 10 === 8 ? 0.5 : -1.5, i); } ctx.stroke();
   ctx.strokeStyle = OL; ctx.lineWidth = 2;
-  ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.roundRect(-5, -2, 10, 28, 4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = SH; ctx.beginPath(); ctx.roundRect(-5, -2, 10, 28, 4); ctx.fill(); ctx.stroke();
   ctx.fillStyle = SK; ell(0, 27, 5.5, 5.5); ctx.fill(); ctx.stroke();
   ctx.restore();
-  // cabeza
-  const hy = -106;
-  ctx.fillStyle = SK; ell(-21, hy + 2, 4, 6); ctx.fill(); ctx.stroke(); ell(21, hy + 2, 4, 6); ctx.fill(); ctx.stroke();
-  ell(0, hy, 21, 24); ctx.fill(); ctx.stroke();
-  if (mood === 'angry') { ctx.fillStyle = 'rgba(220,40,30,.28)'; ell(0, hy, 21, 24); ctx.fill(); }
-  ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = 1.6; // tres pelitos
-  ctx.beginPath(); ctx.moveTo(-2, hy - 23); ctx.quadraticCurveTo(-6, hy - 34, 2, hy - 33); ctx.moveTo(-17, hy - 8); ctx.lineTo(-20, hy - 14); ctx.moveTo(17, hy - 8); ctx.lineTo(20, hy - 14); ctx.stroke();
-  ctx.fillStyle = '#fff'; ell(-8, hy - 4, 6, 7); ctx.fill(); ell(8, hy - 4, 6, 7); ctx.fill();
-  ctx.strokeStyle = OL; ctx.lineWidth = 1.4; ell(-8, hy - 4, 6, 7); ctx.stroke(); ell(8, hy - 4, 6, 7); ctx.stroke();
+  // cabezota en forma de huevo (más ancha arriba) y orejas salidas
+  const hy = -116;
+  ctx.fillStyle = SK; ell(-21, hy + 4, 4.5, 6.5); ctx.fill(); ctx.stroke(); ell(21, hy + 4, 4.5, 6.5); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, hy - 23); ctx.bezierCurveTo(16, hy - 23, 22, hy - 10, 21, hy + 2); ctx.bezierCurveTo(20, hy + 16, 11, hy + 24, 0, hy + 24);
+  ctx.bezierCurveTo(-11, hy + 24, -20, hy + 16, -21, hy + 2); ctx.bezierCurveTo(-22, hy - 10, -16, hy - 23, 0, hy - 23); ctx.closePath(); ctx.fill(); ctx.stroke();
+  if (mood === 'angry') { ctx.fillStyle = 'rgba(220,40,30,.12)'; ctx.fill(); }
+  ctx.lineWidth = 1.5; // el único pelito, enroscado
+  ctx.beginPath(); ctx.moveTo(1, hy - 23); ctx.bezierCurveTo(0, hy - 29, 6, hy - 31, 6, hy - 27); ctx.bezierCurveTo(6, hy - 25, 3, hy - 25, 3.5, hy - 27); ctx.stroke();
+  // ojos: puntitos negros con brillo
   const lk = o.look || 0;
-  ctx.fillStyle = '#111'; ell(-8 + lk * 2, hy - 3, 2.3, 2.7); ctx.fill(); ell(8 + lk * 2, hy - 3, 2.3, 2.7); ctx.fill();
-  ctx.strokeStyle = '#4a2a10'; ctx.lineWidth = 2.2; ctx.beginPath();
-  if (mood === 'angry') { ctx.moveTo(-14, hy - 16); ctx.lineTo(-3, hy - 11); ctx.moveTo(14, hy - 16); ctx.lineTo(3, hy - 11); }
-  else { ctx.moveTo(-14, hy - 13); ctx.quadraticCurveTo(-8, hy - 18, -3, hy - 14); ctx.moveTo(14, hy - 13); ctx.quadraticCurveTo(8, hy - 18, 3, hy - 14); }
+  ctx.fillStyle = '#111'; ell(-8 + lk * 1.5, hy - 3, 2.6, 3.4); ctx.fill(); ell(8 + lk * 1.5, hy - 3, 2.6, 3.4); ctx.fill();
+  ctx.fillStyle = '#fff'; ell(-8.8 + lk * 1.5, hy - 4.3, 0.8, 0.9); ctx.fill(); ell(7.2 + lk * 1.5, hy - 4.3, 0.8, 0.9); ctx.fill();
+  ctx.lineWidth = 1.8; ctx.beginPath(); // cejas
+  if (mood === 'angry') { ctx.moveTo(-14, hy - 13); ctx.lineTo(-4, hy - 8); ctx.moveTo(14, hy - 13); ctx.lineTo(4, hy - 8); }
+  else { ctx.moveTo(-13, hy - 10); ctx.quadraticCurveTo(-8, hy - 14, -3, hy - 11); ctx.moveTo(13, hy - 10); ctx.quadraticCurveTo(8, hy - 14, 3, hy - 11); }
   ctx.stroke();
-  ctx.fillStyle = '#d8a07a'; ell(0, hy + 4, 3, 2.6); ctx.fill();
+  ctx.strokeStyle = SKD; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-1, hy - 1); ctx.quadraticCurveTo(-4, hy + 5, 0, hy + 6); ctx.stroke(); // nariz
   ctx.strokeStyle = OL; ctx.lineWidth = 1.6;
-  if (mood === 'angry') {
-    ctx.fillStyle = '#5a0a0a'; ctx.beginPath(); ctx.moveTo(-9, hy + 16); ctx.quadraticCurveTo(0, hy + 9 - (talk ? 4 : 0), 9, hy + 16); ctx.quadraticCurveTo(0, hy + 13, -9, hy + 16); ctx.fill(); ctx.stroke();
-  } else {
-    const op = (mood === 'happy' ? 12 : 9) + (talk ? 3 : 0);
-    ctx.fillStyle = '#7a1010'; ctx.beginPath(); ctx.moveTo(-11, hy + 9); ctx.quadraticCurveTo(0, hy + 9 + op * 1.6, 11, hy + 9); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.fillRect(-8, hy + 9, 16, 2.5);
+  if (mood === 'angry') { // boca hacia abajo
+    if (talk) { ctx.fillStyle = '#3a0606'; ctx.beginPath(); ctx.moveTo(-9, hy + 16); ctx.quadraticCurveTo(0, hy + 7, 9, hy + 16); ctx.quadraticCurveTo(0, hy + 14, -9, hy + 16); ctx.fill(); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.moveTo(-10, hy + 16); ctx.quadraticCurveTo(0, hy + 9, 10, hy + 16); ctx.stroke(); }
+  } else { // su sonrisota de oreja a oreja con los dientes de arriba
+    const op = (mood === 'happy' ? 11 : 8) + (talk ? 3 : 0);
+    const mouth = () => { ctx.beginPath(); ctx.moveTo(-14, hy + 8); ctx.quadraticCurveTo(0, hy + 10, 14, hy + 8); ctx.quadraticCurveTo(0, hy + 8 + op * 1.8, -14, hy + 8); ctx.closePath(); };
+    ctx.fillStyle = '#5a0e0e'; mouth(); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-12, hy + 8.6); ctx.quadraticCurveTo(0, hy + 10.5, 12, hy + 8.6); ctx.lineTo(10, hy + 12); ctx.quadraticCurveTo(0, hy + 13.5, -10, hy + 12); ctx.closePath(); ctx.fill();
+    mouth(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-15.5, hy + 6.5); ctx.lineTo(-13, hy + 9); ctx.moveTo(15.5, hy + 6.5); ctx.lineTo(13, hy + 9); ctx.stroke(); // hoyuelos
   }
   ctx.restore();
 }
@@ -7916,11 +7923,11 @@ function balWallCol(x, cw, y0, lh, wx, v, mx, my, f) {
   } else if ((mx * 5 + my * 11) % 7 === 0 && wx > 0.3 && wx < 0.7) { ctx.fillStyle = sh(240, 200, 60); ctx.fillRect(x, y0 + lh * 0.2, cw, lh * 0.22); } // cartel
   if (wx < 0.02 || wx > 0.98) { ctx.fillStyle = sh(180, 174, 150); ctx.fillRect(x, y0, cw, lh); }
 }
-const balBaldiCv = typeof document !== 'undefined' ? mkCanvas(150, 300) : null;
+const balBaldiCv = typeof document !== 'undefined' ? mkCanvas(150, 330) : null;
 function balBaldiImg(slap) { // Baldi enojado en un lienzo aparte para el 3D
   const x = balBaldiCv.getContext('2d'), prev = ctx; ctx = x;
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, 150, 300);
-  try { drawBaldiFig(75, 298, 2.2, { mood: 'angry', slap }); } finally { ctx = prev; }
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, 150, 330);
+  try { drawBaldiFig(75, 327, 2.2, { mood: 'angry', slap }); } finally { ctx = prev; }
   return balBaldiCv;
 }
 function balDrawMaze() {
@@ -8196,55 +8203,80 @@ function drawMeatBoy(x, y, o = {}) { // (x, y) = esquina de arriba a la izquierd
   ctx.strokeStyle = '#3a0404'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(f * 3 - 4, -6); ctx.quadraticCurveTo(f * 3 + 1, -3, f * 3 + 6, -6); ctx.stroke();
   ctx.restore();
 }
-function drawFetusBaby(x, y, s, o = {}) { // Dr. Fetus: feto cabezón con monóculo y cara de malo
+function drawFetusBaby(x, y, s, o = {}) { // Dr. Fetus: feto cabezón y venoso, con monóculo, cejas de malo y sonrisa de dientes
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s); if (o.rot) ctx.rotate(o.rot);
-  ctx.fillStyle = '#f4a8b4'; ctx.strokeStyle = '#8a3a4a'; ctx.lineWidth = 1.6;
-  ell(5, 9, 9, 8); ctx.fill(); ctx.stroke();
-  ctx.strokeStyle = '#d06070'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(8, 14); ctx.quadraticCurveTo(15, 22, 6, 27); ctx.stroke();
-  ctx.strokeStyle = '#8a3a4a'; ctx.lineWidth = 1.6; ell(-2, -3, 13, 12); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#fff'; ell(-7, -4, 3.6, 3); ctx.fill(); ell(3, -4, 3.6, 3); ctx.fill();
-  ctx.fillStyle = '#111'; ell(-6, -3.6, 1.6, 1.8); ctx.fill(); ell(4, -3.6, 1.6, 1.8); ctx.fill();
-  ctx.strokeStyle = '#5a1a2a'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(-11, -10); ctx.lineTo(-4, -7); ctx.moveTo(7, -10); ctx.lineTo(0, -7); ctx.stroke();
-  ctx.strokeStyle = '#d8b040'; ctx.lineWidth = 1.2; ell(3, -4, 5, 5); ctx.stroke(); ctx.beginPath(); ctx.moveTo(7.5, -1); ctx.lineTo(9, 8); ctx.stroke();
-  if (o.laugh) { ctx.fillStyle = '#5a1a2a'; ell(-2, 4, 3.2, 1.6 + Math.abs(Math.sin(frame * 0.4)) * 1.8); ctx.fill(); }
-  else { ctx.strokeStyle = '#5a1a2a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-6, 6); ctx.quadraticCurveTo(-2, 2.5, 2, 6); ctx.stroke(); }
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const SK = '#f2aab0', OL = '#7a2a38';
+  ctx.fillStyle = SK; ctx.strokeStyle = OL; ctx.lineWidth = 1.4;
+  ell(1, 12, 8, 7.5); ctx.fill(); ctx.stroke(); // cuerpito encogido
+  ell(-5, 18, 4.5, 2.6); ctx.fill(); ctx.stroke(); ell(5, 19, 4.5, 2.6); ctx.fill(); ctx.stroke(); // piernitas
+  ell(-6, 9, 2.5, 4); ctx.fill(); ctx.stroke(); ell(7, 9, 2.5, 4); ctx.fill(); ctx.stroke(); // bracitos
+  ell(0, -6, 15, 13); ctx.fill(); ctx.stroke(); // cabezota
+  ctx.strokeStyle = 'rgba(160,60,110,.55)'; ctx.lineWidth = 0.9; ctx.beginPath(); // venas
+  ctx.moveTo(-11, -12); ctx.quadraticCurveTo(-6, -15, -4, -19); ctx.moveTo(-6, -15); ctx.lineTo(-9, -18);
+  ctx.moveTo(6, -18); ctx.quadraticCurveTo(9, -13, 13, -12); ctx.moveTo(9, -14); ctx.lineTo(11, -17); ctx.stroke();
+  ctx.fillStyle = '#fff'; ell(-5.5, -4, 3.4, 2.6); ctx.fill(); ell(5.5, -4, 3.4, 2.6); ctx.fill(); // ojos
+  ctx.fillStyle = '#111'; ell(-5, -3.6, 1.5, 1.8); ctx.fill(); ell(5, -3.6, 1.5, 1.8); ctx.fill();
+  ctx.strokeStyle = '#3a0a14'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(-2, -6.5); ctx.moveTo(10, -10); ctx.lineTo(2, -6.5); ctx.stroke(); // cejas de malo
+  ctx.strokeStyle = '#e0b030'; ctx.lineWidth = 1.3; ell(5.5, -4, 4.6, 4.6); ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fill(); ctx.stroke(); // monóculo con su cadenita
+  ctx.setLineDash([1.2, 1.2]); ctx.beginPath(); ctx.moveTo(9.8, -2); ctx.quadraticCurveTo(13, 6, 9, 10); ctx.stroke(); ctx.setLineDash([]);
+  const op = o.laugh ? 2 + Math.abs(Math.sin(frame * 0.4)) * 2.5 : 1.4; // sonrisa malvada con dientes
+  ctx.fillStyle = '#3a0a14'; ctx.beginPath(); ctx.moveTo(-7, 2); ctx.quadraticCurveTo(0, 4, 7, 2); ctx.quadraticCurveTo(0, 4 + op * 1.6, -7, 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-6, 2.4); ctx.quadraticCurveTo(0, 4.2, 6, 2.4); ctx.lineTo(5.5, 4); ctx.quadraticCurveTo(0, 5.2, -5.5, 4); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#3a0a14'; ctx.lineWidth = 0.6; ctx.beginPath(); for (let i = -4; i <= 4; i += 2) { ctx.moveTo(i, 3); ctx.lineTo(i, 4.8); } ctx.stroke();
   ctx.restore();
 }
-function drawFetusJar(x, y, s, o = {}) { // frasco con líquido verde; o.crack = 0..3 grietas
+function drawFetusJar(x, y, s, o = {}) { // su frasco: vidrio con líquido amarillento, tapa y base de metal con remaches; o.crack = 0..3 grietas
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  const metal = (yy, h) => {
+    const g = ctx.createLinearGradient(-27, 0, 27, 0); g.addColorStop(0, '#6a6e78'); g.addColorStop(0.35, '#d6dae2'); g.addColorStop(1, '#4a4e58');
+    ctx.fillStyle = g; ctx.fillRect(-27, yy, 54, h); ctx.strokeStyle = '#2a2c34'; ctx.lineWidth = 1.2; ctx.strokeRect(-27, yy, 54, h);
+    ctx.fillStyle = '#3a3c44'; for (let i = -20; i <= 20; i += 10) { ell(i, yy + h / 2, 1.3, 1.3); ctx.fill(); }
+  };
   if (o.broken) { // frasco reventado: sólo quedan la base y unos vidrios
-    ctx.fillStyle = 'rgba(110,210,130,.5)'; ctx.fillRect(-22, 18, 44, 8);
+    ctx.fillStyle = 'rgba(214,220,120,.5)'; ctx.fillRect(-22, 18, 44, 8);
     ctx.fillStyle = 'rgba(230,250,255,.8)'; poly([[-22, 26], [-22, 4], [-16, 14], [-10, 0], [-4, 16], [4, 8], [10, 18], [16, -2], [22, 12], [22, 26]]); ctx.fill();
-    ctx.fillStyle = '#5a5a66'; ctx.fillRect(-27, 26, 54, 6);
+    metal(26, 8);
     ctx.restore(); return;
   }
-  ctx.fillStyle = 'rgba(110,210,130,.5)'; ctx.beginPath(); ctx.roundRect(-22, -28, 44, 56, 8); ctx.fill();
-  for (let i = 0; i < 3; i++) { const k = (frame * 0.01 + i / 3) % 1; ctx.fillStyle = 'rgba(220,255,230,.6)'; ell(-12 + i * 11, 24 - k * 48, 2 + i * 0.6, 2 + i * 0.6); ctx.fill(); }
-  drawFetusBaby(0, -2 + Math.sin(frame * 0.05) * 2, 1, o);
-  ctx.strokeStyle = 'rgba(230,250,255,.9)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.roundRect(-22, -28, 44, 56, 8); ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(-17, -22, 4, 34);
+  ctx.fillStyle = 'rgba(214,220,120,.5)'; ctx.fillRect(-22, -27, 44, 54);
+  for (let i = 0; i < 3; i++) { const k = (frame * 0.01 + i / 3) % 1; ctx.fillStyle = 'rgba(250,255,220,.6)'; ell(-12 + i * 11, 24 - k * 48, 2 + i * 0.6, 2 + i * 0.6); ctx.fill(); }
+  const by = 2 + Math.sin(frame * 0.05) * 2;
+  ctx.strokeStyle = '#c85a6a'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(12, -27); ctx.bezierCurveTo(20, -12, 16, by + 18, 5, by + 14); ctx.stroke(); // el cordón cuelga de la tapa
+  drawFetusBaby(0, by, 1, o);
+  ctx.strokeStyle = 'rgba(230,250,255,.9)'; ctx.lineWidth = 2.5; ctx.strokeRect(-22, -27, 44, 54);
+  ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.fillRect(-18, -22, 4, 40); ctx.fillRect(15, -22, 2, 40);
   const cracks = [[[-8, -26], [-2, -12], [-10, -2], [-4, 8]], [[20, -10], [8, -4], [14, 6], [4, 14], [10, 26]], [[-20, 10], [-8, 14], [-14, 22], [0, 26]]];
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6;
   for (let i = 0; i < Math.min(3, o.crack || 0); i++) { ctx.beginPath(); cracks[i].forEach(([a, b], j) => j ? ctx.lineTo(a, b) : ctx.moveTo(a, b)); ctx.stroke(); }
-  ctx.fillStyle = '#8a8a96'; ctx.fillRect(-25, -38, 50, 11); ctx.fillStyle = '#5a5a66'; ctx.fillRect(-27, -30, 54, 4); ctx.fillRect(-27, 26, 54, 6);
+  metal(-38, 11); metal(26, 8);
   ctx.restore();
 }
-function drawFetusSuit(x, feet, s, o = {}) { // su cuerpo robot de esmoquin, con el frasco por cabeza
+function drawFetusSuit(x, feet, s, o = {}) { // su cuerpo robot de frac con colas, guantes blancos y moño rojo; el frasco va de cabeza
   ctx.save(); ctx.translate(x, feet); ctx.scale(s, s); ctx.lineJoin = 'round';
-  const arm = o.laugh ? Math.sin(frame * 0.3) * 0.3 : 0;
-  ctx.fillStyle = '#1a1a22'; ctx.fillRect(-15, -42, 11, 38); ctx.fillRect(4, -42, 11, 38);
-  ctx.fillStyle = '#0a0a0e'; ctx.beginPath(); ctx.roundRect(-19, -7, 17, 7, 3); ctx.roundRect(2, -7, 17, 7, 3); ctx.fill();
-  ctx.fillStyle = '#1a1a22'; poly([[-26, -94], [26, -94], [20, -40], [-20, -40]]); ctx.fill();
-  ctx.fillStyle = '#f4f4f0'; poly([[-9, -94], [9, -94], [0, -52]]); ctx.fill();
-  ctx.fillStyle = '#c01818'; poly([[-8, -92], [0, -88], [-8, -84]]); ctx.fill(); poly([[8, -92], [0, -88], [8, -84]]); ctx.fill();
-  ctx.fillStyle = '#e8c040'; ell(0, -70, 1.6, 1.6); ctx.fill(); ell(0, -60, 1.6, 1.6); ctx.fill();
+  const arm = o.laugh ? Math.sin(frame * 0.3) * 0.3 : 0, BK = '#16161c', ED = '#3a3a48';
+  ctx.strokeStyle = ED; ctx.lineWidth = 1.5;
+  ctx.fillStyle = BK; ctx.fillRect(-14, -44, 11, 38); ctx.fillRect(3, -44, 11, 38); // pantalones
+  ctx.fillStyle = '#050508'; ctx.beginPath(); ctx.roundRect(-19, -7, 18, 7, 3); ctx.roundRect(1, -7, 18, 7, 3); ctx.fill(); // zapatos de charol
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(-15, -6, 6, 1.5); ctx.fillRect(5, -6, 6, 1.5);
+  ctx.fillStyle = BK; poly([[-20, -52], [-26, -22], [-12, -30], [-10, -46]]); ctx.fill(); ctx.stroke(); // colas del frac
+  poly([[20, -52], [26, -22], [12, -30], [10, -46]]); ctx.fill(); ctx.stroke();
+  poly([[-27, -96], [27, -96], [21, -46], [-21, -46]]); ctx.fill(); ctx.stroke(); // saco
+  ctx.fillStyle = '#f4f4f0'; poly([[-10, -96], [10, -96], [6, -56], [0, -50], [-6, -56]]); ctx.fill(); // camisa
+  ctx.fillStyle = '#2a2a36'; poly([[-10, -96], [-3, -78], [-12, -64]]); ctx.fill(); poly([[10, -96], [3, -78], [12, -64]]); ctx.fill(); // solapas
+  ctx.fillStyle = '#c01818'; poly([[-9, -94], [0, -90], [-9, -86]]); ctx.fill(); poly([[9, -94], [0, -90], [9, -86]]); ctx.fill(); ell(0, -90, 2, 2); ctx.fill(); // moño
+  ctx.fillStyle = '#111'; for (const yy of [-80, -71, -62]) { ell(0, yy, 1.3, 1.3); ctx.fill(); }
   for (const sd of [-1, 1]) {
-    ctx.save(); ctx.translate(sd * 26, -90); ctx.rotate(sd * (0.25 + arm) - (o.laugh ? sd * 1.6 : 0));
-    ctx.fillStyle = '#1a1a22'; ctx.fillRect(-5, 0, 10, 36); ctx.fillStyle = '#fff'; ell(0, 40, 7, 7); ctx.fill();
+    ctx.save(); ctx.translate(sd * 26, -92); ctx.rotate(sd * (0.25 + arm) - (o.laugh ? sd * 1.6 : 0));
+    ctx.fillStyle = BK; ctx.strokeStyle = ED; ctx.lineWidth = 1.5; ctx.fillRect(-5, 0, 10, 34); ctx.strokeRect(-5, 0, 10, 34);
+    ctx.fillStyle = '#f4f4f0'; ctx.fillRect(-5, 30, 10, 4); // puño de la camisa
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#8a8a96'; ell(0, 40, 7, 7); ctx.fill(); ctx.stroke(); // guante blanco
+    ctx.beginPath(); ctx.moveTo(-3, 42); ctx.lineTo(-3, 46); ctx.moveTo(0, 43); ctx.lineTo(0, 47); ctx.moveTo(3, 42); ctx.lineTo(3, 46); ctx.stroke();
     ctx.restore();
   }
-  ctx.fillStyle = '#5a5a66'; ctx.fillRect(-10, -100, 20, 8);
-  drawFetusJar(0, -128, 0.9, o);
+  ctx.fillStyle = '#5a5a66'; ctx.fillRect(-9, -102, 18, 8); // cuello robot con tubos
+  ctx.strokeStyle = '#8a8e98'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-6, -102); ctx.lineTo(-6, -94); ctx.moveTo(6, -102); ctx.lineTo(6, -94); ctx.stroke();
+  drawFetusJar(0, -129, 0.9, o);
   ctx.restore();
 }
 function fetSawDraw(x, y, r, rot) {
