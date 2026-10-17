@@ -60,7 +60,7 @@ const BOTS = `(() => {
       }
     } else if (u.phase === 'maze') {
       const z = u.z, w = z.w, px = Math.floor(z.x), py = Math.floor(z.y), d = balBfs(z, px, py);
-      const goals = z.open ? [[z.exit.x, z.exit.y]] : z.notes.filter(n => !n.got).map(n => [Math.floor(n.x), Math.floor(n.y)]);
+      const goals = z.open ? z.exits.filter(e => !e.done).map(e => [e.x, e.y]) : z.notes.filter(n => !n.got).map(n => [Math.floor(n.x), Math.floor(n.y)]);
       let g = goals[0]; for (const q of goals) if (d[q[1] * w + q[0]] >= 0 && (d[g[1] * w + g[0]] < 0 || d[q[1] * w + q[0]] < d[g[1] * w + g[0]])) g = q;
       let [cx, cy] = g;
       while (d[cy * w + cx] > 1) { for (const [dx, dy] of DIR4) { const nx = cx + dx, ny = cy + dy; if (nx >= 0 && ny >= 0 && nx < w && ny < z.h && d[ny * w + nx] === d[cy * w + cx] - 1) { cx = nx; cy = ny; break; } } }
@@ -92,12 +92,12 @@ const BOTS = `(() => {
     let wp;
     if (f.phase === 'free') wp = [f.lab.fetus.x, f.lab.fetus.y];
     else {
-      const list = WP[key];
+      const list = f.L.wp || WP[key];
       while (f.botWp < list.length - 1 && Math.hypot(cx - list[f.botWp][0], cy - list[f.botWp][1]) < 26) { f.botWp++; f.botStuck = 0; }
       if (key === 'lab' && f.botWp >= list.length - 1 && f.lab.btn.every(b => b)) { f.botIn = { x: 0, j: false }; return; }
       wp = list[f.botWp];
     }
-    if (++f.botStuck > 1500 && f.botWp < WP[key].length - 1) { f.botWp++; f.botStuck = 0; } // si se atora mucho, sigue con el siguiente
+    if (++f.botStuck > 1500 && f.botWp < (f.L.wp || WP[key]).length - 1) { f.botWp++; f.botStuck = 0; } // si se atora mucho, sigue con el siguiente
     if (f.botIn && f.t % 2) return;
     let best = null, bs = 1e12;
     for (const a of OPTS) for (const b of OPTS) for (const c of OPTS) {

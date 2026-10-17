@@ -7646,10 +7646,11 @@ function balRopeUpdate() {
   }
 }
 
-// 3) la escuela en 3D: junta los 4 cuadernos y escapa por la SALIDA mientras Baldi te persigue
+// 3) la escuela en 3D, grande como en el juego: pasillos anchos, salones con puerta, 7 cuadernos y 4 salidas.
+// Baldi sale a buscarte cuando agarras el primer cuaderno; con todos, hay que pasar por las 4 salidas (la última es la de verdad)
 function balMazeIntro() {
   bal.scene = 'class';
-  balTalk(['¡Último minijuego!', 'Escondí 7 cuadernos en mi escuela. Encuéntralos todos...', '...y luego busca la SALIDA.', 'Yo iré a buscarte. Y cada cuaderno me hace ir más rápido. ¡Je je je!'], () => {
+  balTalk(['¡Último minijuego!', 'Escondí 7 cuadernos en mi escuela. Encuéntralos todos...', '...y luego pasa por las 4 SALIDAS. Sólo la última te deja escapar.', 'Cuando agarres el primero, iré a buscarte. Y cada cuaderno me hace ir más rápido. ¡Je je je!'], () => {
     bal.scene = 'maze'; bal.z = balMazeBuild(); balPhase('maze'); stopMusic();
   }, 'baldi', bal.anger > 1 ? 'angry' : 'smile');
 }
@@ -7666,40 +7667,48 @@ function balBfs(z, sx, sy) { // distancias (en celdas) desde (sx, sy) a toda la 
   }
   return d;
 }
+const BAL_HR = [1, 14, 27, 40], BAL_VC = [1, 20, 39, 58, 77]; // dónde empiezan los pasillos (de 2 de ancho)
 function balMazeBuild() {
-  const CW = 11, CH = 7, w = CW * 2 + 1, h = CH * 2 + 1;
+  const w = 80, h = 43, HR = BAL_HR, VC = BAL_VC;
   const g = Array.from({ length: h }, () => Array(w).fill(1));
-  const seen = new Set(['0,0']), st = [[0, 0]]; g[1][1] = 0;
-  while (st.length) { // laberinto (backtracking)
-    const [cx, cy] = st[st.length - 1];
-    const nb = DIR4.map(([dx, dy]) => [cx + dx, cy + dy, dx, dy]).filter(([x, y]) => x >= 0 && y >= 0 && x < CW && y < CH && !seen.has(x + ',' + y));
-    if (!nb.length) { st.pop(); continue; }
-    const [nx, ny, dx, dy] = pick(nb);
-    g[cy * 2 + 1 + dy][cx * 2 + 1 + dx] = 0; g[ny * 2 + 1][nx * 2 + 1] = 0; seen.add(nx + ',' + ny); st.push([nx, ny]);
+  const carve = (x0, y0, x1, y1) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) g[y][x] = 0; };
+  for (const y of HR) carve(1, y, w - 2, y + 1);
+  for (const x of VC) carve(x, 1, x + 1, h - 2);
+  const rooms = [];
+  for (let bj = 0; bj < HR.length - 1; bj++) for (let bi = 0; bi < VC.length - 1; bi++) { // cada cuadra entre pasillos: salones
+    const x0 = VC[bi] + 3, x1 = VC[bi + 1] - 2, y0 = HR[bj] + 3, y1 = HR[bj + 1] - 2;
+    const big = Math.random() < 0.25; // a veces un salón enorme (la cafetería, el gimnasio) con dos puertas
+    const parts = big ? [[x0, x1]] : Math.random() < 0.5 ? [[x0, x0 + 6], [x0 + 8, x1]] : [[x0, x0 + 3], [x0 + 5, x0 + 10], [x0 + 12, x1]];
+    for (const [a, b] of parts) {
+      carve(a, y0, b, y1);
+      const doors = big ? [y0 - 1, y1 + 1] : [Math.random() < 0.5 ? y0 - 1 : y1 + 1];
+      for (const dy of doors) { const dx = ri(a, b - 1); g[dy][dx] = g[dy][dx + 1] = 0; }
+      rooms.push({ a, b, y0, y1 });
+    }
   }
-  for (let i = 0; i < 26; i++) { // atajos: así hay vueltas por donde huir de Baldi
-    const x = ri(1, w - 2), y = ri(1, h - 2);
-    if ((x % 2 === 0) !== (y % 2 === 0)) g[y][x] = 0;
+  for (let i = 0; i < 4; i++) { // algunos tramos de pasillo tapados: así hay que dar la vuelta
+    const bj = ri(1, HR.length - 2), bi = ri(0, VC.length - 2), y = HR[bj], x = ri(VC[bi] + 4, VC[bi + 1] - 3);
+    g[y][x] = g[y + 1][x] = 1;
   }
-  const z = { g, w, h, x: 1.5, y: 1.5, a: g[1][2] === 0 ? 0 : Math.PI / 2, notes: [], got: 0, open: false, t: 0, bob: 0, msg: '¡Encuentra los 7 cuadernos!', msgT: 200,
-    zb: new Float32Array(BAL_COLS), slapT: 150, move: 0, dmap: null, catchT: 0, hbT: 0, slapAt: -99 };
-  const cells = []; for (let y = 1; y < h; y += 2) for (let x = 1; x < w; x += 2) cells.push([x, y]);
-  const d0 = balBfs(z, 1, 1), picked = [[1, 1]];
-  for (let i = 0; i < 7; i++) { // cuadernos repartidos: cada uno lo más lejos posible de los demás
+  const sx = VC[2] + 1, sy = HR[1] + 1; // empiezas en el cruce de en medio
+  const z = { g, w, h, x: sx, y: sy, a: 0, notes: [], got: 0, open: false, act: false, t: 0, bob: 0, msg: '¡Encuentra los 7 cuadernos!', msgT: 200,
+    zb: new Float32Array(BAL_COLS), slapT: 90, move: 0, dmap: null, catchT: 0, hbT: 0, slapAt: -99, left: 4 };
+  const d0 = balBfs(z, sx, sy), mid = r => [(r.a + r.b + 1) / 2, (r.y0 + r.y1 + 1) / 2], picked = [[sx, sy]];
+  const usable = rooms.filter(r => d0[Math.floor(mid(r)[1]) * w + Math.floor(mid(r)[0])] > 0);
+  for (let i = 0; i < 7; i++) { // un cuaderno por salón, repartidos por toda la escuela
     let best = null, bd = -1;
-    for (const c of cells) { const md = Math.min(...picked.map(q => Math.abs(q[0] - c[0]) + Math.abs(q[1] - c[1]))) + Math.random() * 0.5; if (md > bd) { bd = md; best = c; } }
-    picked.push(best); z.notes.push({ x: best[0] + 0.5, y: best[1] + 0.5, got: false });
+    for (const r of usable) { const [cx, cy] = mid(r), md = Math.min(...picked.map(q => Math.abs(q[0] - cx) + Math.abs(q[1] - cy))) + Math.random() * 6; if (md > bd) { bd = md; best = r; } }
+    usable.splice(usable.indexOf(best), 1); picked.push(mid(best));
+    z.notes.push({ x: ri(best.a, best.b) + 0.5, y: ri(best.y0, best.y1) + 0.5, got: false });
   }
-  let ey = 1; // la salida: en la pared derecha, lo más lejos posible del inicio
-  for (let y = 1; y < h; y += 2) if (d0[y * w + w - 2] > d0[ey * w + w - 2]) ey = y;
-  z.exit = { x: w - 1, y: ey }; g[ey][w - 1] = 2;
-  let bc = cells[cells.length - 1]; // Baldi sale de un salón a media distancia del inicio
-  for (const [x, y] of cells) if (Math.abs(d0[y * w + x] - 9) < Math.abs(d0[bc[1] * w + bc[0]] - 9)) bc = [x, y];
-  z.bx = bc[0] + 0.5; z.by = bc[1] + 0.5;
+  z.exits = [{ x: 0, y: HR[1] }, { x: w - 1, y: HR[2] + 1 }, { x: VC[1], y: 0 }, { x: VC[3] + 1, y: h - 1 }].map(e => ({ ...e, done: false }));
+  for (const e of z.exits) g[e.y][e.x] = 2;
+  let br = rooms[0], bd = 1e9; // Baldi espera en el salón más cercano al inicio
+  for (const r of rooms) { const [cx, cy] = mid(r), d = d0[Math.floor(cy) * w + Math.floor(cx)]; if (d > 6 && d < bd) { bd = d; br = r; } }
+  [z.bx, z.by] = mid(br); z.bx = Math.floor(z.bx) + 0.5; z.by = Math.floor(z.by) + 0.5;
   return z;
 }
 const balWalk = v => v === 0 || v === 3;
-const BAL_OUT = 90; // cuadros que tarda Baldi en salir a buscarte
 function balFree(z, x, y) {
   const r = 0.22;
   for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) {
@@ -7708,9 +7717,9 @@ function balFree(z, x, y) {
   }
   return true;
 }
-function balFarCell(z) { // la celda más lejos del jugador (ahí reaparece Baldi después de pegarte)
-  const d = balBfs(z, Math.floor(z.x), Math.floor(z.y)); let best = [1, 1], bd = -1;
-  for (let y = 1; y < z.h; y += 2) for (let x = 1; x < z.w; x += 2) if (d[y * z.w + x] > bd) { bd = d[y * z.w + x]; best = [x, y]; }
+function balFarCell(z) { // un lugar a unos 28 pasos de ti (ahí reaparece Baldi después de pegarte)
+  const d = balBfs(z, Math.floor(z.x), Math.floor(z.y)); let best = [Math.floor(z.bx), Math.floor(z.by)], bd = 1e9;
+  for (let y = 1; y < z.h; y++) for (let x = 1; x < z.w; x++) { const v = d[y * z.w + x]; if (v > 0 && Math.abs(v - 28) < bd) { bd = Math.abs(v - 28); best = [x, y]; } }
   return best;
 }
 function balMazeUpdate() {
@@ -7726,10 +7735,14 @@ function balMazeUpdate() {
   for (const n of z.notes) if (!n.got && Math.hypot(n.x - z.x, n.y - z.y) < 0.5) {
     n.got = true; z.got++; sfx('balNote');
     z.msg = `¡Cuaderno ${z.got} de ${z.notes.length}!`; z.msgT = 120;
-    if (z.got === z.notes.length) { z.open = true; z.g[z.exit.y][z.exit.x] = 3; sfx('balAlarm'); z.msg = '¡Ya tienes todos! ¡Corre a la SALIDA!'; z.msgT = 260; }
+    if (!z.act) { z.act = true; z.msg = '¡Baldi viene por ti!'; sfx('balWrong'); }
+    if (z.got === z.notes.length) { z.open = true; for (const e of z.exits) z.g[e.y][e.x] = 3; sfx('balAlarm'); z.msg = '¡Ya tienes todos! ¡Pasa por las 4 SALIDAS!'; z.msgT = 260; }
   }
-  if (z.open && Math.floor(z.x) === z.exit.x && Math.floor(z.y) === z.exit.y) { balMazeWin(); return; }
-  if (z.t < BAL_OUT) return; // Baldi tarda un poquito en salir a buscarte
+  if (z.open) for (const e of z.exits) if (!e.done && Math.hypot(e.x + 0.5 - z.x, e.y + 0.5 - z.y) < 1.1) { // cada salida se cierra al tocarla; la última es la de verdad
+    if (--z.left <= 0) { balMazeWin(); return; }
+    e.done = true; z.g[e.y][e.x] = 2; sfx('balAlarm'); z.msg = z.left === 1 ? '¡Una salida más!' : `¡Faltan ${z.left} salidas!`; z.msgT = 160;
+  }
+  if (!z.act) return; // Baldi sale a buscarte cuando agarras el primer cuaderno
   if (z.catchT > 0) z.catchT--;
   const dd = Math.hypot(z.bx - z.x, z.by - z.y);
   if (--z.slapT <= 0) { // ¡ZAS! cada reglazo lo acerca una celda (más rápido si está enojado y con cada cuaderno)
@@ -7906,7 +7919,7 @@ function balRender3D() { // la escuela en 3D (rayos, como Wolfenstein)
     let mx = Math.floor(z.x), my = Math.floor(z.y), side = 0, v = 0;
     const ddx = Math.abs(1 / rx), ddy = Math.abs(1 / ry), sx = rx < 0 ? -1 : 1, sy = ry < 0 ? -1 : 1;
     let sdx = rx < 0 ? (z.x - mx) * ddx : (mx + 1 - z.x) * ddx, sdy = ry < 0 ? (z.y - my) * ddy : (my + 1 - z.y) * ddy;
-    for (let i = 0; i < 64; i++) {
+    for (let i = 0; i < 220; i++) {
       if (sdx < sdy) { sdx += ddx; mx += sx; side = 0; } else { sdy += ddy; my += sy; side = 1; }
       if (mx < 0 || my < 0 || mx >= z.w || my >= z.h) { v = 9; break; }
       v = z.g[my][mx]; if (v === 1 || v === 2) break;
@@ -7919,7 +7932,7 @@ function balRender3D() { // la escuela en 3D (rayos, como Wolfenstein)
   }
   // cuadernos y Baldi (recortados por las paredes)
   const spr = z.notes.filter(n => !n.got).map(n => ({ x: n.x, y: n.y, img: balNoteImg(), hw: 0.3, lift: 0.25 + Math.sin(frame * 0.06 + n.x) * 0.04 }));
-  if (z.t >= BAL_OUT) {
+  { // Baldi (antes de salir, espera parado en su salón)
     const bc = balBaldiImg(z.t - z.slapAt < 12 ? 1 - (z.t - z.slapAt) / 12 : 0);
     spr.push({ x: z.bx, y: z.by, img: bc, hw: 0.92, lift: 0 });
   }
@@ -7967,13 +7980,13 @@ function balDrawMaze() {
   balRender3D();
   if (z.open) { ctx.fillStyle = `rgba(255,0,0,${0.1 + Math.sin(frame * 0.15) * 0.06})`; ctx.fillRect(0, 0, W, H); }
   // mapa
-  const cs = 7, mx0 = W - z.w * cs - 16, my0 = 16;
+  const cs = 3, mx0 = W - z.w * cs - 16, my0 = 16;
   ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(mx0 - 6, my0 - 6, z.w * cs + 12, z.h * cs + 12);
   for (let y = 0; y < z.h; y++) for (let x = 0; x < z.w; x++) {
     const v = z.g[y][x]; if (v === 0) continue;
     ctx.fillStyle = v === 1 ? '#c8c2a8' : v === 2 ? '#c03030' : '#40ff60'; ctx.fillRect(mx0 + x * cs, my0 + y * cs, cs, cs);
   }
-  for (const n of z.notes) if (!n.got) { ctx.fillStyle = '#3a8aff'; ctx.fillRect(mx0 + n.x * cs - 2.5, my0 + n.y * cs - 2.5, 5, 5); }
+  for (const n of z.notes) if (!n.got) { ctx.fillStyle = '#3a8aff'; ctx.fillRect(mx0 + n.x * cs - 3, my0 + n.y * cs - 3, 6, 6); }
   ctx.save(); ctx.translate(mx0 + z.x * cs, my0 + z.y * cs); ctx.rotate(z.a); ctx.fillStyle = '#ffe040'; poly([[5, 0], [-3, -3.5], [-3, 3.5]]); ctx.fill(); ctx.restore();
   // cuadernos
   ctx.drawImage(balNoteImg(), CX - 70, 12, 26, 33);
@@ -8004,17 +8017,56 @@ function balDraw() {
 // DR. FETUS (Super Meat Boy): la pelea es de plataformas, como en el juego original.
 // 1) escapa trepando la torre mientras Dr. Fetus gigante sube destrozando todo y te dispara con su lanzacohetes
 // 2) en su laboratorio aprieta los 3 botones (cada uno dispara un cohete a su frasco) y, cuando caiga... ¡atrápalo y dale un golpe!
-// Morir te regresa al último punto de control y cuesta medio corazón.
+// Morir te regresa al último punto de control; cada 5 muertes cuestan medio corazón (como en Super Meat Boy, morir es parte del juego).
 // =====================================================================
 let fet = null;
 const FT = 32; // tamaño de un bloque
-const FET_TOWER = { name: 'LA TORRE', h: 64, start: [4, 62],
-  plats: [[63, 1, 28], [60, 3, 9], [57, 12, 17], [54, 21, 26], [51, 14, 18], [48, 5, 10], [45, 1, 4], [35, 5, 12], [32, 15, 20], [29, 23, 27], [26, 16, 20],
-    [23, 8, 13], [20, 2, 6], [17, 9, 14], [14, 17, 22], [11, 24, 28], [8, 17, 21], [5, 9, 14]],
-  walls: [[5, 36, 41]], // la chimenea: se sube rebotando entre las paredes
-  saws: [{ x: 14.5, y: 57, r: 15 }, { x: 18, y: 30.4, r: 15, ax: 3, sp: 0.042 }, { x: 10.5, y: 23, r: 15 }, { x: 15.5, y: 14.5, r: 15, ay: 2.6, sp: 0.055 }, { x: 24.5, y: 11, r: 13 },
-    { x: 16, y: 60.5, r: 13, ax: 3, sp: 0.035 }, { x: 12, y: 17, r: 13 }, { x: 16, y: 6, r: 14, ay: 2.5, sp: 0.04 }],
-  cps: [[4, 62], [9, 34]] }; // sólo un punto de control a la mitad
+const FET_SEED = 7, FET_DPH = 5; // FET_DPH: muertes por cada medio corazón
+// LA TORRE: larguísima (230 bloques de alto). Se arma con una semilla fija, así siempre es la misma (como un nivel diseñado):
+// plataformas en zigzag con sierras encima, sierras que suben y bajan entre los saltos y chimeneas para subir rebotando en las paredes
+function fetRng(seed) { return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function fetTowerGen(seed, h) {
+  const R = fetRng(seed), rr = (a, b) => a + Math.floor(R() * (b - a + 1));
+  const plats = [[h - 1, 1, 28]], walls = [], saws = [], cps = [[4, h - 2]];
+  const S = (c, row) => [c * FT, row * FT - 11], P = (c, row) => [c * FT, row * FT], wp = []; // wp: la ruta que sigue el bot de los videos
+  let cur = { r: h - 1, a: 1, b: 28 }, dir = 1, cpNext = h - 42, lastChim = h, force = 0; // force: después de brincar una sierra se sigue para el mismo lado
+  while (cur.r > 7) {
+    const nr = cur.r - 3;
+    let d = cur.b <= 22 && (cur.a < 7 || R() < 0.5) ? 1 : cur.a >= 7 ? -1 : 0;
+    if (cur.r > 26 && lastChim - cur.r > 22 && R() < 0.3 && d && cur.b - cur.a < 20) { // chimenea
+      const c0 = d > 0 ? cur.b + 2 : cur.a - 5, top = nr - rr(10, 16), L = c0 - 1, Rw = c0 + 4;
+      plats.push([nr, L, Rw]); // el piso de la chimenea
+      walls.push([d > 0 ? L : Rw, top, nr - 4], [d > 0 ? Rw : L, top, nr - 1]); // del lado por donde entras queda un hueco
+      wp.push(S(c0 + 2, nr));
+      for (let y = nr - 4; y > top; y -= 4) wp.push(P(c0 + 2, y));
+      if (R() < 0.5) saws.push({ x: c0 + 2, y: rr(top + 3, nr - 5) + 0.5, r: 12, ax: 1.2, sp: 0.05 }); // una sierra que va y viene adentro
+      const right = Rw + 4 <= 28 && (L - 4 < 1 || R() < 0.5), la = right ? Rw : L - 4, lb = right ? Rw + 4 : L;
+      plats.push([top - 1, la, lb]); wp.push(S((la + lb + 1) / 2, top - 1)); // la salida, arriba de una pared
+      cur = { r: top - 1, a: la, b: lb }; lastChim = cur.r; dir = right ? 1 : -1;
+    } else { // zigzag
+      const wdt = rr(3, 6), gap = rr(1, 4);
+      d = force || (cur.b - cur.a > 20 ? 0 : R() < 0.75 ? dir : -dir); force = 0;
+      let na = d > 0 ? cur.b + 1 + gap : d < 0 ? cur.a - gap - wdt : rr(6, 20);
+      if (d && (na < 1 || na + wdt - 1 > 28)) { d = -d; na = d > 0 ? cur.b + 1 + gap : cur.a - gap - wdt; }
+      const nb = na + wdt - 1, near = d > 0 ? na + 0.8 : nb + 0.2, far = d > 0 ? nb + 0.2 : na + 0.8, roll = R();
+      const ahead = d > 0 ? nb <= 17 : d < 0 && na >= 12; // ¿cabe la siguiente plataforma del otro lado de la sierra?
+      plats.push([nr, na, nb]);
+      if (wdt >= 5 && ahead && roll < 0.22) { saws.push({ x: na + wdt / 2, y: nr, r: 13 }); wp.push(S(near, nr), S(far, nr)); force = d; } // sierra encima: hay que brincarla
+      else if (d && roll < 0.45) { // sierra que sube y baja justo donde saltas
+        saws.push({ x: d > 0 ? (cur.b + 1 + na) / 2 : (nb + 1 + cur.a) / 2, y: nr - 1.2, r: 13, ay: 1.7, sp: 0.025 + R() * 0.02 });
+        wp.push(S(na + wdt / 2, nr));
+      } else if (wdt >= 5 && ahead && roll < 0.57) { saws.push({ x: na + wdt / 2, y: nr, r: 11, ax: (wdt - 2) / 2, sp: 0.035 }); wp.push(S(near, nr), S(far, nr)); force = d; } // sierra que patrulla
+      else {
+        wp.push(S(na + wdt / 2, nr));
+        if (nr <= cpNext && nr > 20) { cps.push([Math.floor(na + wdt / 2), nr - 1]); cpNext -= 42; } // punto de control (sólo en plataformas sin sierra)
+      }
+      cur = { r: nr, a: na, b: nb }; dir = force || -d || dir;
+    }
+  }
+  wp.push(P((cur.a + cur.b + 1) / 2, 1));
+  return { name: 'LA TORRE', h, start: [4, h - 2], plats, walls, saws, cps, wp };
+}
+const FET_TOWER = fetTowerGen(FET_SEED, 230);
 const FET_LAB = { name: 'EL LABORATORIO', h: 18, start: [14, 16],
   plats: [[17, 0, 29], [0, 0, 29], [14, 3, 8], [14, 21, 26], [11, 11, 18], [8, 2, 6], [8, 23, 27]], walls: [], cps: [[14, 16]],
   saws: [{ x: 14.5, y: 16.5, r: 14, ax: 6, sp: 0.03 }, { x: 14.5, y: 5.5, r: 15, ax: 8, sp: 0.025 }], // una barre el piso y otra arriba
@@ -8100,7 +8152,7 @@ function fetDie() {
   for (let i = 0; i < 26; i++) { const a = rnd(0, BAL_TAU), s = rnd(1, 7); f.parts.push({ x: m.x + 11, y: m.y + 11, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 3, life: ri(30, 70), r: rnd(2, 5), col: pick(['#c81e1e', '#8a0a0a', '#e84040']) }); }
   for (let i = 0; i < 6; i++) f.smears.push({ x: m.x + 11 + rnd(-30, 30), y: m.y + 11 + rnd(-30, 30), r: rnd(3, 8) });
   if (f.noDie) return;
-  p.inv = 0; hurt(1);
+  if (f.deaths % FET_DPH === 0) { p.inv = 0; hurt(1); }
 }
 function fetRespawn() {
   const f = fet, c = f.L.cps[f.cp];
@@ -8147,7 +8199,7 @@ function fetUpdate() {
     if (f.robHold > 0) f.robHold--;
     f.rob -= f.robV;
     if (!m.dead && f.robHold <= 0 && --f.gunT <= 0) { // ¡cohete desde su lanzacohetes!
-      f.gunT = 150; const g = fetGun(f);
+      f.gunT = 170; const g = fetGun(f);
       f.mis.push({ x: g.x + Math.cos(g.a) * 95, y: g.y + Math.sin(g.a) * 95, a: g.a, vx: 0, vy: 0, sp: 4.2, turn: 0.022, life: 260 }); sfx('fetMissile'); f.shake = 5;
     }
     if (f.t % 50 === 0) sfx('rumble', 0.5);
@@ -8444,6 +8496,7 @@ function fetDraw() {
   modeHearts();
   ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.font = 'bold 18px Impact, "Arial Black", sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#000';
   ctx.strokeText(`MUERTES: ${f.deaths}`, W - 20, 24); ctx.fillStyle = '#ff6a5a'; ctx.fillText(`MUERTES: ${f.deaths}`, W - 20, 24);
+  ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#e8c8b8'; ctx.fillText(`-½♥ en ${FET_DPH - f.deaths % FET_DPH}`, W - 44, 42); // cuánto falta para perder medio corazón
   if (!lab) { // qué tan arriba vas
     const k = clamp(1 - (m.y - 3 * FT) / ((f.L.h - 4) * FT), 0, 1);
     ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(W - 26, 50, 10, 200); ctx.fillStyle = '#c81e1e'; ctx.fillRect(W - 26, 250 - 200 * k, 10, 200 * k);
