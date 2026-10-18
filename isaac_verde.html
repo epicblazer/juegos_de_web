@@ -720,8 +720,71 @@ const BOSS_SONGS = {
     bass: 'x.x.x.x.', drums: 'k h s h k h s h k h s h k h s h',
     v: { leadType: 'square', leadVol: 0.06, leadLen: 1.2, bassType: 'sawtooth', bassVol: 0.08, bassLen: 1.5 } },
 };
+// ---------- Canciones de nivel: cada piso tiene la suya (mismo formato que las de jefe) ----------
+const LEVEL_SONGS = {
+  sotano2: { // Sótano II: marcha militar más oscura, con redoble y metales
+    bpm: 100, key: 50, scale: 'harm', prog: [0, 5, 3, 4], pad: true, crash: 4,
+    mel: ['0...2.3.4...3.2.', '5...4.3.2...0...', '3...4.5.6...5.4.', '4...6...7.......'],
+    bass: 'x...x.x.', drums: 'kt - r r s - r r kt - r r s r s r',
+    v: { leadType: 'brass', leadVol: 0.075, leadLen: 3, leadCut: 2600, bassCut: 600, bassLen: 2 } },
+  cuevas: { // Cuevas: gotas que caen, campanitas con eco y bajo hondo
+    bpm: 92, key: 57, scale: 'dorian', prog: [0, 0, 6, 3],
+    mel: ['4.......2...0...', '4...5...6...4...', '3.......2...1...', '0.......1...2...'],
+    arp: '02470742', bass: 'x.......', drums: 'k - - - h - - - s - - - h - - h',
+    v: { leadType: 'bell', leadVol: 0.06, leadLen: 5, arpType: 'triangle', arpVol: 0.04, bassType: 'triangle', bassLen: 8, bassVol: 0.3 } },
+  cuevas2: { // Cuevas II: túneles estrechos, ritmo nervioso
+    bpm: 126, key: 52, scale: 'phryg', prog: [0, 1, 0, 6], crash: 4,
+    mel: ['0.0.1.0.3...1...', '0.0.1.0.4...3...', '5.5.4.3.4...3...', '1.0.1.3.0.......'],
+    arp: '0.4.7.4.', bass: 'x.xo', drums: 'k h s h k h s h k h s h k k s r',
+    v: { leadType: 'sawtooth', leadVol: 0.045, leadLen: 1.4, arpType: 'triangle', arpVol: 0.035, bassCut: 700, bassLen: 1.2 } },
+  profundidades: { // Profundidades: metales graves y órgano, todo pesa
+    bpm: 84, key: 45, scale: 'harm', prog: [0, 5, 0, 4], pad: true,
+    mel: ['0.......3.......', '5.......4...3...', '0.......3...5...', '7.......6.......'],
+    bass: 'x.......', drums: 'kt - - - - - t - kt - - - s - r r',
+    v: { leadType: 'brass', leadVol: 0.08, leadLen: 7, leadCut: 1800, bassCut: 400, bassLen: 6, bassVol: 0.24, padType: 'organ', padVol: 0.025 } },
+  profundidades2: { // Profundidades II: campanas lejanas, casi silencio
+    bpm: 72, key: 50, scale: 'phryg', prog: [0, 1, 6, 0], pad: true,
+    mel: ['7.......8.......', '7...6...5.......', '4.......5...4...', '1...0...........'],
+    arp: '0...4...7...4...', bass: 'x.......', drums: 't - - - - - - - t - - - T - - -',
+    v: { leadType: 'bell', leadVol: 0.07, leadLen: 8, arpType: 'triangle', arpVol: 0.035, bassCut: 400, bassLen: 8, bassVol: 0.22 } },
+  utero: { // Útero: un latido que no para y un órgano blando
+    bpm: 96, key: 48, scale: 'minor', prog: [0, 0, 5, 6], pad: true,
+    mel: ['....0.2.3.......', '....3.2.0.......', '....5.4.3.2.....', '....4.3.2.0.....'],
+    bass: 'x..x............', drums: 'k - - k - - - - - - - - - - - -',
+    v: { leadType: 'organ', leadVol: 0.06, leadLen: 3, bassType: 'sine', bassVol: 0.35, bassLen: 2, padType: 'organ', padVol: 0.022 } },
+  torre: { // Torre Final: marcha épica hacia la última batalla
+    bpm: 132, key: 47, scale: 'harm', prog: [0, 5, 3, 4], crash: 2, pad: true,
+    mel: ['0...2...4...5...', '7...5...4...2...', '0...2...4...5...', '7...8...7.5.4...'],
+    arp: '0.4.7.4.', bass: 'x.x.o.x.', drums: 'kt h s h kt h s h kt h s h kt T T r',
+    v: { leadType: 'brass', leadVol: 0.08, leadLen: 3.5, leadCut: 3000, arpType: 'square', arpVol: 0.025, bassCut: 900, bassLen: 1.5 } },
+  champinon: { // Reino Champiñón: brincos alegres en onda cuadrada
+    bpm: 160, key: 60, scale: 'major', prog: [0, 3, 4, 0],
+    mel: ['4.4.4...2.4...7.', '....0.......2...', '3.3.3...1.3...5.', '4...2...0.......'],
+    bass: 'x.5.o.5.', drums: 'k h s h k h s h k h s h k k s h',
+    v: { leadType: 'square', leadVol: 0.06, leadLen: 1.4, bassType: 'triangle', bassVol: 0.32, bassLen: 1.5 } },
+  minas: { // Minas de Bloques: tranquila, campanitas y notas sueltas
+    bpm: 76, key: 55, scale: 'major', prog: [0, 3, 5, 4], pad: true,
+    mel: ['4.......2.......', '....5...4...2...', '0.......1.......', '2...........4...'],
+    arp: '0.2.4.2.', bass: 'x.......', drums: 'h - - - - - - - h - - - - - - -',
+    v: { leadType: 'bell', leadVol: 0.06, leadLen: 6, arpType: 'triangle', arpVol: 0.03, arpLen: 2, bassType: 'triangle', bassVol: 0.25, bassLen: 8, padType: 'organ', padVol: 0.015 } },
+  colinas: { // Colinas Verdes: rápida y con ganas de correr
+    bpm: 170, key: 60, scale: 'major', prog: [0, 5, 3, 4], crash: 4,
+    mel: ['0.2.4...7...9.7.', '5...4.2.4.......', '0.2.4...7...b.a.', '9.7.5.4.2...0...'],
+    bass: 'xoxo', drums: 'k h s h k h s h k h s h k s s s',
+    v: { leadType: 'square', leadVol: 0.06, leadLen: 1.6, bassType: 'sawtooth', bassVol: 0.09, bassLen: 1.2 } },
+  arcade: { // Laberinto Arcade: chiptune de maquinita
+    bpm: 150, key: 59, scale: 'major', prog: [0, 0, 3, 4],
+    mel: ['0.7.4.2.7.4.2...', '1.8.5.3.8.5.3...', '0.7.4.2.7.4.2...', '2.3.4...4.5.6.7.'],
+    bass: 'x...o...', drums: 'k - h - s - h - k - h - s - h h',
+    v: { leadType: 'square', leadVol: 0.055, leadLen: 1, bassType: 'triangle', bassVol: 0.32, bassLen: 3 } },
+  zebes: { // Planeta Zebes: planeta extraño, arpegio frío y órgano lejano
+    bpm: 88, key: 52, scale: 'phryg', prog: [0, 0, 1, 0], pad: true,
+    mel: ['0.......3.......', '1.......0.......', '4.......5...4...', '3.......1.......'],
+    arp: '0.7.3.4.', bass: 'x.x.....', drums: 'k - - - - - h - - - k - - - h -',
+    v: { leadType: 'sawtooth', leadVol: 0.035, leadLen: 6, arpType: 'triangle', arpVol: 0.045, arpLen: 1.2, bassType: 'triangle', bassVol: 0.3, bassLen: 2, padType: 'organ', padVol: 0.02 } },
+};
 const MUSIC = { title: buildTitleMusic(), floor: buildFloorMusic(), bright: buildBrightMusic(), eerie: buildEerieMusic(), boss: buildBossMusic(), final: buildFinalMusic(), retro: buildRetroMusic() };
-for (const [k, s] of Object.entries(BOSS_SONGS)) MUSIC[k] = buildSong(s);
+for (const [k, s] of Object.entries({ ...BOSS_SONGS, ...LEVEL_SONGS })) MUSIC[k] = buildSong(s);
 MUSIC.monstro = MUSIC.boss; MUSIC.darkIsaac = MUSIC.final;
 const bossMusic = type => MUSIC[type] ? type : 'boss';
 let musicName = null, nextNoteTime = 0, step = 0;
@@ -1507,20 +1570,20 @@ const ISAAC_POOL = ['fly', 'gaper', 'charger', 'shooter'];
 const RETRO_ENEMIES = ['goomba', 'creeper', 'ghost', 'slime', 'invader', 'skeleton'];
 const ISAAC_LEVELS = [
   { name: 'Sótano', ref: 'The Binding of Isaac', fa: '#5d402e', fb: '#634533', wall: '#24170f', wall2: '#2f1e14', rock: '#7d7468', rockStyle: 'stone', music: 'floor', pool: ISAAC_POOL, boss: 'pool' },
-  { name: 'Sótano II', ref: 'The Binding of Isaac', fa: '#574030', fb: '#5e4535', wall: '#221510', wall2: '#2d1c15', rock: '#776e64', rockStyle: 'stone', music: 'floor', pool: ISAAC_POOL, boss: 'pool' },
-  { name: 'Cuevas', ref: 'The Binding of Isaac', fa: '#4a4038', fb: '#51463d', wall: '#1a1612', wall2: '#26201a', rock: '#6a625a', rockStyle: 'stone', music: 'floor', pool: ISAAC_POOL, boss: 'pool' },
-  { name: 'Cuevas II', ref: 'The Binding of Isaac', fa: '#443a33', fb: '#4b4039', wall: '#171310', wall2: '#221c17', rock: '#645c55', rockStyle: 'stone', music: 'floor', pool: ISAAC_POOL, boss: 'pool' },
-  { name: 'Profundidades', ref: 'The Binding of Isaac', fa: '#3a1c18', fb: '#42201b', wall: '#120606', wall2: '#1f0a0a', rock: '#5a4a44', rockStyle: 'stone', music: 'floor', pool: ISAAC_POOL, boss: 'pool' },
-  { name: 'Profundidades II', ref: 'The Binding of Isaac', fa: '#341a16', fb: '#3c1d19', wall: '#100505', wall2: '#1c0909', rock: '#54453f', rockStyle: 'stone', music: 'eerie', pool: ISAAC_POOL, boss: 'pool' },
-  { name: 'Útero', ref: 'The Binding of Isaac', fa: '#6a2028', fb: '#73252d', wall: '#2a0508', wall2: '#3a0a10', rock: '#8a3a40', rockStyle: 'stone', music: 'eerie', pool: ISAAC_POOL, boss: 'pool' },
-  { name: 'Torre Final', ref: 'The Binding of Isaac', fa: '#2a2a2a', fb: '#222', wall: '#0a0a0a', wall2: '#181818', rock: '#555', rockStyle: 'stone', music: 'eerie', pool: ISAAC_POOL, boss: 'darkIsaac' },
+  { name: 'Sótano II', ref: 'The Binding of Isaac', fa: '#574030', fb: '#5e4535', wall: '#221510', wall2: '#2d1c15', rock: '#776e64', rockStyle: 'stone', music: 'sotano2', pool: ISAAC_POOL, boss: 'pool' },
+  { name: 'Cuevas', ref: 'The Binding of Isaac', fa: '#4a4038', fb: '#51463d', wall: '#1a1612', wall2: '#26201a', rock: '#6a625a', rockStyle: 'stone', music: 'cuevas', pool: ISAAC_POOL, boss: 'pool' },
+  { name: 'Cuevas II', ref: 'The Binding of Isaac', fa: '#443a33', fb: '#4b4039', wall: '#171310', wall2: '#221c17', rock: '#645c55', rockStyle: 'stone', music: 'cuevas2', pool: ISAAC_POOL, boss: 'pool' },
+  { name: 'Profundidades', ref: 'The Binding of Isaac', fa: '#3a1c18', fb: '#42201b', wall: '#120606', wall2: '#1f0a0a', rock: '#5a4a44', rockStyle: 'stone', music: 'profundidades', pool: ISAAC_POOL, boss: 'pool' },
+  { name: 'Profundidades II', ref: 'The Binding of Isaac', fa: '#341a16', fb: '#3c1d19', wall: '#100505', wall2: '#1c0909', rock: '#54453f', rockStyle: 'stone', music: 'profundidades2', pool: ISAAC_POOL, boss: 'pool' },
+  { name: 'Útero', ref: 'The Binding of Isaac', fa: '#6a2028', fb: '#73252d', wall: '#2a0508', wall2: '#3a0a10', rock: '#8a3a40', rockStyle: 'stone', music: 'utero', pool: ISAAC_POOL, boss: 'pool' },
+  { name: 'Torre Final', ref: 'The Binding of Isaac', fa: '#2a2a2a', fb: '#222', wall: '#0a0a0a', wall2: '#181818', rock: '#555', rockStyle: 'stone', music: 'torre', pool: ISAAC_POOL, boss: 'darkIsaac' },
 ];
 const RETRO_LEVELS = [
-  { name: 'Reino Champiñón', ref: 'Super Mario', fa: '#4f8a3a', fb: '#57943f', wall: '#5a2a10', wall2: '#8a4520', rock: '#c8642c', rockStyle: 'brick', music: 'bright', pool: ['goomba', 'goomba', 'fly', 'slime', 'charger'], boss: ['koopa', 'kingBoo'] },
-  { name: 'Minas de Bloques', ref: 'Minecraft', fa: '#6a6a6a', fb: '#737373', wall: '#222', wall2: '#363636', rock: '#7a7a7a', rockStyle: 'block', music: 'floor', pool: ['creeper', 'skeleton', 'slime', 'creeper'], boss: ['dragon', 'wither'] },
-  { name: 'Colinas Verdes', ref: 'Sonic the Hedgehog', fa: '#9a6430', fb: '#7e4f24', wall: '#1f5a14', wall2: '#2f7a20', rock: '#a0703a', rockStyle: 'stone', music: 'bright', pool: ['charger', 'invader', 'goomba', 'fly'], boss: 'eggman' },
-  { name: 'Laberinto Arcade', ref: 'Pac-Man', fa: '#0b0b1e', fb: '#0e0e26', wall: '#000', wall2: '#101060', rock: '#000', rockStyle: 'maze', music: 'eerie', pool: ['ghost', 'ghost', 'invader', 'fly'], boss: ['ghostKing', 'mothership'], pellets: true },
-  { name: 'Planeta Zebes', ref: 'Metroid', fa: '#3a2a4a', fb: '#433052', wall: '#140c1c', wall2: '#2a1838', rock: '#7a4a9a', rockStyle: 'crystal', music: 'eerie', pool: ['shooter', 'skeleton', 'slime', 'invader', 'fly'], boss: ['brain', 'ridley'] },
+  { name: 'Reino Champiñón', ref: 'Super Mario', fa: '#4f8a3a', fb: '#57943f', wall: '#5a2a10', wall2: '#8a4520', rock: '#c8642c', rockStyle: 'brick', music: 'champinon', pool: ['goomba', 'goomba', 'fly', 'slime', 'charger'], boss: ['koopa', 'kingBoo'] },
+  { name: 'Minas de Bloques', ref: 'Minecraft', fa: '#6a6a6a', fb: '#737373', wall: '#222', wall2: '#363636', rock: '#7a7a7a', rockStyle: 'block', music: 'minas', pool: ['creeper', 'skeleton', 'slime', 'creeper'], boss: ['dragon', 'wither'] },
+  { name: 'Colinas Verdes', ref: 'Sonic the Hedgehog', fa: '#9a6430', fb: '#7e4f24', wall: '#1f5a14', wall2: '#2f7a20', rock: '#a0703a', rockStyle: 'stone', music: 'colinas', pool: ['charger', 'invader', 'goomba', 'fly'], boss: 'eggman' },
+  { name: 'Laberinto Arcade', ref: 'Pac-Man', fa: '#0b0b1e', fb: '#0e0e26', wall: '#000', wall2: '#101060', rock: '#000', rockStyle: 'maze', music: 'arcade', pool: ['ghost', 'ghost', 'invader', 'fly'], boss: ['ghostKing', 'mothership'], pellets: true },
+  { name: 'Planeta Zebes', ref: 'Metroid', fa: '#3a2a4a', fb: '#433052', wall: '#140c1c', wall2: '#2a1838', rock: '#7a4a9a', rockStyle: 'crystal', music: 'zebes', pool: ['shooter', 'skeleton', 'slime', 'invader', 'fly'], boss: ['brain', 'ridley'] },
 ].map(l => ({ ...l, secret: true }));
 // [oscuridad del cuarto, color de la luz ambiental]
 const LIGHT_CFG = {

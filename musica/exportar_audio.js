@@ -1,6 +1,7 @@
 // Exporta toda la música del juego a musica/*.mp3 y los sonidos especiales a sonidos/*.mp3
 // El juego sintetiza todo el audio en vivo; esto lo graba con el mismo código (exportarAudio de isaac_verde.html).
-// Uso:  node musica/exportar_audio.js
+// Uso:  node musica/exportar_audio.js                 (todo)
+//       node musica/exportar_audio.js cuevas utero    (sólo esas canciones o sonidos)
 // Necesita Google Chrome o Microsoft Edge, y ffmpeg (en el PATH o con: pip install imageio-ffmpeg)
 const { spawn, execFileSync } = require('child_process');
 const fs = require('fs'), path = require('path'), os = require('os');
@@ -11,11 +12,16 @@ const PORT = 9337;
 
 // nombre en el juego → nombre del archivo (los numeros ordenan la carpeta)
 const MUSICA = {
-  title: '01_menu_y_creditos', floor: '02_pisos_sotano_y_cuevas', eerie: '03_pisos_profundos', bright: '04_mundos_alegres_y_angel', retro: '05_arena_retro',
+  title: '01_menu_y_creditos', eerie: '02_cuarto_del_diablo', bright: '03_cuarto_del_angel', retro: '05_arena_retro',
   boss: '10_jefe_monstro', dukeFlies: '11_jefe_duque_de_las_moscas', gurdy: '12_jefe_gurdy', peep: '13_jefe_peep', widow: '14_jefe_la_viuda',
   kingSlime: '16_jefe_rey_slime', kingBoo: '17_jefe_rey_boo', mothership: '18_jefe_nave_nodriza', koopa: '19_jefe_rey_koopa',
   eggman: '20_jefe_dr_huevon', dragon: '21_jefe_dragon_del_fin', ghostKing: '22_jefe_rey_fantasma', brain: '23_jefe_cerebro_madre', ridley: '24_jefe_ridley',
   wither: '25_jefe_wither', ganon: '26_jefe_ganon', sans: '27_jefe_sans', satan: '28_jefe_satanas', final: '29_jefe_final_isaac_oscuro',
+  // cada nivel tiene su canción
+  floor: '30_nivel_sotano', sotano2: '31_nivel_sotano_ii', cuevas: '32_nivel_cuevas', cuevas2: '33_nivel_cuevas_ii',
+  profundidades: '34_nivel_profundidades', profundidades2: '35_nivel_profundidades_ii', utero: '36_nivel_utero', torre: '37_nivel_torre_final',
+  champinon: '38_nivel_reino_champinon', minas: '39_nivel_minas_de_bloques', colinas: '40_nivel_colinas_verdes', arcade: '41_nivel_laberinto_arcade',
+  zebes: '42_nivel_planeta_zebes',
 };
 const SONIDOS = {
   shoot: 'disparo_lagrima', fire: 'disparo_fuego', sword: 'espada', ringS: 'anillo', block: 'bloqueo', laser: 'laser', splash: 'lagrima_choca', hit: 'golpe_a_enemigo',
@@ -80,8 +86,9 @@ async function evaluate(cdp, expression) {
     const alias = ['monstro', 'darkIsaac']; // son la misma canción que 'boss' y 'final'
     for (const k of mus) if (!MUSICA[k] && !alias.includes(k)) MUSICA[k] = 'otra_' + k;
     for (const k of sfx) if (!SONIDOS[k]) SONIDOS[k] = k;
+    const only = process.argv.slice(2);
     const jobs = [...Object.entries(MUSICA).map(([k, n]) => ['music', k, path.join(MUS_DIR, n + '.mp3')]),
-      ...Object.entries(SONIDOS).map(([k, n]) => ['sfx', k, path.join(SFX_DIR, n + '.mp3')])];
+      ...Object.entries(SONIDOS).map(([k, n]) => ['sfx', k, path.join(SFX_DIR, n + '.mp3')])].filter(([, k]) => !only.length || only.includes(k));
     for (const [kind, key, out] of jobs) {
       // el WAV se trae en pedazos: un mensaje muy grande traba la conexión con el navegador
       const len = await evaluate(cdp, `exportarAudio(${JSON.stringify(kind)}, ${JSON.stringify(key)}).then(s => (window.__wav = s).length)`);
