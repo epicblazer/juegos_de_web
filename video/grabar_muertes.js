@@ -9,7 +9,7 @@ const fs = require('fs'), path = require('path'), os = require('os');
 const DIR = __dirname, GAME = path.join(DIR, '..', 'isaac_verde.html');
 const JEFES = { monstro: 'monstro', dukeFlies: 'duque_moscas', darkIsaac: 'isaac_oscuro', koopa: 'rey_koopa',
   dragon: 'dragon_fin', eggman: 'dr_huevon', ghostKing: 'rey_fantasma', brain: 'cerebro_madre',
-  gurdy: 'gurdy', peep: 'peep', widow: 'viuda', momFoot: 'pie_mama', satan: 'satanas', kingSlime: 'rey_slime',
+  gurdy: 'gurdy', peep: 'peep', widow: 'viuda', satan: 'satanas', kingSlime: 'rey_slime',
   kingBoo: 'rey_boo', mothership: 'nave_nodriza', ridley: 'ridley', wither: 'wither', ganon: 'ganon', sans: 'sans',
   baldi: 'baldi', fetus: 'dr_fetus', devil: 'diablo', flowey: 'flowey' };
 const PORT = 9333;

@@ -13,7 +13,7 @@ const PORT = 9337;
 const MUSICA = {
   title: '01_menu_y_creditos', floor: '02_pisos_sotano_y_cuevas', eerie: '03_pisos_profundos', bright: '04_mundos_alegres_y_angel', retro: '05_arena_retro',
   boss: '10_jefe_monstro', dukeFlies: '11_jefe_duque_de_las_moscas', gurdy: '12_jefe_gurdy', peep: '13_jefe_peep', widow: '14_jefe_la_viuda',
-  momFoot: '15_jefe_pie_de_mama', kingSlime: '16_jefe_rey_slime', kingBoo: '17_jefe_rey_boo', mothership: '18_jefe_nave_nodriza', koopa: '19_jefe_rey_koopa',
+  kingSlime: '16_jefe_rey_slime', kingBoo: '17_jefe_rey_boo', mothership: '18_jefe_nave_nodriza', koopa: '19_jefe_rey_koopa',
   eggman: '20_jefe_dr_huevon', dragon: '21_jefe_dragon_del_fin', ghostKing: '22_jefe_rey_fantasma', brain: '23_jefe_cerebro_madre', ridley: '24_jefe_ridley',
   wither: '25_jefe_wither', ganon: '26_jefe_ganon', sans: '27_jefe_sans', satan: '28_jefe_satanas', final: '29_jefe_final_isaac_oscuro',
 };

@@ -20,56 +20,6 @@
     "projectile": "tear"
   },
   {
-    "name": "Caín",
-    "file": "cain",
-    "projectile": "tear"
-  },
-  {
-    "name": "Eva",
-    "file": "eva",
-    "projectile": "dark"
-  },
-  {
-    "name": "Sansón",
-    "file": "sanson",
-    "projectile": "slash"
-  },
-  {
-    "name": "Lázaro",
-    "file": "lazaro",
-    "projectile": "tear"
-  },
-  {
-    "name": "Edén",
-    "file": "eden",
-    "projectile": "tear"
-  },
-  {
-    "name": "Lilith",
-    "file": "lilith",
-    "projectile": "orb"
-  },
-  {
-    "name": "Guardián",
-    "file": "guardian",
-    "projectile": "ring"
-  },
-  {
-    "name": "Apolión",
-    "file": "apolion",
-    "projectile": "bolt"
-  },
-  {
-    "name": "Bethany",
-    "file": "bethany",
-    "projectile": "holy"
-  },
-  {
-    "name": "El Olvidado",
-    "file": "el_olvidado",
-    "projectile": "arrow"
-  },
-  {
     "name": "Comando Cuchillo",
     "file": "comando_cuchillo",
     "projectile": "slash"

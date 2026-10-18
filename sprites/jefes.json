@@ -36,7 +36,6 @@
     "gurdy": "las pústulas se inflan, revienta en carne y pus y las moscas escapan",
     "peep": "llora a mares, revienta en un charco amarillo y los ojos salen rodando",
     "viuda": "se da vuelta panza arriba, se hace polvo y huyen las arañitas",
-    "pie_mama": "encoge los dedos de dolor y se retira hacia arriba dejando polvo",
     "satanas": "se agrieta con luz del infierno y arde hasta ser ceniza",
     "rey_slime": "tiembla, se derrite en un charco y la corona cae rebotando",
     "rey_boo": "se tapa la cara avergonzado, se esfuma en humo y cae la corona",
@@ -311,18 +310,6 @@
           "loop": true
         }
       }
-    },
-    "pie_mama": {
-      "image": "jefe_pie_mama.png",
-      "animations": {
-        "idle": {
-          "row": 0,
-          "frames": 8,
-          "fps": 6,
-          "loop": true
-        }
-      },
-      "note": "en la pelea se dibuja por código porque la pierna baja desde fuera del cuarto"
     },
     "satanas": {
       "image": "jefe_satanas.png",
