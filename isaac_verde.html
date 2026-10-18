@@ -109,7 +109,7 @@ function applyVolume() {
   musGain.gain.value = 0.3 * CFG.music / 10;
 }
 addEventListener('keydown', e => {
-  if (e.code.startsWith('Arrow') || e.code === 'Space' || e.code in keyMap || cfgWait) e.preventDefault();
+  if (e.code.startsWith('Arrow') || e.code === 'Space' || e.code === 'Tab' || e.code in keyMap || cfgWait) e.preventDefault();
   if (cfgWait) { if (!e.repeat) bindKey(e.code); return; }
   const c = mapKey(e.code);
   if (!c) return;
@@ -208,7 +208,9 @@ cv.addEventListener('pointerdown', e => {
   }
   if (state === 'menu' && menuSub === 'chars') {
     const r = cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width * W, fy = (e.clientY - r.top) / r.height * H;
-    const i = CHARS.findIndex((_, k) => { const [x, y] = galTagPos(k); return Math.abs(fx - x) < 40 && Math.abs(fy - y) < 34; });
+    const tb = GAL_TABS.findIndex((_, k) => { const [x, y] = galTabPos(k); return Math.abs(fx - x) < 52 && Math.abs(fy - y) < 15; });
+    if (tb >= 0) { if (GAL_TABS[tb][0] !== galTab) { galTab = GAL_TABS[tb][0]; galIdx = 0; galT = frame; sfx('select'); } return; }
+    const i = galList().findIndex((_, k) => { const [x, y] = galTagPos(k); return Math.abs(fx - x) < 36 && Math.abs(fy - y) < 32; });
     if (i >= 0) { if (i !== galIdx) { galIdx = i; galT = frame; sfx('select'); } return; }
   }
   if (state === 'menu' && !menuSub) {
@@ -6758,8 +6760,9 @@ function enterMenu() {
 function menuKey(c) {
   const up = c === 'ArrowUp' || c === 'KeyW', down = c === 'ArrowDown' || c === 'KeyS';
   if (menuSub === 'chars') { // galería: flechas para mirar cada personaje
-    const d = c === 'ArrowLeft' || c === 'KeyA' ? -1 : c === 'ArrowRight' || c === 'KeyD' ? 1 : up ? -GAL_COLS : down ? GAL_COLS : 0;
-    if (d) { galIdx = (galIdx + d + CHARS.length) % CHARS.length; galT = frame; sfx('select'); }
+    const n = galList().length, d = c === 'ArrowLeft' || c === 'KeyA' ? -1 : c === 'ArrowRight' || c === 'KeyD' ? 1 : up ? -galCols() : down ? galCols() : 0;
+    if (c === 'KeyQ') galSetTab(-1); else if (c === 'KeyE' || c === 'Tab') galSetTab(1); // pelotón · jefes · enemigos
+    else if (d) { galIdx = (galIdx + d + n) % n; galT = frame; sfx('select'); }
     else if (c === 'Escape' || isConfirm(c)) { menuSub = null; sfx('select'); }
     return;
   }
@@ -6947,19 +6950,152 @@ const LORE = {
   'Marinero': ['Infante de marina', 'Lo mandaron al mar, pero se equivocó de camino y llegó al sótano. Trajo su manguera de agua a presión y descubrió que atraviesa a cualquier monstruo. Saluda a la bandera cada mañana y le dice "cubierta" al piso.'],
   'Espía': ['Agente secreto', 'Nadie sabe su nombre real, ni de qué bando es. Aparece y desaparece entre las sombras, y esquiva uno de cada tres golpes como si los viera venir. Nunca se quita los lentes oscuros, ni para dormir.'],
 };
-const GAL_COLS = 4;
+// expedientes de los enemigos: nombre y de qué juego vienen (los jefes ya lo tienen en BDEF)
+const FOE_NAMES = { fly: ['Mosca', 'The Binding of Isaac'], gaper: ['Zombi Pelón', 'The Binding of Isaac'], shooter: ['Saco Escupidor', 'The Binding of Isaac'],
+  charger: ['Gusano Embestidor', 'The Binding of Isaac'], spider: ['Arañita', 'The Binding of Isaac'], goomba: ['Goomba', 'Super Mario'], creeper: ['Creeper', 'Minecraft'],
+  skeleton: ['Esqueleto Arquero', 'Minecraft'], ghost: ['Fantasma', 'Pac-Man'], invader: ['Marciano', 'Space Invaders'], slime: ['Slime', 'Terraria'], slimeMini: ['Slime Chiquito', 'Terraria'] };
+// apodo, dónde aparece, peligro (1-10), ataques e historia de cada amenaza
+const FOE_LORE = {
+  // ---------- jefes ----------
+  monstro: ['Glotón del sótano', 'Sótano y Cuevas', 3, 'Salta para aplastarte y escupe montones de sangre.', 'Una bola de carne con dientes que vive en el fondo del Sótano. Se come todo lo que encuentra: ratas, piedras, cascos olvidados... Por eso escupe todo lo que no le gustó directo a la cara de los soldados. El pelotón lo usa como examen para los reclutas nuevos.'],
+  dukeFlies: ['Señor del enjambre', 'Sótano II y Cuevas II', 3, 'Suelta moscas que lo protegen y luego las sopla contra ti.', 'Se cree de la realeza porque miles de moscas lo siguen a todos lados. En realidad lo siguen porque huele horrible. Nunca pelea solo: siempre manda a sus moscas primero. Cuando se queda sin ellas, llora y llama a más.'],
+  gurdy: ['Montaña de carne', 'Sótano y Sótano II', 4, 'Escupe abanicos y lluvias de sangre y llama moscas.', 'Nadie sabe dónde empieza ni dónde termina. Está pegado al piso desde hace años y no se mueve ni un centímetro, pero su bocota dispara más que una ametralladora. El Ingeniero cree que en realidad es parte de la pared.'],
+  peep: ['El llorón', 'Sótano y Sótano II', 4, 'Llora chorros de lágrimas, embiste y salta. Pierde los ojos a media vida.', 'Es el bebé más llorón del sótano. Llora tanto que inunda los cuartos y sus lágrimas pegan como balas. Cuando le pegan fuerte se le salen los ojos... y sigue llorando. Isaac Soldado dice que lo entiende un poquito.'],
+  kingSlime: ['Rey gelatina', 'Sótano y Sótano II', 4, 'Brinca encima de ti, se hunde en el piso y suelta slimes chiquitos.', 'Una gelatina azul gigante con una corona que nadie sabe de dónde sacó. Cada vez que le pegas se encoge un poco y suelta pedacitos de sí mismo que te persiguen. El Médico jura que sabe a mora.'],
+  widow: ['La tejedora', 'Sótano II y Cuevas', 5, 'Salta encima de ti, escupe telarañas y suelta arañitas.', 'Una araña negra con cara de muñeca y un reloj de arena rojo en la panza. Teje telarañas por todas las Cuevas para atrapar soldados distraídos. Sus hijas, las arañitas, corren por todos lados. El Explorador le tiene pánico y no lo admite.'],
+  kingBoo: ['El tímido', 'Cuevas y Reino Champiñón', 5, 'Se hace invisible, llama fantasmas, embiste y aparece detrás de ti.', 'El rey de los fantasmas del Reino Champiñón. Es tan tímido que se tapa la cara si lo miras, pero en cuanto le das la espalda... ¡BUU! Le encanta reírse de los soldados asustados. El Espía es el único que no se asusta.'],
+  mothership: ['Invasión espacial', 'Cuevas y Laberinto Arcade', 5, 'Lluvia de rayos, un rayo gigante, oleadas de marcianos y disparos en abanico.', 'Un platillo volador que se quedó atorado en el sótano cuando intentaba invadir la Tierra. El marciano de la cúpula sigue convencido de que va ganando. El Radiooperador a veces escucha sus mensajes: "aquí nave nodriza... ¿alguien sabe dónde estamos?".'],
+  koopa: ['Rey de las tortugas', 'Cuevas II, Profundidades y Reino Champiñón', 6, 'Lanza fuego, martillos y se mete en su caparazón para rebotar por el cuarto.', 'El rey de los Koopas lleva años secuestrando princesas y perdiendo contra un plomero. Se mudó al sótano para entrenar en secreto. Su caparazón con picos rebota por las paredes como bola de boliche. Nadie le ha dicho que la princesa no está aquí.'],
+  baldi: ['El maestro', 'Cuevas (en su escuela)', 6, 'Te pone a resolver cuentas, saltar la cuerda y recorrer su escuela. Si fallas, te persigue con su regla.', 'Un maestro de matemáticas que ama las sumas más que nada en el mundo. Si contestas bien, sonríe. Si contestas mal... se enoja y te persigue golpeando su regla, cada vez más rápido. Los soldados ahora repasan las tablas antes de cada misión.'],
+  ridley: ['Pirata espacial', 'Cuevas II, Profundidades y Planeta Zebes', 7, 'Escupe bolas de fuego, se lanza en picada y da saltos gigantes.', 'Un dragón morado del espacio, jefe de los piratas espaciales. Ha peleado contra cazarrecompensas en todo el universo y nunca se queda muerto mucho tiempo. Grita tan fuerte que tiembla el sótano. El Paracaidista dice que vuela mejor que su avión.'],
+  eggman: ['Genio malvado', 'Profundidades y Colinas Verdes', 7, 'Suelta bombas desde su nave, apunta disparos y se lanza en picada.', 'Un científico con un bigote enorme y un coeficiente intelectual de 300 (según él). Vino a convertir a los animalitos del sótano en robots, pero no encontró animalitos, así que ahora ataca soldados. Su nave huele a huevo frito.'],
+  fetus: ['Científico en frasco', 'Profundidades (en su laboratorio)', 8, 'Una torre gigante de plataformas con sierras, misiles y su robot de pelea.', 'Un pequeño científico malvado que vive dentro de un frasco, metido en un traje robot gigante. Odia a todo lo que sea feliz. Construyó una torre llena de sierras y trampas solo para que nadie llegue hasta él. Si le rompes el frasco, se pone a llorar.'],
+  wither: ['Las tres cabezas', 'Profundidades, Útero y Minas de Bloques', 9, 'Dispara calaveras negras y azules que explotan, embiste, tormentas y llama esqueletos. Se pone armadura a media vida.', 'Un monstruo flotante de tres cabezas hecho de bloques de carbón. Cada cabeza dispara calaveras explosivas. A media vida se pone una armadura que bloquea las flechas. Los mineros lo despertaron por error. El Granadero quiere estudiar sus explosiones.'],
+  ganon: ['Rey de la oscuridad', 'Profundidades y Útero', 8, 'Lanza su tridente, suelta murciélagos de fuego, se teletransporta y gira como trompo.', 'Un rey jabalí gigante con armadura y capa, que lleva siglos tratando de conquistar un reino que no es suyo. Bajó al sótano buscando un poder secreto y se quedó porque le gusta lo oscuro. Su tridente atraviesa las rocas como si fueran papel.'],
+  dragon: ['Señora del Fin', 'Profundidades II y Minas de Bloques', 8, 'Lanza orbes de fuego morado, se lanza en picada y escupe su aliento de dragón.', 'Un dragón negro de ojos morados que vuela sobre una isla en el vacío. Llegó al sótano por un portal mal cerrado. Es enorme, rápida y muy orgullosa. Cuando ruge, hasta el Tanquista se esconde detrás de una roca.'],
+  ghostKing: ['El gran fantasma', 'Profundidades II y Laberinto Arcade', 8, 'Lanza enemigos giratorios, disparos en abanico y espirales de fuego.', 'El jefe de todos los fantasmas del laberinto. Lleva toda la vida persiguiendo a un comelón amarillo que nunca logra atrapar. De tanto perder, se puso muy enojado y ahora se desquita con los soldados. No soporta el sonido de "waka waka".'],
+  brain: ['La mente maestra', 'Profundidades II, Útero y Planeta Zebes', 9, 'Lanza anillos de energía, disparos y llama ayudantes mientras flota de lado a lado.', 'Un cerebro gigante dentro de un frasco de vidrio, que controla a todos los piratas espaciales. Es el ser más inteligente del sótano y lo sabe. Planea cada ataque con años de anticipación. Lo único que no planeó fue al pelotón verde.'],
+  sans: ['El esqueleto chistoso', 'Profundidades II y Útero', 10, 'Te cambia a una pelea de Undertale: huesos, Gaster Blasters, alma azul y KARMA.', 'Un esqueleto bajito que siempre está sonriendo y contando chistes malos. Parece flojo: duerme en todos lados y casi nunca trabaja. Pero si haces daño a los demás, te va a hacer pasar un mal rato. Es el enemigo más fácil... sólo puede hacer 1 de daño.'],
+  devil: ['El dueño del casino', 'Profundidades II y Útero (Inkwell Hell)', 10, 'Una pelea de Cuphead: se transforma en carnero, serpiente y araña, y lanza fuego, bolas y demonios.', 'El dueño del casino del infierno. Le encanta hacer apuestas, y nunca pierde... o eso dice él. Puede transformarse en carnero, en serpiente y en araña. El Demonio del pelotón trabajó para él y dice que es el peor jefe que ha tenido.'],
+  flowey: ['Tu mejor amigo', 'Profundidades II y Útero (el Subsuelo)', 10, 'Se roba las seis almas humanas y se vuelve una tele gigante con rayos, lanzallamas, bombas, enredaderas y moscas.', 'Una florecita amarilla que siempre sonríe... hasta que deja de hacerlo. Dice que en este mundo es "matar o morir". Puede guardar y cargar su partida cuando quiera, así que nunca pierde. Lo único que no entiende es por qué alguien sería amable con él.'],
+  satan: ['El ángel caído', 'Útero', 10, 'Rayos infernales, ataques en cruz, barridos, abanicos de fuego e invocaciones.', 'El rey del infierno en persona. Tiene alas de murciélago, cuernos enormes y un rayo rojo que lo destruye todo. Lleva siglos esperando a que alguien llegue hasta el fondo del Útero para pelear. El pelotón verde fue el primero en llegar.'],
+  darkIsaac: ['???', 'Torre Final', 10, '...', 'El expediente de esta amenaza está casi vacío. Los pocos que lo vieron dicen que se parece mucho a alguien del pelotón... Lleva casco, llora y nunca se rinde. ¿Será un reflejo? ¿Un clon? ¿O algo que vive dentro de nosotros? El Coronel prohibió hablar del tema.'],
+  // ---------- enemigos ----------
+  fly: ['Plaga voladora', 'Casi todos los pisos', 1, 'Vuela en zigzag hacia ti. Pasa por encima de las rocas.', 'La mosca más común del sótano. Zumba, molesta y se te mete en el casco. Una sola no da miedo, pero nunca viene sola. El Lanzallamas tiene un récord de cien moscas en un solo chorro.'],
+  gaper: ['El perseguidor', 'Del Sótano a la Torre Final', 2, 'Camina directo hacia ti, sin parar.', 'Un zombi pelón con ojos huecos que lloran sangre. No corre, no dispara, no piensa: sólo te sigue a donde vayas, con la boca abierta. Es más lento que tú, pero nunca se cansa. Nunca.'],
+  shooter: ['Artillería de carne', 'Pisos del sótano y Planeta Zebes', 3, 'Abre la boca y te escupe. En pisos profundos escupe tres a la vez.', 'Un saco de carne que se arrastra por el piso y escupe sangre. Antes de disparar abre la boca, así que si lo ves bostezar... muévete. El Francotirador le tiene respeto porque casi nunca falla.'],
+  charger: ['El ariete', 'Pisos del sótano, Reino Champiñón y Colinas Verdes', 3, 'Camina en línea recta y, si te ve en su fila, embiste a toda velocidad.', 'Un gusano segmentado con mandíbulas que se pone rojo cuando embiste. Es muy tonto: si te pones en su línea, sale disparado sin pensar, y si no te pega se estrella contra la pared. Truco del pelotón: nunca te pares enfrente.'],
+  spider: ['Cría de la Viuda', 'Cuevas (con La Viuda)', 2, 'Corre a saltitos rápidos hacia ti.', 'Las hijas de La Viuda. Son chiquitas, rápidas y salen de los rincones cuando menos lo esperas. Corren a saltitos y se meten por todas partes. El Explorador grita cada vez que ve una.'],
+  goomba: ['Soldado champiñón', 'Reino Champiñón y Colinas Verdes', 1, 'Camina lentamente hacia ti.', 'Un champiñón enojado con colmillos, el soldado raso del ejército de Koopa. Es el enemigo más débil del reino, pero tiene mucho valor. Nadie sabe por qué está siempre enojado. Quizás porque todo el mundo lo pisa.'],
+  creeper: ['Bomba andante', 'Minas de Bloques', 6, 'Se acerca en silencio y, cuando está cerca, hace "sssss"... y EXPLOTA.', 'Una criatura verde hecha de bloques que camina sin hacer ruido. Cuando se acerca a ti hace "sssss" y explota, llevándose todo lo que tiene alrededor. Si escuchas el silbido: ¡corre! El Granadero lo considera un colega.'],
+  skeleton: ['Arquero de las minas', 'Minas de Bloques y Planeta Zebes', 4, 'Mantiene distancia, camina de lado y dispara flechas rápidas.', 'Un esqueleto con arco que nunca se acerca demasiado. Si te le acercas, se aleja; si te alejas, se acerca. Tensa el arco antes de disparar, así que fíjate en sus manos. Él y el Explorador tienen una rivalidad de arqueros.'],
+  ghost: ['Fantasma del laberinto', 'Laberinto Arcade', 3, 'Flota hacia ti cruzando lo que sea. El rojo es el más rápido.', 'Fantasmas de cuatro colores que vienen del laberinto. Flotan detrás de ti sin parar y atraviesan las paredes. El rojo es el más rápido y el más enojado. Antes perseguían a un comelón amarillo; ahora persiguen soldados.'],
+  invader: ['Explorador alienígena', 'Laberinto Arcade, Colinas Verdes y Planeta Zebes', 3, 'Se mueve de lado a lado volando y te dispara rayos.', 'Un marciano de píxeles que llegó en la Nave Nodriza. Se mueve de lado a lado como en su juego y te dispara rayos verdes. Brilla en la oscuridad. Ninguno sabe hablar español, pero el Radiooperador está aprendiendo su idioma.'],
+  slime: ['Gelatina saltarina', 'Reino Champiñón, Minas de Bloques y Planeta Zebes', 3, 'Salta hacia ti y, al morir, se parte en dos slimes chiquitos.', 'Una gelatina con un núcleo adentro, que salta hacia ti haciendo "squish". Cuando la derrotas se parte en dos slimes más chiquitos. Son súbditos del Rey Slime y le tienen mucha lealtad.'],
+  slimeMini: ['Gelatina bebé', 'Donde muere un Slime', 1, 'Salta hacia ti, más rápido que su papá.', 'Lo que queda de un Slime cuando lo derrotas. Es chiquito y débil, pero salta más rápido que su papá. Si los dejas juntarse, te rodean. El Médico dice que son lo más tierno del sótano... hasta que te saltan encima.'],
+};
+const GAL_TABS = [['soldiers', 'PELOTÓN'], ['bosses', 'JEFES'], ['enemies', 'ENEMIGOS']];
+let galTab = 'soldiers';
+const galList = () => galTab === 'soldiers' ? CHARS : galTab === 'bosses' ? Object.keys(BDEF) : Object.keys(EDEF);
+const galCols = () => galList().length > 20 ? 5 : 4;
 let galT = 0; // cuándo se abrió el expediente actual (para la animación)
-const galTagPos = i => [100 + (i % GAL_COLS) * 84, 112 + Math.floor(i / GAL_COLS) * 78];
-function drawCharsCloud() { // archivo del pelotón: placas a la izquierda, expediente abierto a la derecha
+const galTagPos = i => { const c = galCols(), sx = c === 5 ? 70 : 84; return [c === 5 ? 86 : 100, 132].map((v, k) => k ? v + Math.floor(i / c) * (c === 5 ? 70 : 78) : v + (i % c) * sx); };
+const galTabPos = i => [96 + i * 114, 78];
+function galSetTab(d) { const i = GAL_TABS.findIndex(t => t[0] === galTab); galTab = GAL_TABS[(i + d + GAL_TABS.length) % GAL_TABS.length][0]; galIdx = 0; galT = frame; sfx('select'); }
+const foePrev = {}; // un jefe/enemigo de muestra por tipo, para dibujarlo en el archivo
+function drawFoeIcon(type, x, y, size, still) {
+  const e = foePrev[type] || (foePrev[type] = Object.assign(mkEnemy(type, 0, 0), { spawn: 0, hit: 0, z: 0, state: 'idle', timer: 999, color: '#ff2a2a', x: 0, y: 0 }));
+  if (!still) e.t = frame;
+  // se dibuja en un lienzo aparte: si algo falla a la mitad, la pantalla del menú no queda descuadrada
+  const k = FOE_CV.width / (size * 2), s = size / (e.r * 2.6 * (e.sc || 1)), prev = ctx, realP = p;
+  FOE_X.setTransform(1, 0, 0, 1, 0, 0); FOE_X.clearRect(0, 0, FOE_CV.width, FOE_CV.height);
+  FOE_X.translate(FOE_CV.width / 2, FOE_CV.height / 2 + (e.fly && !e.boss ? size * 0.22 * k : 0)); FOE_X.scale(s * k, s * k); // los enemigos voladores se bajan un poco
+  if (!p) p = { x: 0, y: 300, r: 12 }; // en el menú no hay jugador, pero algunos jefes lo miran
+  ctx = FOE_X;
+  try { drawEnemyBody(e); } catch (err) { FOE_CV.width = FOE_CV.width; } // reinicia el lienzo si un dibujo falla
+  finally { ctx = prev; p = realP; }
+  ctx.drawImage(FOE_CV, x - size, y - size, size * 2, size * 2);
+}
+const FOE_CV = mkCanvas(320, 320), FOE_X = FOE_CV.getContext('2d');
+function drawCharsCloud() { // archivo: pestañas arriba, placas a la izquierda, expediente abierto a la derecha
   drawBarracks();
-  armyTitle('ARCHIVO DEL PELOTÓN');
-  CHARS.forEach((c, i) => {
-    const [x, y] = galTagPos(i), open = isUnlocked(c), sel = i === galIdx;
-    dogTag(x, y, 74, 62, sel, open);
-    if (open) drawCharIcon(c, x + 2, y + 6 + (sel ? Math.sin(frame * 0.15) * 2 : 0), 0.5); else drawCharLocked(c, x + 2, y + 6, 0.5);
+  armyTitle(galTab === 'soldiers' ? 'ARCHIVO DEL PELOTÓN' : galTab === 'bosses' ? 'ARCHIVO DE JEFES' : 'ARCHIVO DE ENEMIGOS');
+  GAL_TABS.forEach(([k, name], i) => { // pestañas de carpeta
+    const [x, y] = galTabPos(i), on = k === galTab;
+    ctx.fillStyle = on ? '#d8bc7c' : '#7a6440'; ctx.beginPath(); ctx.roundRect(x - 52, y - 14, 104, 28, [8, 8, 0, 0]); ctx.fill();
+    ctx.fillStyle = on ? '#2a2010' : '#c8b48a'; ctx.font = typeFont(13); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(name, x, y + 1);
   });
-  drawDossier(CHARS[galIdx], galIdx);
-  armyHint('flechas para elegir  ·  ENTER o ESC para volver');
+  const list = galList(), five = galCols() === 5, tw = five ? 62 : 74, th = five ? 58 : 62;
+  list.forEach((c, i) => {
+    const [x, y] = galTagPos(i), sel = i === galIdx, bob = sel ? Math.sin(frame * 0.15) * 2 : 0;
+    if (galTab === 'soldiers') {
+      const open = isUnlocked(c);
+      dogTag(x, y, tw, th, sel, open);
+      if (open) drawCharIcon(c, x + 2, y + 6 + bob, 0.5); else drawCharLocked(c, x + 2, y + 6, 0.5);
+    } else { dogTag(x, y, tw, th, sel, true); drawFoeIcon(c, x + 3, y + 2 + bob, th - 12, !sel); }
+  });
+  if (galTab === 'soldiers') drawDossier(CHARS[galIdx], galIdx); else drawFoeDossier(list[galIdx], galIdx, list.length);
+  armyHint('flechas para elegir  ·  Q / E o TAB: cambiar archivo  ·  ESC para volver');
+}
+function drawFoeDossier(type, idx, total) { // expediente de amenaza: foto, stats e historia de un jefe o enemigo
+  const boss = !!BDEF[type], d = boss ? BDEF[type] : EDEF[type], [name, ref] = boss ? [d.name, d.ref] : FOE_NAMES[type];
+  const [nick, place, danger, hab, lore] = FOE_LORE[type];
+  const k = clamp((frame - galT) / 10, 0, 1);
+  ctx.save(); ctx.translate(656, 290);
+  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(-232 + 7, -212 + 7, 464, 426);
+  ctx.fillStyle = '#b89060'; ctx.beginPath(); ctx.roundRect(-232, -226, 140, 26, [8, 8, 0, 0]); ctx.fill();
+  ctx.fillStyle = '#4a2a1a'; ctx.font = typeFont(12); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(`Nº ${String(idx + 1).padStart(2, '0')} / ${total}`, -220, -213);
+  ctx.fillStyle = lin(0, -212, 0, 214, '#cfa878', '#b08858'); ctx.fillRect(-232, -212, 464, 426);
+  ctx.globalAlpha = k; ctx.translate((1 - k) * 26, 0); ctx.rotate(-0.012);
+  const PL = -218, PT = -198;
+  ctx.fillStyle = '#f4ecd4'; ctx.fillRect(PL, PT, 436, 398);
+  // foto con clip y sello rojo
+  ctx.save(); ctx.translate(PL + 82, PT + 92); ctx.rotate(-0.06);
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(-64 + 3, -76 + 4, 128, 150);
+  ctx.fillStyle = '#fbfaf4'; ctx.fillRect(-64, -76, 128, 150);
+  ctx.fillStyle = lin(0, -66, 0, 50, '#4a2a2a', '#1a0c0c'); ctx.fillRect(-56, -68, 112, 112);
+  ctx.save(); ctx.beginPath(); ctx.rect(-56, -68, 112, 112); ctx.clip(); drawFoeIcon(type, 0, -10, 100); ctx.restore();
+  ctx.fillStyle = '#4a2a1a'; ctx.font = typeFont(name.length > 14 ? 9 : 11); ctx.textAlign = 'center'; ctx.fillText(name.toUpperCase(), 0, 59);
+  ctx.strokeStyle = '#8a8a92'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(-46, -90, 14, 40, 7); ctx.stroke();
+  ctx.save(); ctx.translate(30, 34); ctx.rotate(-0.25);
+  ctx.strokeStyle = 'rgba(180,20,20,.85)'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.roundRect(-44, -12, 88, 24, 3); ctx.stroke();
+  ctx.font = armyFont(15); ctx.textAlign = 'center'; ctx.fillText(boss ? 'JEFE' : 'HOSTIL', 0, 1);
+  ctx.restore();
+  ctx.restore();
+  // datos al lado de la foto
+  const DX = PL + 168;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#8a2a1a'; ctx.font = typeFont(11); ctx.fillText(boss ? 'EXPEDIENTE DE AMENAZA · NIVEL JEFE' : 'EXPEDIENTE DE AMENAZA', DX, PT + 20);
+  ctx.fillStyle = '#2a2010'; ctx.font = typeFont(name.length > 13 ? (name.length > 17 ? 15 : 18) : 22); ctx.fillText(name.toUpperCase(), DX, PT + 44);
+  ctx.strokeStyle = 'rgba(42,32,16,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(DX, PT + 60); ctx.lineTo(PL + 420, PT + 60); ctx.stroke();
+  ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(11);
+  ctx.fillText('APODO: ' + nick.toUpperCase(), DX, PT + 76);
+  ctx.fillText('ORIGEN: ' + (type === 'darkIsaac' ? '???' : ref.toUpperCase()), DX, PT + 92, 252);
+  ctx.fillText('VISTO EN: ' + place.toUpperCase(), DX, PT + 108, 252);
+  const hp = d.hp, stats = [['VIDA', boss ? hp / 340 : hp / 10, String(hp)], ['TAMAÑO', boss ? d.r * (d.sc || 1) / 60 : d.r / 18, String(Math.round(d.r * (d.sc || 1)))],
+    ['PELIGRO', danger / 10, danger + ' / 10'], ['VUELA', d.fly ? 1 : 0.1, d.fly ? 'SÍ' : 'NO']];
+  stats.forEach(([sn, v, txt], i) => {
+    const y = PT + 132 + i * 19, n = Math.round(clamp(v, 0.1, 1) * 10), red = sn === 'PELIGRO';
+    ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(11); ctx.fillText(sn, DX, y);
+    for (let j = 0; j < 10; j++) { ctx.fillStyle = j < n ? (red ? (j < 4 ? '#8a7a2a' : j < 7 ? '#b0601a' : '#a01a10') : '#7a2a1a') : 'rgba(80,70,40,.18)'; ctx.beginPath(); ctx.roundRect(DX + 78 + j * 11, y - 5, 9, 10, 2); ctx.fill(); }
+    ctx.fillStyle = '#2a2010'; ctx.textAlign = 'right'; ctx.fillText(txt, PL + 422, y); ctx.textAlign = 'left';
+  });
+  // ataques e historia
+  let y = PT + 222;
+  ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(12); ctx.fillText('ATAQUES:', PL + 18, y);
+  ctx.fillStyle = '#2a2010'; ctx.font = typeFont(12, false);
+  const dl = wrapLines(hab, 316);
+  dl.forEach((l, i) => ctx.fillText(l, PL + 100, y + i * 15));
+  y += 26 + (dl.length - 1) * 15;
+  ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(12); ctx.fillText('HISTORIA:', PL + 18, y);
+  const room = PT + 392 - (y + 14);
+  let size = 13, lines;
+  do { ctx.font = typeFont(size, false); lines = wrapLines(lore, 398); } while (lines.length * (size + 3) > room && --size > 9);
+  ctx.fillStyle = '#2a2010';
+  lines.forEach((l, i) => ctx.fillText(l, PL + 18, y + 20 + i * (size + 3)));
+  ctx.restore();
 }
 function drawDossier(c, idx) {
   const open = isUnlocked(c), [rank, lore] = LORE[c.name] || ['Recluta', ''];
