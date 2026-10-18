@@ -56,12 +56,67 @@ cv.width = W * DPR; cv.height = H * DPR;
 const mainCtx = cv.getContext('2d');
 let ctx = mainCtx; // se intercambia temporalmente para dibujar en lienzos auxiliares
 const keys = {};
+// ---- teclas configurables: cada tecla física se traduce a la tecla "original" de su acción,
+// así todo el juego sigue leyendo keys.KeyW, keys.ArrowUp, etc. sin cambios ----
+const ACTIONS = [
+  ['KeyW', 'Mover arriba'], ['KeyS', 'Mover abajo'], ['KeyA', 'Mover izquierda'], ['KeyD', 'Mover derecha'],
+  ['ArrowUp', 'Disparar arriba'], ['ArrowDown', 'Disparar abajo'], ['ArrowLeft', 'Disparar izquierda'], ['ArrowRight', 'Disparar derecha'],
+  ['KeyZ', 'Saltar / aceptar (minijuegos)'], ['KeyX', 'Disparar / volver (minijuegos)'], ['KeyC', 'Dash (Cuphead)'], ['KeyV', 'Súper (Cuphead)'],
+  ['KeyP', 'Pausa'], ['KeyM', 'Silenciar'], ['KeyR', 'Reiniciar'],
+];
+const ACTION_CODES = new Set(ACTIONS.map(([a]) => a));
+const CFG_KEY = 'isaac_config';
+const defaultKeys = () => Object.fromEntries(ACTIONS.map(([a]) => [a, a]));
+const CFG = { keys: defaultKeys(), music: 10, sfx: 10 }; // volúmenes de 0 a 10
+try {
+  const d = JSON.parse(localStorage.getItem(CFG_KEY) || 'null');
+  if (d) { Object.assign(CFG.keys, d.keys); if (d.music >= 0) CFG.music = d.music; if (d.sfx >= 0) CFG.sfx = d.sfx; }
+} catch (e) { }
+function saveConfig() { try { localStorage.setItem(CFG_KEY, JSON.stringify(CFG)); } catch (e) { } }
+let keyMap = {}, cfgWait = null; // cfgWait: acción esperando su tecla nueva
+function keyName(c) {
+  if (/^Key[A-Z]$/.test(c)) return c[3];
+  if (/^Digit\d$/.test(c)) return c[5];
+  if (/^Numpad\d$/.test(c)) return 'Num ' + c[6];
+  return { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Space: 'ESPACIO', ShiftLeft: 'SHIFT IZQ', ShiftRight: 'SHIFT DER',
+    ControlLeft: 'CTRL IZQ', ControlRight: 'CTRL DER', AltLeft: 'ALT', AltRight: 'ALT GR', Tab: 'TAB', Backspace: 'BORRAR',
+    CapsLock: 'BLOQ MAYÚS' }[c] || c.replace(/^Numpad/, 'Num ').toUpperCase();
+}
+function rebuildKeyMap() {
+  keyMap = {};
+  for (const [a] of ACTIONS) keyMap[CFG.keys[a]] = a;
+  for (const k in keys) keys[k] = false;
+  const ks = list => list.map(a => keyName(CFG.keys[a])).join('');
+  const mv = ks(['KeyW', 'KeyA', 'KeyS', 'KeyD']), sh = ks(['ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight']);
+  document.getElementById('info').textContent = `${mv === 'WASD' ? 'WASD' : mv}: moverse · ${sh === '↑←↓→' ? 'Flechas' : sh}: disparar · ` +
+    `${keyName(CFG.keys.KeyP)}: pausa · ${keyName(CFG.keys.KeyM)}: silenciar · ${keyName(CFG.keys.KeyR)}: reiniciar · Configuración en el menú`;
+}
+rebuildKeyMap();
+// una tecla original que ya no está asignada a su acción se ignora
+const mapKey = c => c in keyMap ? keyMap[c] : ACTION_CODES.has(c) ? null : c;
+function bindKey(code) {
+  const a = cfgWait; cfgWait = null;
+  if (code === 'Escape') { sfx('select'); return; }
+  if (code === 'Enter') { sfx('bump'); return; } // reservada para los menús
+  const other = ACTIONS.find(([b]) => b !== a && CFG.keys[b] === code);
+  if (other) CFG.keys[other[0]] = CFG.keys[a]; // si ya la usaba otra acción, se intercambian
+  CFG.keys[a] = code;
+  rebuildKeyMap(); saveConfig(); sfx('select');
+}
+function applyVolume() {
+  if (!AC) return;
+  sfxGain.gain.value = 0.8 * CFG.sfx / 10;
+  musGain.gain.value = 0.3 * CFG.music / 10;
+}
 addEventListener('keydown', e => {
-  keys[e.code] = true;
-  if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
-  if (!e.repeat) onKey(e.code);
+  if (e.code.startsWith('Arrow') || e.code === 'Space' || e.code in keyMap || cfgWait) e.preventDefault();
+  if (cfgWait) { if (!e.repeat) bindKey(e.code); return; }
+  const c = mapKey(e.code);
+  if (!c) return;
+  keys[c] = true;
+  if (!e.repeat) onKey(c, e.code);
 });
-addEventListener('keyup', e => keys[e.code] = false);
+addEventListener('keyup', e => { const c = mapKey(e.code); if (c) keys[c] = false; });
 addEventListener('pointerdown', () => initAudio()); // un clic también activa el sonido (para la música del menú)
 
 // =====================================================================
@@ -141,6 +196,16 @@ for (const b of document.querySelectorAll('#tbtns button')) {
 cv.addEventListener('pointerdown', e => {
   if (e.pointerType === 'mouse') return;
   e.preventDefault();
+  if (cfgWait) { cfgWait = null; return; } // en el celular no hay teclas que asignar
+  if (state === 'menu' && menuSub === 'config') { // tocar una fila la elige; en el volumen, los lados bajan o suben
+    const r = cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width * W, fy = (e.clientY - r.top) / r.height * H;
+    const row = Math.round((fy - CFG_Y0) / CFG_DY), i = cfgScroll + row;
+    if (row < 0 || row >= CFG_ROWS) return;
+    cfgIdx = i;
+    const j = i - ACTIONS.length;
+    if (j === 0 || j === 1) { onKey(fx < 600 ? 'ArrowLeft' : 'ArrowRight'); return; }
+    if (j < 0) return; // asignar teclas solo tiene sentido con teclado
+  }
   if (state === 'menu' && !menuSub) {
     const r = cv.getBoundingClientRect(), fy = (e.clientY - r.top) / r.height * H;
     const i = MENU_ITEMS.findIndex((_, k) => Math.abs(fy - MENU_Y(k)) < 26);
@@ -181,6 +246,7 @@ function initAudio() {
   master = AC.createGain(); master.gain.value = 0.6; master.connect(AC.destination);
   sfxGain = AC.createGain(); sfxGain.gain.value = 0.8; sfxGain.connect(master);
   musGain = AC.createGain(); musGain.gain.value = 0.3; musGain.connect(master);
+  applyVolume();
   noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
   const d = noiseBuf.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -2832,10 +2898,10 @@ function moveSel(d) {
   sfx('select');
 }
 const isConfirm = c => c === 'Enter' || c === 'Space';
-function onKey(c) {
+function onKey(c, raw) {
   initAudio();
-  // código secreto del minijuego retro
-  const ch = codeChar(c);
+  // código secreto del minijuego retro (con la tecla física, aunque esté reasignada)
+  const ch = codeChar(raw || c);
   if (ch) {
     typedCode = (typedCode + ch).slice(-RETRO_CODE.length);
     if (typedCode === RETRO_CODE) { typedCode = ''; startRetro(); return; }
@@ -6720,12 +6786,14 @@ function drawCharLocked(c, x, y, s) { // silueta oscura con signo de pregunta
   ctx.fillText('?', x, y - 14 * s);
 }
 
-const MENU_ITEMS = ['Nueva partida', 'Personajes', 'Estadísticas', 'Sonido', 'Despertar'];
-let menuIdx = 0, menuSub = null, galIdx = 0, selShake = 0; // menuSub: null | 'chars' | 'stats'
-const MENU_Y = i => 200 + i * 56;
+const MENU_ITEMS = ['Nueva partida', 'Personajes', 'Estadísticas', 'Sonido', 'Configuración', 'Despertar'];
+let menuIdx = 0, menuSub = null, galIdx = 0, selShake = 0; // menuSub: null | 'chars' | 'stats' | 'config'
+const MENU_Y = i => 190 + i * 50;
+let cfgIdx = 0, cfgScroll = 0;
+const CFG_ROWS = 10, CFG_Y0 = 138, CFG_DY = 32;
 function enterMenu() {
   retro.on = false; deathCut = null; ending = null;
-  state = 'menu'; menuSub = null;
+  state = 'menu'; menuSub = null; cfgWait = null;
   sfx('select');
 }
 function menuKey(c) {
@@ -6736,6 +6804,7 @@ function menuKey(c) {
     else if (c === 'Escape' || isConfirm(c)) { menuSub = null; sfx('select'); }
     return;
   }
+  if (menuSub === 'config') { cfgKey(c); return; }
   if (menuSub) { if (c === 'Escape' || isConfirm(c)) { menuSub = null; sfx('select'); } return; }
   if (up || down) { menuIdx = (menuIdx + (up ? -1 : 1) + MENU_ITEMS.length) % MENU_ITEMS.length; sfx('select'); }
   else if (c === 'Escape') { state = 'title'; sfx('select'); }
@@ -6744,8 +6813,26 @@ function menuKey(c) {
     else if (menuIdx === 1) { menuSub = 'chars'; galIdx = 0; sfx('select'); }
     else if (menuIdx === 2) { menuSub = 'stats'; sfx('select'); }
     else if (menuIdx === 3) { if (AC) { muted = !muted; master.gain.value = muted ? 0 : 0.6; } sfx('select'); }
+    else if (menuIdx === 4) { menuSub = 'config'; cfgIdx = 0; cfgScroll = 0; sfx('select'); }
     else { state = 'title'; sfx('select'); }
   }
+}
+function cfgKey(c) { // filas: una por acción, volumen de música, volumen de efectos, restablecer, volver
+  const n = ACTIONS.length + 4, up = c === 'ArrowUp' || c === 'KeyW', down = c === 'ArrowDown' || c === 'KeyS';
+  const d = c === 'ArrowLeft' || c === 'KeyA' ? -1 : c === 'ArrowRight' || c === 'KeyD' ? 1 : 0;
+  if (up || down) { cfgIdx = (cfgIdx + (up ? -1 : 1) + n) % n; sfx('select'); return; }
+  if (c === 'Escape') { menuSub = null; sfx('select'); return; }
+  const j = cfgIdx - ACTIONS.length;
+  if (j === 0 || j === 1) {
+    const k = j === 0 ? 'music' : 'sfx';
+    if (d) { CFG[k] = clamp(CFG[k] + d, 0, 10); applyVolume(); saveConfig(); sfx('select'); }
+    return;
+  }
+  if (!isConfirm(c)) return;
+  if (j < 0) cfgWait = ACTIONS[cfgIdx][0];
+  else if (j === 2) { CFG.keys = defaultKeys(); CFG.music = CFG.sfx = 10; rebuildKeyMap(); applyVolume(); saveConfig(); }
+  else menuSub = null;
+  sfx('select');
 }
 function menuHint(t) { ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(235,225,255,.7)'; ctx.font = dreamFont(14, false); ctx.fillText(t, CX, 556); }
 function drawMenu() {
@@ -6754,6 +6841,7 @@ function drawMenu() {
   drawSleepingIsaac(160, 470, 1.5);
   if (menuSub === 'stats') return drawStatsCloud();
   if (menuSub === 'chars') return drawCharsCloud();
+  if (menuSub === 'config') return drawConfigCloud();
   trailBubbles(115, 385, 330, 330);
   const cx = 600, cy = 280;
   dreamBubble(cx, cy, 520, 450);
@@ -6789,6 +6877,40 @@ function drawStatsCloud() {
     ctx.textAlign = 'right'; ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(18); ctx.fillText(String(v), cx + 200, y);
   });
   menuHint('ENTER o ESC para volver');
+}
+function drawConfigCloud() {
+  trailBubbles(115, 385, 330, 330);
+  const cx = 600, cy = 280, n = ACTIONS.length + 4;
+  dreamBubble(cx, cy, 560, 480);
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(30); ctx.fillText('Configuración', cx, 90);
+  cfgScroll = clamp(clamp(cfgScroll, cfgIdx - CFG_ROWS + 1, cfgIdx), 0, n - CFG_ROWS);
+  for (let r = 0; r < CFG_ROWS; r++) {
+    const i = cfgScroll + r, y = CFG_Y0 + r * CFG_DY, sel = i === cfgIdx, j = i - ACTIONS.length;
+    if (sel) { ctx.fillStyle = 'rgba(170,140,240,.22)'; ctx.beginPath(); ctx.roundRect(cx - 220, y - 14, 440, 28, 14); ctx.fill(); }
+    if (j >= 2) { // botones
+      ctx.textAlign = 'center'; ctx.fillStyle = sel ? DREAM_INK : '#7a6aa0'; ctx.font = dreamFont(sel ? 19 : 17);
+      ctx.fillText(j === 2 ? 'Restablecer todo' : 'Volver', cx, y);
+      continue;
+    }
+    ctx.textAlign = 'left'; ctx.fillStyle = sel ? DREAM_INK : '#6a5a90'; ctx.font = dreamFont(16, false);
+    ctx.fillText(j < 0 ? ACTIONS[i][1] : j ? 'Volumen efectos' : 'Volumen música', cx - 200, y);
+    if (j < 0) {
+      const waiting = sel && cfgWait;
+      ctx.textAlign = 'right'; ctx.font = dreamFont(17);
+      ctx.fillStyle = waiting ? `rgba(160,90,140,${0.55 + Math.sin(frame * 0.2) * 0.45})` : DREAM_INK;
+      ctx.fillText(waiting ? 'pulsa una tecla…' : keyName(CFG.keys[ACTIONS[i][0]]), cx + 200, y);
+    } else { // barra de volumen
+      const v = CFG[j ? 'sfx' : 'music'];
+      ctx.fillStyle = '#e4dcf8'; ctx.beginPath(); ctx.roundRect(cx + 40, y - 7, 130, 14, 7); ctx.fill();
+      if (v) { ctx.fillStyle = lin(cx + 40, 0, cx + 170, 0, '#ff9ad0', '#a07ae8'); ctx.beginPath(); ctx.roundRect(cx + 40, y - 7, 130 * v / 10, 14, 7); ctx.fill(); }
+      ctx.textAlign = 'right'; ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(14); ctx.fillText(v * 10 + '%', cx + 215, y);
+    }
+  }
+  ctx.textAlign = 'center'; ctx.fillStyle = DREAM_SOFT; ctx.font = dreamFont(14);
+  if (cfgScroll > 0) ctx.fillText('▲', cx, CFG_Y0 - 24);
+  if (cfgScroll < n - CFG_ROWS) ctx.fillText('▼', cx, CFG_Y0 + CFG_ROWS * CFG_DY - 8);
+  menuHint(cfgWait ? 'pulsa la tecla nueva  ·  ESC cancelar' : '↑ ↓ elegir  ·  ENTER cambiar tecla  ·  ← → volumen  ·  ESC volver');
 }
 function drawCharsCloud() {
   trailBubbles(115, 385, 290, 350, 3);
