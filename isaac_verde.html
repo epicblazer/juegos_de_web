@@ -220,6 +220,8 @@ cv.addEventListener('pointerdown', e => {
   }
   if (state === 'select') {
     const r = cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width;
+    const gx = fx * W, gy = (e.clientY - r.top) / r.height * H, di = DIFF_LV.findIndex((_, k) => { const [x, y] = DIFF_BTN(k); return Math.abs(gx - x) < 52 && Math.abs(gy - y) < 20; });
+    if (di >= 0) { setDiff(di); return; }
     if (fx < 0.3) { onKey('ArrowLeft'); return; }
     if (fx > 0.7) { onKey('ArrowRight'); return; }
   }
@@ -1602,15 +1604,25 @@ const depth = () => (floorNum - 1) % ISAAC_LEVELS.length;
 const isFinalLevel = () => depth() === ISAAC_LEVELS.length - 1 && !curLevel.secret;
 // Dificultad: todo crece con cada piso que bajas (y sigue creciendo en el modo infinito)
 const tier = () => floorNum - 1;
+// la dificultad que eliges antes de jugar (pantalla de elegir soldado). SOLDADO es el juego normal
+const DIFF_LV = [
+  { name: 'RECLUTA', tag: 'FÁCIL', col: '#7ac850', desc: '+2 corazones, enemigos lentos y jefes mucho más fáciles', hearts: 4, inv: 1.5, spd: 0.8, fire: 0.65, shot: 0.8, bossHp: 0.5, rush: 0, elite: 0, extra: -1, art: 0.4, soul: 1.8,
+    rest: 0.45, thin: 0.35, soft: true, cup: 1.6, fet: 2, bone: 0.8 }, // rest: los jefes descansan más · thin: parte de las balas de los jefes no sale · soft: los golpes de un corazón quitan medio
+  { name: 'SOLDADO', tag: 'NORMAL', col: '#e8c860', desc: 'El juego como fue pensado', hearts: 0, inv: 1, spd: 1, fire: 1, shot: 1, bossHp: 1, rush: 1, elite: 1, extra: 0, art: 1, soul: 1 },
+  { name: 'VETERANO', tag: 'DIFÍCIL', col: '#e05040', desc: 'Enemigos rápidos y jefes con más vida', hearts: 0, inv: 0.8, spd: 1.15, fire: 1.25, shot: 1.15, bossHp: 1.3, rush: 1.3, elite: 1.6, extra: 1, art: 1.3, soul: 0.8 },
+];
+let diffIdx = 1;
+try { const d = +localStorage.getItem('isaac_dificultad'); if (d >= 0 && d <= 2 && localStorage.getItem('isaac_dificultad') !== null) diffIdx = d; } catch (e) { }
+const DL = () => DIFF_LV[diffIdx];
 const DIFF = {
-  spd: () => Math.min(1.5, 1 + tier() * 0.06),            // velocidad de los enemigos
-  fire: () => Math.min(1.9, 1 + tier() * 0.09),           // qué tan seguido disparan / atacan
-  shot: () => Math.min(1.45, 1 + tier() * 0.05),          // velocidad de sus balas
-  bossHp: () => 1 + depth() * 0.1,                        // vida extra de los jefes según el piso
-  bossRush: () => Math.min(0.8, tier() * 0.08),           // los jefes descansan menos entre ataques
-  elite: () => clamp((tier() - 1) * 0.05, 0, 0.35),      // probabilidad de enemigo veterano
-  extra: () => Math.floor(depth() * 0.75) + loopN() * 2,  // enemigos extra por cuarto
-  artillery: () => clamp((tier() - 1) * 0.16, 0, 1),     // bombardeos de artillería (desde el piso 3)
+  spd: () => Math.min(1.5, 1 + tier() * 0.06) * DL().spd,             // velocidad de los enemigos
+  fire: () => Math.min(1.9, 1 + tier() * 0.09) * DL().fire,           // qué tan seguido disparan / atacan (menos de 1: más lento)
+  shot: () => Math.min(1.45, 1 + tier() * 0.05) * DL().shot,           // velocidad de sus balas
+  bossHp: () => (1 + depth() * 0.1) * DL().bossHp,                     // vida extra de los jefes según el piso
+  bossRush: () => DL().rest ? -DL().rest : Math.min(0.8, tier() * 0.08) * DL().rush, // los jefes descansan menos (o más, en RECLUTA) entre ataques
+  elite: () => clamp((tier() - 1) * 0.05, 0, 0.35) * DL().elite,      // probabilidad de enemigo veterano
+  extra: () => Math.max(0, Math.floor(depth() * 0.75) + loopN() * 2 + DL().extra), // enemigos extra por cuarto
+  artillery: () => clamp((tier() - 1) * 0.16, 0, 1) * DL().art,       // bombardeos de artillería (desde el piso 3)
 };
 // Ambiente de guerra: 0 en el primer piso, 1 en la Torre Final (no en mundos retro ni en Diablo/Ángel)
 const warLvl = () => (typeof retro !== 'undefined' && retro.on) || curLevel.secret || (cur && DEAL_LOOK[cur.type]) ? 0 : clamp(tier() / 7, 0, 1);
@@ -1801,6 +1813,7 @@ function newPlayer(c) {
     star: 0, inv: 0, face: 'B', items: [], walk: 0, shootT: 0, shield: 0, shieldMax: 0,
     deal: { devil: DEVIL_BASE_CHANCE, angel: ANGEL_BASE_CHANCE, hits: 0, tookDevil: false } };
   pl.triple = !!c.triple;
+  if (!retro.on) { pl.hp += DL().hearts; pl.maxHp += DL().hearts; } // RECLUTA: corazones extra
   return pl;
 }
 
@@ -2012,7 +2025,9 @@ function moveEnemy(e, dx, dy) {
   e.x = nx; e.y = ny;
   return blocked;
 }
+let shooter = null; // el enemigo que se está actualizando (para saber si la bala es de un jefe)
 function enemyShot(x, y, ang, sp, kind = 'red', extra = {}) {
+  if (DL().thin && shooter && shooter.boss && !retro.on && Math.random() < DL().thin) return; // RECLUTA: los jefes tiran menos balas
   sp *= DIFF.shot();
   tears.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 140, r: 7, friendly: false, kind, ...extra });
   sfx(kind === 'arrow' ? 'arrow' : 'enemyShot', 0.08);
@@ -2162,7 +2177,7 @@ function updateEnemy(e) {
       if (e.dt > 14) moveEnemy(e, e.vx, e.vy);
       break;
     }
-    default: if (BOSS_AI[e.type]) BOSS_AI[e.type](e, ang);
+    default: if (BOSS_AI[e.type]) { shooter = e; try { BOSS_AI[e.type](e, ang); } finally { shooter = null; } }
   }
 }
 
@@ -2768,8 +2783,9 @@ function hurt(n) {
     p.shield--; p.inv = 60; sfx('shield'); burst(p.x, p.y - 12, '#ffe680', 18);
     return;
   }
+  if (DL().soft && n > 1) n--; // RECLUTA: los golpes fuertes pegan menos
   p.deal.hits++; // recibir daño baja la probabilidad de Diablo/Ángel
-  p.hp -= n; p.inv = 70; shake = 8;
+  p.hp -= n; p.inv = Math.round(70 * DL().inv); shake = 8;
   burst(p.x, p.y, '#b01818', 14);
   addDecal('blood', p.x + rnd(-6, 6), p.y + 10, 11, p.char === CHARS[0] ? '#3a7a20' : '#8a0a0a');
   p.hurtAt = frame;
@@ -3000,6 +3016,13 @@ function moveSel(d) {
   sfx('select');
 }
 const isConfirm = c => c === 'Enter' || c === 'Space';
+function setDiff(i) {
+  i = clamp(i, 0, DIFF_LV.length - 1); if (i === diffIdx) { sfx('bump'); return; }
+  diffIdx = i; diffT = frame; sfx('select');
+  try { localStorage.setItem('isaac_dificultad', String(i)); } catch (e) { }
+}
+let diffT = -99;
+const DIFF_BTN = i => [175 + i * 110, 408]; // botones de dificultad (centro) en la pantalla de elegir
 function onKey(c, raw) {
   initAudio();
   // código secreto del minijuego retro (con la tecla física, aunque esté reasignada)
@@ -3020,6 +3043,8 @@ function onKey(c, raw) {
   if (state === 'select') {
     if (c === 'ArrowLeft' || c === 'KeyA') moveSel(-1);
     else if (c === 'ArrowRight' || c === 'KeyD') moveSel(1);
+    else if (c === 'ArrowUp' || c === 'KeyW') setDiff(diffIdx - 1);
+    else if (c === 'ArrowDown' || c === 'KeyS') setDiff(diffIdx + 1);
     else if (c === 'Escape') enterMenu();
     else if (isConfirm(c)) { if (isUnlocked(CHARS[selIdx])) startGame(); else { sfx('bump'); selShake = 16; } }
     return;
@@ -7219,7 +7244,22 @@ function drawSelect() {
     if (isUnlocked(ch)) drawCharIcon(ch, x, y + 6, k ? 0.6 : 0.68); else drawCharLocked(ch, x, y + 6, 0.6);
     ctx.restore();
   }
-  armyHint('◀ ▶ elegir  ·  ENTER jugar  ·  ESC menú');
+  drawDiffPicker();
+  armyHint('◀ ▶ soldado  ·  ▲ ▼ dificultad  ·  ENTER jugar  ·  ESC menú');
+}
+function drawDiffPicker() { // los tres botones de dificultad, debajo del soldado
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(232,216,160,.85)'; ctx.font = typeFont(12); ctx.fillText('DIFICULTAD', DIFF_BTN(1)[0], 380);
+  DIFF_LV.forEach((d, i) => {
+    const [x, y] = DIFF_BTN(i), on = i === diffIdx, pop = on ? 1 + Math.max(0, 1 - (frame - diffT) / 10) * 0.12 : 1;
+    ctx.save(); ctx.translate(x, y); ctx.scale(pop, pop);
+    ctx.fillStyle = on ? 'rgba(20,16,8,.85)' : 'rgba(20,16,8,.5)'; ctx.beginPath(); ctx.roundRect(-50, -17, 100, 34, 6); ctx.fill();
+    ctx.strokeStyle = on ? d.col : 'rgba(232,216,160,.25)'; ctx.lineWidth = on ? 2.5 : 1.2; ctx.stroke();
+    ctx.fillStyle = on ? d.col : 'rgba(232,216,160,.45)'; ctx.font = armyFont(15); ctx.fillText(d.name, 0, -3);
+    ctx.font = typeFont(9); ctx.fillText(d.tag, 0, 10);
+    ctx.restore();
+  });
+  ctx.fillStyle = DL().col; ctx.font = typeFont(11, false); ctx.fillText(DL().desc, DIFF_BTN(1)[0], 436);
 }
 function drawUnlockToasts() { // aviso de recluta nuevo en una placa militar
   const t = unlockToasts[0];
@@ -7346,7 +7386,7 @@ const UT_SX = 480, UT_FEET = 292; // Sans: centro y pies
 const UT_SP = 2.6; // velocidad del alma
 const UT_BTNS = ['LUCHAR', 'ACTUAR', 'OBJETO', 'PIEDAD'];
 const UT_ITEMS = [['Filete', 60], ['Héroe', 40], ['Héroe', 40], ['Nieve', 45]]; // pocos: es el segundo jefe más difícil (sólo Isaac Oscuro es peor)
-const utHard = () => 1.2 + loopN() * 0.12; // rapidez de los huesos (sube en el modo infinito)
+const utHard = () => (1.2 + loopN() * 0.12) * (DL().bone || 1); // rapidez de los huesos (sube en el modo infinito; más lentos en RECLUTA)
 const UT_G = [[0, 1], [0, -1], [-1, 0], [1, 0]]; // gravedad del alma azul: abajo, arriba, izquierda, derecha
 const UT_FONT = 'bold 23px "Courier New", monospace';
 const UT_SANS_FONT = 'bold 17px "Comic Sans MS", "Comic Neue", cursive';
@@ -7507,7 +7547,8 @@ function utHurt(kr) {
 // ---------- flujo de la pelea ----------
 function utStart(boss, turn = 0) {
   stopMusic();
-  ut = { boss, phase: 'enc', t: 0, pt: 0, turn, hp: 92, maxHp: 92, kr: 0, krT: 0, hitCd: 0, items: UT_ITEMS.map(i => [...i]), btn: 0, sub: 0,
+  const uHp = Math.round(92 * DL().soul);
+  ut = { boss, phase: 'enc', t: 0, pt: 0, turn, hp: uHp, maxHp: uHp, kr: 0, krT: 0, hitCd: 0, items: UT_ITEMS.map(i => [...i]), btn: 0, sub: 0,
     text: '', textN: 0, bub: null, box: { ...UT_MENU }, boxT: utBox(UT_ATTACKS[turn].w, UT_ATTACKS[turn].h), objs: [], atk: null, at: 0,
     soul: { x: clamp(p.x, 20, W - 20), y: clamp(p.y - 12, 20, H - 20), mode: 'red', g: 0, vg: 0, ground: false, slam: false, moved: false },
     enc: { x: clamp(p.x, 20, W - 20), y: clamp(p.y - 12, 20, H - 20) }, dodge: -999, miss: -999, hit: -999, slash: -999, hand: null,
@@ -8458,6 +8499,7 @@ function balDraw() {
 let fet = null;
 const FT = 32; // tamaño de un bloque
 const FET_SEED = 7, FET_DPH = 5; // FET_DPH: muertes por cada medio corazón
+const fetDph = () => FET_DPH * (DL().fet || 1); // en RECLUTA puedes morir el doble de veces
 // LA TORRE: larguísima (230 bloques de alto). Se arma con una semilla fija, así siempre es la misma (como un nivel diseñado):
 // plataformas en zigzag con sierras encima, sierras que suben y bajan entre los saltos y chimeneas para subir rebotando en las paredes
 function fetRng(seed) { return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -8588,7 +8630,7 @@ function fetDie() {
   for (let i = 0; i < 26; i++) { const a = rnd(0, BAL_TAU), s = rnd(1, 7); f.parts.push({ x: m.x + 11, y: m.y + 11, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 3, life: ri(30, 70), r: rnd(2, 5), col: pick(['#c81e1e', '#8a0a0a', '#e84040']) }); }
   for (let i = 0; i < 6; i++) f.smears.push({ x: m.x + 11 + rnd(-30, 30), y: m.y + 11 + rnd(-30, 30), r: rnd(3, 8) });
   if (f.noDie) return;
-  if (f.deaths % FET_DPH === 0) { p.inv = 0; hurt(1); }
+  if (f.deaths % fetDph() === 0) { p.inv = 0; hurt(1); }
 }
 function fetRespawn() {
   const f = fet, c = f.L.cps[f.cp];
@@ -8942,7 +8984,7 @@ function fetDraw() {
   modeHearts();
   ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.font = 'bold 18px Impact, "Arial Black", sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#000';
   ctx.strokeText(`MUERTES: ${f.deaths}`, W - 20, 24); ctx.fillStyle = '#ff6a5a'; ctx.fillText(`MUERTES: ${f.deaths}`, W - 20, 24);
-  ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#e8c8b8'; ctx.fillText(`-½♥ en ${FET_DPH - f.deaths % FET_DPH}`, W - 44, 42); // cuánto falta para perder medio corazón
+  ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#e8c8b8'; ctx.fillText(`-½♥ en ${fetDph() - f.deaths % fetDph()}`, W - 44, 42); // cuánto falta para perder medio corazón
   if (!lab) { // qué tan arriba vas
     const k = clamp(1 - (m.y - 3 * FT) / ((f.L.h - 4) * FT), 0, 1);
     ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(W - 26, 50, 10, 200); ctx.fillStyle = '#c81e1e'; ctx.fillRect(W - 26, 250 - 200 * k, 10, 200 * k);
@@ -9266,6 +9308,7 @@ function dvlHurt(pit) {
 }
 function dvlDamage(n) {
   const d = dvl; if (d.phase !== 'fight') return;
+  n *= DL().cup || 1; // RECLUTA: tus balas le hacen más daño al Diablo
   d.hp = Math.max(0, d.hp - n); d.hitF = 3; d.cards = Math.min(5, d.cards + n / 70);
   if (d.stage === 1 && d.hp <= DV_P2) { d.phase = 'fall'; d.pt = 0; d.atk = null; d.extra = []; d.haz = []; d.head = 'normal'; d.mood = 'angry'; sfx('dvlRoar'); d.shake = 14; }
   else if (d.stage === 2 && d.hp <= DV_P3) { d.stage = 3; d.mood = 'cry'; d.msg = '¡EL DIABLO ESTÁ LLORANDO!'; d.msgT = 120; sfx('dvlCry'); d.next = 90; }
@@ -10114,7 +10157,8 @@ function fwHurt(n) {
 // ---------- flujo de la pelea ----------
 function fwStart(boss) {
   stopMusic();
-  fw = { boss, phase: 'intro', t: 0, pt: 0, hp: 60, maxHp: 60, inv: 0, objs: [], seg: 0, st: 0, act: null, freed: 0, crack: 0, face: 'grin', faceT: 0,
+  const fHp = Math.round(60 * DL().soul);
+  fw = { boss, phase: 'intro', t: 0, pt: 0, hp: fHp, maxHp: fHp, inv: 0, objs: [], seg: 0, st: 0, act: null, freed: 0, crack: 0, face: 'grin', faceT: 0,
     bub: null, text: '', textN: 0, shake: 0, loads: 0, hand: [{ y: 370, t: -99 }, { y: 370, t: -99 }], flame: [0.6, 2.5], eyeT: [-99, -99], mouth: 0,
     soul: { x: 480, y: 374, mode: 'red', g: 0, vg: 0, ground: false, slam: false, moved: false, line: 1, sh: 0 }, shots: [], btn: 3, noDie: false, botIn: null,
     il: 0, glitch: 0, souls: [], choice: null, trapT: [-99, -99], saveT: -999, round: 0, fhp: 1, fhpS: 1, dmgT: -999, slash: -999, aimX: 0 };
