@@ -203,7 +203,7 @@ cv.addEventListener('pointerdown', e => {
     if (row < 0 || row >= CFG_ROWS) return;
     cfgIdx = i;
     const j = i - ACTIONS.length;
-    if (j === 0 || j === 1) { onKey(fx < 600 ? 'ArrowLeft' : 'ArrowRight'); return; }
+    if (j === 0 || j === 1) { onKey(fx < CX + 105 ? 'ArrowLeft' : 'ArrowRight'); return; }
     if (j < 0) return; // asignar teclas solo tiene sentido con teclado
   }
   if (state === 'menu' && !menuSub) {
@@ -1107,6 +1107,201 @@ function flameSuit() { // traje ignífugo con franja reflectante y tanque
   if (bodyFace === 'T') { ctx.fillStyle = rad(0, 6, 7, '#ff6a4a', '#c01a10', '#4a0404'); ctx.beginPath(); ctx.roundRect(-5, -2, 10, 15, 4); ctx.fill(); }
 }
 
+// ---------- más soldados del pelotón: misma cabeza de Isaac, cada uno con su color, su cara y su equipo ----------
+// cara con los ojos de Isaac: cejas, boca y lentes opcionales (ox = centro de la cara, EY = altura de los ojos, pose > 0.3 = atacando)
+function soldierFace({ brow = null, mouth = 'smile', blush = 'rgba(255,120,140,.35)', wink = false, shades = false }) {
+  return (ox, EY, pose, P) => {
+    if (blush) cheeks(ox, blush);
+    if (shades) { // lentes oscuros de espía
+      ctx.fillStyle = '#111'; ctx.fillRect(ox - 12, EY - 4, 24, 2);
+      for (const s of [-1, 1]) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(ox + s * 7 - 5.5, EY - 4, 11, 8, 3); ctx.fill(); shine(ox + s * 7 - 2.5, EY - 1.5, 2.4, 1.1, 0.55); }
+    } else for (const s of [-1, 1]) {
+      if (pose > 0.3 && wink && s < 0) happyEye(ox + s * 7, EY); else isaacEye(ox + s * 7, EY);
+    }
+    ctx.strokeStyle = P.line; ctx.lineWidth = 2.1; ctx.lineCap = 'round';
+    if (brow) { // cejas: 'brave' decididas, 'up' levantadas
+      ctx.beginPath();
+      for (const s of [-1, 1]) {
+        if (brow === 'brave') { ctx.moveTo(ox + s * 11, EY - 6.6); ctx.lineTo(ox + s * 3.5, EY - 5); }
+        else { ctx.moveTo(ox + s * 10.5, EY - 7); ctx.quadraticCurveTo(ox + s * 7, EY - 9.5, ox + s * 3.5, EY - 7); }
+      }
+      ctx.stroke();
+    }
+    if (pose > 0.3) { // grito de ataque
+      ctx.fillStyle = '#3a0a0a'; ell(ox, 14, 3.8, 2.8); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(ox - 2.8, 11.6, 5.6, 1.3);
+    } else {
+      ctx.lineWidth = 1.7; ctx.beginPath();
+      if (mouth === 'grin') { ctx.moveTo(ox - 5, 12); ctx.quadraticCurveTo(ox, 18, ox + 5, 12); ctx.closePath(); ctx.fillStyle = '#5a1010'; ctx.fill(); }
+      else if (mouth === 'smirk') { ctx.moveTo(ox - 4, 13.6); ctx.quadraticCurveTo(ox + 1, 15.6, ox + 5, 12); }
+      else if (mouth === 'flat') { ctx.moveTo(ox - 3.5, 14); ctx.lineTo(ox + 3.5, 14); }
+      else if (mouth === 'o') ell(ox, 14, 2, 2.4);
+      else ctx.arc(ox, 11.6, 3.8, Math.PI * 0.2, Math.PI * 0.8);
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+  };
+}
+function domeHat(c, line) { // casco redondo de soldado con degradado, ala y brillo
+  ctx.beginPath(); ctx.moveTo(-23, -2); ctx.bezierCurveTo(-24, -31, 24, -31, 23, -2); ctx.quadraticCurveTo(0, -7, -23, -2);
+  ctx.fillStyle = rad(-5, -16, 26, shade(c, 0.35), c, shade(c, -0.5)); ctx.fill(); ctx.strokeStyle = line; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = shade(c, -0.25); ell(0, -2.5, 26, 3.2); ctx.fill(); ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.stroke();
+  shine(-9, -20, 5, 2.2, 0.35);
+}
+function crossMark(x, y, s, col = '#e02a2a') { ctx.fillStyle = col; ctx.fillRect(x - s, y - s * 0.35, s * 2, s * 0.7); ctx.fillRect(x - s * 0.35, y - s, s * 0.7, s * 2); }
+const hidesSide = (face, s) => (face === 'L' && s > 0) || (face === 'R' && s < 0); // la oreja de atrás no se ve de lado
+function medicHat(face) { // casco blanco con la cruz roja
+  domeHat('#e8ecf0', '#5a6470');
+  if (face !== 'T') { const x = faceOX(face) * 0.8; ell(x, -15, 6, 6); ctx.fillStyle = '#fff'; ctx.fill(); crossMark(x, -15, 4.2); }
+}
+function medicBag() { // correa del botiquín y parche con cruz
+  ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(9, -3); ctx.lineTo(-9, 11); ctx.stroke();
+  if (bodyFace !== 'T') { ctx.fillStyle = '#fff'; ctx.fillRect(-3.5, -1, 7, 7); crossMark(0, 2.5, 2.6); }
+}
+function shotgunHat(face) { // gorra de campaña con cartuchos en la cinta
+  ctx.beginPath(); ctx.moveTo(-20, -3); ctx.lineTo(-18, -22); ctx.quadraticCurveTo(0, -27, 18, -22); ctx.lineTo(20, -3); ctx.closePath();
+  ctx.fillStyle = rad(-4, -15, 24, '#9a7a4a', '#6a4e28', '#2e1e0a'); ctx.fill(); ctx.strokeStyle = '#24160a'; ctx.lineWidth = 1.8; ctx.stroke();
+  ctx.fillStyle = '#3a2a14'; ctx.fillRect(-20, -9, 40, 4);
+  if (face !== 'T') {
+    const ox = faceOX(face);
+    for (const dx of [-10, -5, 0, 5, 10]) { ctx.fillStyle = '#c82a1a'; ctx.fillRect(ox * 0.6 + dx - 1.5, -11, 3, 5); ctx.fillStyle = '#d8b040'; ctx.fillRect(ox * 0.6 + dx - 1.5, -7.5, 3, 1.6); }
+    ctx.beginPath(); ctx.ellipse(ox * 1.2, -3, 16, 4.5, 0, 0, Math.PI); ctx.fillStyle = '#4a3418'; ctx.fill(); ctx.strokeStyle = '#24160a'; ctx.lineWidth = 1.2; ctx.stroke(); // visera
+  }
+}
+function shotgunShells() { // bandolera con cartuchos rojos
+  const flip = bodyFace === 'L' ? -1 : 1;
+  ctx.strokeStyle = '#3a2a14'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(9 * flip, -3); ctx.lineTo(-9 * flip, 12); ctx.stroke();
+  if (bodyFace !== 'T') for (const t of [0.15, 0.35, 0.55, 0.75]) {
+    const bx = lerp(9 * flip, -9 * flip, t), by = lerp(-3, 12, t);
+    ctx.fillStyle = '#d02a1a'; ctx.fillRect(bx - 1.2, by - 3, 2.4, 3.6); ctx.fillStyle = '#e0b840'; ctx.fillRect(bx - 1.2, by + 0.4, 2.4, 1.2);
+  }
+}
+function gunnerHat(face) { // casco de acero pesado con banda de balas y barboquejo
+  domeHat('#7a8494', '#262c36');
+  ctx.save(); ctx.beginPath(); ctx.moveTo(-23, -2); ctx.bezierCurveTo(-24, -31, 24, -31, 23, -2); ctx.clip();
+  ctx.fillStyle = '#4a3a1e'; ctx.fillRect(-24, -12, 48, 4.5);
+  if (face !== 'T') for (let x = -18; x <= 18; x += 4.5) { ctx.fillStyle = '#e8c048'; ell(x + faceOX(face) * 0.5, -10, 1.3, 2); ctx.fill(); }
+  ctx.restore();
+  ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-19, 0); ctx.quadraticCurveTo(-17, 15, 0, 18.5); ctx.quadraticCurveTo(17, 15, 19, 0); ctx.stroke();
+}
+function gunnerBelts() { // dos cintas de balas cruzadas
+  ctx.lineWidth = 3.4; ctx.strokeStyle = '#5a4020';
+  ctx.beginPath(); ctx.moveTo(-9, -3); ctx.lineTo(9, 12); ctx.moveTo(9, -3); ctx.lineTo(-9, 12); ctx.stroke();
+  if (bodyFace !== 'T') for (const t of [0.15, 0.35, 0.65, 0.85]) for (const s of [-1, 1]) {
+    ctx.fillStyle = '#e8c048'; ell(lerp(-9 * s, 9 * s, t), lerp(-3, 12, t) - 1.2, 1.1, 1.9); ctx.fill();
+  }
+}
+function paraHat(face) { // gorro de aviador de cuero con orejeras y gafas
+  ctx.beginPath(); ctx.moveTo(-20.5, 4); ctx.bezierCurveTo(-22, -27, 22, -27, 20.5, 4); ctx.quadraticCurveTo(0, -6, -20.5, 4);
+  ctx.fillStyle = rad(-4, -14, 24, '#a8784a', '#7a4e26', '#3a200a'); ctx.fill(); ctx.strokeStyle = '#2a1608'; ctx.lineWidth = 1.8; ctx.stroke();
+  ctx.strokeStyle = 'rgba(40,20,5,.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -24); ctx.lineTo(0, -6); ctx.stroke(); // costura
+  for (const s of [-1, 1]) { if (hidesSide(face, s)) continue; ell(s * 18, 6, 5, 8); ctx.fillStyle = '#6a4220'; ctx.fill(); ctx.strokeStyle = '#2a1608'; ctx.lineWidth = 1.4; ctx.stroke(); }
+  if (face !== 'T') {
+    const ox = faceOX(face) * 0.7;
+    ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-20, -13, 40, 3);
+    for (const s of [-1, 1]) { ell(ox + s * 7, -12, 5.4, 4.6); ctx.fillStyle = rad(ox + s * 7, -12, 5.4, '#d8f4ff', '#5ab0e0', '#1a4a6a'); ctx.fill(); ctx.strokeStyle = '#8a8a8a'; ctx.lineWidth = 1.6; ctx.stroke(); }
+  }
+}
+function paraHarness() { // arnés del paracaídas (y la mochila, de espaldas)
+  if (bodyFace === 'T') { ctx.fillStyle = rad(0, 4, 9, '#9aa86a', '#6a7a3a', '#2a3410'); ctx.beginPath(); ctx.roundRect(-8, -3, 16, 15, 4); ctx.fill(); }
+  ctx.strokeStyle = '#d8d0b0'; ctx.lineWidth = 2.4; ctx.beginPath();
+  for (const s of [-1, 1]) { ctx.moveTo(s * 6, -4); ctx.lineTo(s * 4, 13); }
+  ctx.moveTo(-8, 6); ctx.lineTo(8, 6); ctx.stroke();
+  if (bodyFace !== 'T') { ctx.fillStyle = '#c0c0c8'; ctx.fillRect(-2.5, 4, 5, 4); }
+}
+function radioHat(face) { // boina verde, auriculares con micrófono y antena
+  ctx.beginPath(); ctx.ellipse(-2, -14, 21, 9, -0.12, 0, Math.PI * 2);
+  ctx.fillStyle = rad(-6, -18, 22, '#5a8a4a', '#3a5a2a', '#16260c'); ctx.fill(); ctx.strokeStyle = '#122008'; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, -2, 20, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke(); // diadema
+  for (const s of [-1, 1]) { if (hidesSide(face, s)) continue; ell(s * 19, 1, 4, 6); ctx.fillStyle = rad(s * 19, 1, 6, '#5a5a5a', '#2a2a2a', '#0a0a0a'); ctx.fill(); }
+  if (face !== 'T' && face !== 'R') { // micrófono
+    const mx = faceOX(face) - 6;
+    ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-19, 4); ctx.quadraticCurveTo(-16, 14, mx, 15); ctx.stroke();
+    ell(mx, 15, 2, 2); ctx.fillStyle = '#111'; ctx.fill();
+  }
+  const sw = Math.sin(frame * 0.15) * 2; // antena que se mueve con lucecita
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(16, -10); ctx.quadraticCurveTo(18, -24, 20 + sw, -36); ctx.stroke();
+  ell(20 + sw, -37, 2, 2); ctx.fillStyle = frame % 40 < 20 ? '#ff4a3a' : '#7a1a10'; ctx.fill();
+}
+function radioPack() { // radio de campaña a la espalda
+  if (bodyFace === 'T') {
+    ctx.fillStyle = lin(0, -3, 0, 13, '#5a6a3a', '#2a3418'); ctx.beginPath(); ctx.roundRect(-8, -3, 16, 15, 3); ctx.fill();
+    ctx.fillStyle = '#e8c048'; ell(-3, 2, 1.5, 1.5); ctx.fill(); ctx.fillStyle = '#5ae05a'; ell(3, 2, 1.5, 1.5); ctx.fill();
+    return;
+  }
+  ctx.strokeStyle = '#3a3a2a'; ctx.lineWidth = 2.4; ctx.beginPath(); for (const s of [-1, 1]) { ctx.moveTo(s * 6, -4); ctx.lineTo(s * 6, 12); } ctx.stroke();
+}
+function engHat(face) { // casco de obra amarillo con linterna
+  domeHat('#f0c020', '#5a4004');
+  ctx.strokeStyle = 'rgba(90,64,4,.5)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(0, -27); ctx.lineTo(0, -6); ctx.stroke();
+  if (face !== 'T') {
+    const lx = faceOX(face) * 0.9;
+    ctx.fillStyle = '#4a4a4a'; ctx.beginPath(); ctx.roundRect(lx - 5, -17, 10, 7, 2); ctx.fill();
+    ell(lx, -13.5, 3.2, 2.6); ctx.fillStyle = rad(lx, -13.5, 3.2, '#ffffff', '#fff6b0', '#e8c040'); ctx.fill();
+  }
+}
+function engVest() { // chaleco naranja reflectante y llave inglesa
+  ctx.fillStyle = 'rgba(255,120,20,.75)'; ctx.fillRect(-11, -4, 22, 18);
+  ctx.fillStyle = '#f0f0d0'; ctx.fillRect(-11, 3, 22, 2); ctx.fillRect(-11, 8.5, 22, 2);
+  if (bodyFace !== 'T') { ctx.save(); ctx.translate(-5, 5); ctx.rotate(-0.6); ctx.fillStyle = '#b0b8c0'; ctx.fillRect(-1, -6, 2.2, 10); ell(0.1, -6.5, 2.6, 2.2); ctx.fill(); ctx.restore(); }
+}
+function scoutHat(face) { // sombrero de explorador con pluma
+  ctx.fillStyle = '#7a6236'; ell(0, -4, 27, 5); ctx.fill(); ctx.strokeStyle = '#2e2210'; ctx.lineWidth = 1.5; ctx.stroke(); // ala ancha
+  ctx.beginPath(); ctx.moveTo(-14, -5); ctx.lineTo(-12, -22); ctx.quadraticCurveTo(-6, -26, 0, -22); ctx.quadraticCurveTo(6, -26, 12, -22); ctx.lineTo(14, -5); ctx.closePath();
+  ctx.fillStyle = rad(-3, -14, 18, '#c8a868', '#9a7a42', '#4a3414'); ctx.fill(); ctx.strokeStyle = '#2e2210'; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.fillStyle = '#a02a1a'; ctx.fillRect(-14, -10, 28, 3.6);
+  ctx.save(); ctx.translate(face === 'R' ? -12 : 12, -10); ctx.rotate(face === 'R' ? -0.5 : 0.5); // pluma
+  ell(0, -9, 3, 10); ctx.fillStyle = lin(0, -19, 0, 1, '#3aa0e0', '#e8f0f8', '#3a6a2a'); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -18); ctx.stroke();
+  ctx.restore();
+}
+function scoutQuiver() { // correa del carcaj y flechas a la espalda
+  ctx.strokeStyle = '#6a4220'; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(-9, -3); ctx.lineTo(9, 12); ctx.stroke();
+  if (bodyFace === 'T') {
+    ctx.save(); ctx.rotate(0.5); ctx.fillStyle = '#6a4220'; ctx.fillRect(-3, -6, 6, 16);
+    ctx.fillStyle = '#e8e0d0'; for (const dx of [-2, 0, 2]) { poly([[dx - 1.4, -6], [dx, -10], [dx + 1.4, -6]]); ctx.fill(); }
+    ctx.restore();
+  }
+}
+function tankHat(face) { // casco acolchado de tanquista con gafas
+  ctx.beginPath(); ctx.moveTo(-21, 5); ctx.bezierCurveTo(-23, -28, 23, -28, 21, 5); ctx.quadraticCurveTo(0, -5, -21, 5);
+  ctx.fillStyle = rad(-4, -14, 25, '#4a4a44', '#2a2a26', '#0a0a08'); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1.8; ctx.stroke();
+  ctx.save(); ctx.clip(); ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 3; ctx.beginPath(); // acolchado
+  for (const x of [-10, 0, 10]) { ctx.moveTo(x, -28); ctx.quadraticCurveTo(x * 1.3, -10, x * 1.6, 5); } ctx.stroke(); ctx.restore();
+  if (face !== 'T') {
+    const ox = faceOX(face) * 0.7;
+    ctx.fillStyle = '#5a4a2a'; ctx.fillRect(-21, -15, 42, 3.4);
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.roundRect(ox + s * 7.5 - 6, -18, 12, 9, 3); ctx.fillStyle = lin(0, -18, 0, -9, '#ffe9a0', '#c88a20'); ctx.fill(); ctx.strokeStyle = '#2a1a0a'; ctx.lineWidth = 1.5; ctx.stroke(); }
+  }
+}
+function tankOveralls() { // overol con tirantes y manchas de grasa
+  ctx.fillStyle = 'rgba(40,50,80,.6)'; ctx.fillRect(-11, 2, 22, 12);
+  ctx.strokeStyle = '#2a3450'; ctx.lineWidth = 2.4; ctx.beginPath(); for (const s of [-1, 1]) { ctx.moveTo(s * 6, -4); ctx.lineTo(s * 6, 3); } ctx.stroke();
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ell(4, 9, 3, 1.6); ctx.fill(); ell(-5, 5, 2, 1.2); ctx.fill();
+}
+function sailorHat(face) { // gorrito blanco de marinero
+  ctx.beginPath(); ctx.moveTo(-15, -12); ctx.bezierCurveTo(-16, -30, 16, -30, 15, -12); ctx.closePath();
+  ctx.fillStyle = rad(-4, -22, 16, '#ffffff', '#e8eef4', '#9aa8b8'); ctx.fill(); ctx.strokeStyle = '#4a5a6a'; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0, -11, 18, 5, 0, 0, Math.PI * 2); ctx.fillStyle = lin(0, -16, 0, -6, '#ffffff', '#c8d4e0'); ctx.fill(); ctx.stroke(); // ala doblada
+  if (face !== 'T') { ctx.fillStyle = '#1a3a7a'; ctx.fillRect(faceOX(face) * 0.6 - 5, -21, 10, 2.2); }
+}
+function sailorCollar() { // cuello azul con raya y pañoleta roja
+  const back = bodyFace === 'T';
+  ctx.fillStyle = '#2a4a9a'; poly([[-11, -4], [11, -4], [back ? 10 : 0, back ? 6 : 5], [back ? -10 : 0, back ? 6 : 5]]); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(-10, -2); ctx.lineTo(10, -2); ctx.stroke();
+  if (!back) { ctx.fillStyle = '#d02a2a'; poly([[-3, 3], [3, 3], [0, 9]]); ctx.fill(); ell(0, 3, 2.2, 1.6); ctx.fill(); }
+}
+function spyHat(face) { // boina negra con insignia
+  ctx.beginPath(); ctx.ellipse(3, -15, 22, 8.5, 0.15, 0, Math.PI * 2);
+  ctx.fillStyle = rad(-2, -19, 22, '#4a4a54', '#22222a', '#060608'); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = '#16161c'; ell(0, -8.5, 18, 2.6); ctx.fill();
+  if (face !== 'T') { ctx.fillStyle = '#d8c070'; starPath(faceOX(face) * 0.6 - 7, -14, 3, 1.3); ctx.fill(); }
+}
+function spyCoat() { // gabardina con cinturón y solapas
+  ctx.fillStyle = 'rgba(160,130,80,.8)'; ctx.fillRect(-11, -4, 22, 18);
+  ctx.fillStyle = '#5a4020'; ctx.fillRect(-11, 7, 22, 2.6);
+  if (bodyFace !== 'T') { ctx.fillStyle = '#c8a868'; poly([[-6, -4], [0, 4], [-2, -4]]); ctx.fill(); poly([[6, -4], [0, 4], [2, -4]]); ctx.fill(); ctx.fillStyle = '#d8c070'; ctx.fillRect(-1.5, 6.6, 3, 3.4); }
+}
+
 // ---------- personajes de Isaac: misma cabeza, cada uno con su color, su cara y lo que lleva en la cabeza ----------
 function demonHat(face) { // cuernos
   for (const s of [-1, 1]) {
@@ -1220,6 +1415,26 @@ const CHARS = [
     ...isaacTint('#a47ad8', '#3a1e5a', sniperHat, sniperGhillie, sniperFace) },
   { name: 'Lanzallamas', ref: 'Fuego', desc: 'Chorro de fuego corto que no para.', hp: 8, speed: 2.8, dmg: 0.75, delay: 4, range: 18, shotSpeed: 6.5, tear: 'flame', snd: 'flame', pierce: true,
     body: withDetail(flameSuit, w => baseBody(w, '#3a3a32', '#c85a1a', shade(FLAME_SKIN, -0.25), '#3a1404')), head: flameHead },
+  { name: 'Médico', ref: 'Apoyo', desc: 'Cura medio corazón en cada cuarto que limpia.', hp: 8, speed: 3.2, dmg: 3, delay: 22, range: 45, shotSpeed: 8, tear: 'tear', snd: 'shoot', heal: true,
+    ...isaacTint('#f2b8a0', '#6a2a1a', medicHat, medicBag, soldierFace({ brow: 'up', mouth: 'smile' })) },
+  { name: 'Escopetero', ref: 'Escopeta', desc: 'Cinco perdigones de cerca. Brutal a quemarropa.', hp: 6, speed: 3.2, dmg: 2.3, delay: 34, range: 20, shotSpeed: 10, tear: 'bullet', snd: 'sniper', spread: 5,
+    ...isaacTint('#e08a48', '#5a2a08', shotgunHat, shotgunShells, soldierFace({ brow: 'brave', mouth: 'smirk', blush: 'rgba(255,90,40,.35)' })) },
+  { name: 'Ametrallador', ref: 'Ametralladora', desc: 'Ráfaga de balas sin parar, pero poco precisa.', hp: 6, speed: 2.9, dmg: 1.3, delay: 6, range: 45, shotSpeed: 11, tear: 'bullet', snd: 'shoot', jitter: 0.12,
+    ...isaacTint('#8a98ac', '#262c3a', gunnerHat, gunnerBelts, soldierFace({ brow: 'brave', mouth: 'grin', blush: null })) },
+  { name: 'Paracaidista', ref: 'Velocidad', desc: 'Rapidísimo. Sus lágrimas cruzan las rocas.', hp: 4, speed: 4.6, dmg: 3.2, delay: 20, range: 50, shotSpeed: 9, tear: 'tear', snd: 'shoot', spectral: true,
+    ...isaacTint('#88d0f0', '#1a4a6a', paraHat, paraHarness, soldierFace({ mouth: 'grin' })) },
+  { name: 'Radiooperador', ref: 'Comunicaciones', desc: 'Pide por radio disparos teledirigidos.', hp: 6, speed: 3.2, dmg: 3.2, delay: 22, range: 55, shotSpeed: 7.5, tear: 'bolt', snd: 'laser', homing: true,
+    ...isaacTint('#48c0a4', '#0e4a3a', radioHat, radioPack, soldierFace({ brow: 'up', mouth: 'o' })) },
+  { name: 'Ingeniero', ref: 'Rebotes', desc: 'Balas que rebotan dos veces en las paredes.', hp: 6, speed: 3.1, dmg: 3.4, delay: 22, range: 45, shotSpeed: 8.5, tear: 'bullet', snd: 'shoot', bounce: 2,
+    ...isaacTint('#c8a070', '#4a2e10', engHat, engVest, soldierFace({ mouth: 'smile', wink: true })) },
+  { name: 'Explorador', ref: 'Arco', desc: 'Dispara tres flechas a la vez.', hp: 6, speed: 3.6, dmg: 2.6, delay: 24, range: 55, shotSpeed: 9, tear: 'arrow', snd: 'arrow', triple: true,
+    ...isaacTint('#b0c850', '#3a4a10', scoutHat, scoutQuiver, soldierFace({ brow: 'up', mouth: 'grin', wink: true })) },
+  { name: 'Tanquista', ref: 'Blindado', desc: 'Muchísima vida y cañonazos lentos.', hp: 14, speed: 2.4, dmg: 6.5, delay: 34, range: 45, shotSpeed: 7, tear: 'bullet', snd: 'sniper',
+    ...isaacTint('#6a7aa8', '#1a2240', tankHat, tankOveralls, soldierFace({ brow: 'brave', mouth: 'flat', blush: null })) },
+  { name: 'Marinero', ref: 'Agua a presión', desc: 'Chorros de agua que atraviesan enemigos.', hp: 8, speed: 3.3, dmg: 3.4, delay: 18, range: 50, shotSpeed: 9, tear: 'tear', snd: 'shoot', pierce: true,
+    ...isaacTint('#f0e6d8', '#5a4a3a', sailorHat, sailorCollar, soldierFace({ mouth: 'smile' })) },
+  { name: 'Espía', ref: 'Sigilo', desc: 'Esquiva uno de cada tres golpes.', hp: 4, speed: 3.9, dmg: 4.4, delay: 20, range: 50, shotSpeed: 9.5, tear: 'bullet', snd: 'shoot', dodge: 0.33,
+    ...isaacTint('#7a7a90', '#1a1a26', spyHat, spyCoat, soldierFace({ mouth: 'smirk', shades: true, blush: null })) },
 ];
 // tipos de ataque propios que los objetos de fuego/luz no reemplazan
 const OWN_ATTACK = ['slash', 'grenade', 'flame'];
@@ -1240,7 +1455,17 @@ const UNLOCKS = {
   'Francotirador': { req: 'Llega a las Profundidades', ok: s => s.bestFloor >= 5 },
   'Lanzallamas': { req: 'Derrota 6 jefes en total', ok: s => s.bosses >= 6 },
   'Alma Perdida': { req: 'Muere 10 veces', ok: s => s.deaths >= 10 },
-  'Demonio': { req: 'Despierta del sueño (gana el juego)', ok: s => s.wins >= 1 },
+  'Demonio': { req: 'Gana el juego', ok: s => s.wins >= 1 },
+  'Médico': { req: 'Juega 3 partidas', ok: s => s.runs >= 3 },
+  'Escopetero': { req: 'Derrota 3 jefes en total', ok: s => s.bosses >= 3 },
+  'Ametrallador': { req: 'Recoge 20 objetos en total', ok: s => s.items >= 20 },
+  'Paracaidista': { req: 'Muere 5 veces', ok: s => s.deaths >= 5 },
+  'Radiooperador': { req: 'Juega 10 partidas', ok: s => s.runs >= 10 },
+  'Ingeniero': { req: 'Llega a Cuevas II', ok: s => s.bestFloor >= 4 },
+  'Explorador': { req: 'Llega a Profundidades II', ok: s => s.bestFloor >= 6 },
+  'Tanquista': { req: 'Derrota 15 jefes en total', ok: s => s.bosses >= 15 },
+  'Marinero': { req: 'Haz 2 pactos con el Diablo', ok: s => s.devil >= 2 },
+  'Espía': { req: 'Gana el juego 2 veces', ok: s => s.wins >= 2 },
 };
 const isUnlocked = c => !UNLOCKS[c.name] || SAVE.unlocked.includes(c.name);
 let unlockToasts = []; // avisos de "¡nuevo personaje!" en una burbuja
@@ -1505,6 +1730,7 @@ function newPlayer(c) {
     range: c.range, shotSpeed: c.shotSpeed, triple: false, bounce: c.bounce || 0, pierce: !!c.pierce, homing: !!c.homing, fireKind: null,
     star: 0, inv: 0, face: 'B', items: [], walk: 0, shootT: 0, shield: 0, shieldMax: 0,
     deal: { devil: DEVIL_BASE_CHANCE, angel: ANGEL_BASE_CHANCE, hits: 0, tookDevil: false } };
+  pl.triple = !!c.triple;
   return pl;
 }
 
@@ -2439,9 +2665,11 @@ function goRoom(dx, dy) {
 }
 function shoot(sx, sy) {
   const base = Math.atan2(sy, sx), own = OWN_ATTACK.includes(p.char.tear), kind = own ? p.char.tear : p.fireKind || p.char.tear;
-  const angs = p.triple ? [base - 0.18, base, base + 0.18] : [base];
+  const n = p.char.spread || (p.triple ? 3 : 1), gap = p.char.spread ? 0.16 : 0.18; // escopeta: abanico de perdigones
+  const angs = Array.from({ length: n }, (_, i) => base + (i - (n - 1) / 2) * gap);
   for (let a of angs) {
     if (kind === 'flame') a += rnd(-0.22, 0.22);
+    if (p.char.jitter) a += rnd(-p.char.jitter, p.char.jitter); // ametralladora: poco precisa
     const t = { x: p.x + sx * 10, y: p.y - 12 + sy * 6,
       vx: Math.cos(a) * p.shotSpeed + p.vx * 0.4, vy: Math.sin(a) * p.shotSpeed + p.vy * 0.4,
       life: p.range, r: 7 + Math.min(4, (p.dmg - 3.5) * 0.8), dmg: p.dmg, friendly: true, kind,
@@ -2462,6 +2690,10 @@ function shoot(sx, sy) {
 }
 function hurt(n) {
   if (p.inv > 0 || p.star > 0 || state !== 'play') return;
+  if (p.char.dodge && !retro.on && Math.random() < p.char.dodge) { // Espía: esquiva el golpe
+    p.inv = 40; sfx('swoosh'); burst(p.x, p.y - 12, '#c8c8dc', 12);
+    return;
+  }
   if (p.shield > 0) { // Escudo Divino absorbe el golpe
     p.shield--; p.inv = 60; sfx('shield'); burst(p.x, p.y - 12, '#ffe680', 18);
     return;
@@ -2498,6 +2730,7 @@ function showMsg(t, s = '', icon = null, bad = '') { msg = t; msgSub = s; msgT =
 function onClear() {
   cur.cleared = true;
   sfx('doorOpen');
+  if (p.char.heal && p.hp < p.maxHp) { p.hp++; sfx('heart'); burst(p.x, p.y - 12, '#ff5a6a', 12); } // Médico: se cura un poco
   if (cur.type === 'boss') {
     stopMusic();
     if (isFinalLevel()) { winPending = true; endingAt = 200; p.inv = 400; tears = tears.filter(t => t.friendly); showMsg('...', ''); return; } // empieza el final del juego
@@ -6413,37 +6646,9 @@ function drawTitle() {
   ctx.fillText(AC ? 'dicen que a veces se abren portales a otros mundos...' : 'haz clic o pulsa una tecla para activar el sonido', CX, 562);
 }
 // =====================================================================
-// MENÚ DEL SUEÑO: Isaac duerme y todo pasa dentro de sus burbujas de sueño
+// MENÚS (estilo cuartel)
 // =====================================================================
-const DREAM = { stars: null, clouds: null };
-const DREAM_INK = '#3a2a6a', DREAM_SOFT = '#8a6ac8', DREAM_EDGE = '#9a86c8';
-function dreamSetup() {
-  const rr = mulberry(4242);
-  DREAM.stars = Array.from({ length: 110 }, () => ({ x: rr() * W, y: rr() * H * 0.85, s: 0.6 + rr() * 1.6, ph: rr() * 6.28 }));
-  DREAM.clouds = Array.from({ length: 6 }, (_, i) => ({ x: rr() * W, y: 60 + rr() * 420, r: 50 + rr() * 50, sp: 0.1 + rr() * 0.2, c: i % 2 ? '255,170,230' : '170,190,255' }));
-}
-function dreamSky() {
-  if (!DREAM.stars) dreamSetup();
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#120c30'); g.addColorStop(0.55, '#3a2a6a'); g.addColorStop(1, '#7a5a9a');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  for (const s of DREAM.stars) { ctx.fillStyle = `rgba(255,250,220,${0.35 + Math.sin(frame * 0.05 + s.ph) * 0.3})`; ell(s.x, s.y, s.s, s.s); ctx.fill(); }
-  for (const c of DREAM.clouds) { // nubecitas de colores que pasan
-    const x = (c.x + frame * c.sp) % (W + c.r * 4) - c.r * 2;
-    const cg = ctx.createRadialGradient(x, c.y, 0, x, c.y, c.r * 2);
-    cg.addColorStop(0, `rgba(${c.c},.16)`); cg.addColorStop(1, `rgba(${c.c},0)`);
-    ctx.fillStyle = cg; ctx.fillRect(x - c.r * 2, c.y - c.r * 2, c.r * 4, c.r * 4);
-  }
-  const mg = ctx.createRadialGradient(880, 70, 10, 880, 70, 90); // brillo de la luna
-  mg.addColorStop(0, 'rgba(255,240,200,.25)'); mg.addColorStop(1, 'rgba(255,240,200,0)');
-  ctx.fillStyle = mg; ctx.fillRect(790, -20, 180, 180);
-  ctx.restore();
-  ctx.save(); ctx.beginPath(); ctx.arc(880, 70, 28, 0, Math.PI * 2); ctx.clip(); // luna creciente
-  ctx.beginPath(); ctx.rect(800, 0, 160, 160); ctx.arc(893, 61, 25, 0, Math.PI * 2, true);
-  ctx.fillStyle = '#fff4c8'; ctx.fill(); ctx.restore();
-}
-// para que el menú no dé lag: cada burbuja y cada personaje se dibuja una sola vez
+// para que el menú no dé lag: cada personaje se dibuja una sola vez
 // en un lienzo aparte y después solo se copia la imagen
 const SPR_CACHE = new Map();
 function cachedSprite(key, w, h, ox, oy, fn) {
@@ -6457,87 +6662,22 @@ function cachedSprite(key, w, h, ox, oy, fn) {
   ctx.drawImage(c, -ox, -oy, w, h); // se dibuja con el origen del que llama
 }
 function atSprite(x, y, key, w, h, ox, oy, fn) { ctx.save(); ctx.translate(x, y); cachedSprite(key, w, h, ox, oy, fn); ctx.restore(); }
-function cloudPath(x, y, w, h) { // contorno de nube: bolitas alrededor de una elipse
-  const m = Math.min(w, h), n = Math.max(9, Math.round((w + h) / 30));
-  ctx.beginPath();
-  for (let i = 0; i < n; i++) {
-    const a = i / n * Math.PI * 2, r = m * 0.2 * (1 + 0.2 * Math.sin(i * 2.7));
-    const px = x + Math.cos(a) * (w / 2 - r * 0.7), py = y + Math.sin(a) * (h / 2 - r * 0.7);
-    ctx.moveTo(px + r, py); ctx.arc(px, py, r, 0, Math.PI * 2);
-  }
-  ctx.moveTo(x + w / 2 - m * 0.15, y); ctx.ellipse(x, y, w / 2 - m * 0.15, h / 2 - m * 0.15, 0, 0, Math.PI * 2);
-}
-function dreamBubble(x, y, w, h) {
-  const pad = 45;
-  atSprite(x, y, `cloud|${w}|${h}`, w + pad * 2, h + pad * 2, w / 2 + pad, h / 2 + pad, () => {
-    ctx.shadowColor = 'rgba(210,180,255,.4)'; ctx.shadowBlur = 20;
-    ctx.fillStyle = DREAM_EDGE; cloudPath(0, 0, w + 7, h + 7); ctx.fill(); // borde
-    ctx.shadowBlur = 0;
-    const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-    g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#e6defc');
-    ctx.fillStyle = g; cloudPath(0, 0, w, h); ctx.fill();
-    shine(-w * 0.24, -h * 0.3, w * 0.1, h * 0.05, 0.45);
-  });
-}
-function roundBubble(x, y, r, glow = 0) { // burbuja redonda de jabón
-  const pad = r + 24;
-  atSprite(x, y, `bub|${r}|${glow ? 1 : 0}`, pad * 2, pad * 2, pad, pad, () => {
-    if (glow) { ctx.save(); ctx.shadowColor = 'rgba(255,220,140,.9)'; ctx.shadowBlur = 18; }
-    ell(0, 0, r + 3, r + 3); ctx.fillStyle = glow ? '#e8c060' : DREAM_EDGE; ctx.fill();
-    if (glow) ctx.restore();
-    ell(0, 0, r, r); ctx.fillStyle = rad(0, 0, r, '#ffffff', '#f2eeff', '#d8ccf8'); ctx.fill();
-    shine(-r * 0.4, -r * 0.45, r * 0.22, r * 0.12, 0.9);
-  });
-}
-function trailBubbles(x0, y0, x1, y1, n = 4) { // burbujitas que salen de la cabeza de Isaac
-  for (let i = 0; i < n; i++) {
-    const t = (i + 1) / (n + 1), r = 4 + t * 13;
-    roundBubble(lerp(x0, x1, t), lerp(y0, y1, t) + Math.sin(frame * 0.06 + i) * 2, r);
-  }
-}
-function drawSleepingIsaac(x, y, s) {
-  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
-  softShadow(5, 26, 95, 12, 0.5);
-  ctx.fillStyle = lin(0, -50, 0, 30, '#7a5034', '#4a2e1a'); // cama
-  ctx.beginPath(); ctx.roundRect(-82, -46, 16, 74, 5); ctx.fill();
-  ctx.beginPath(); ctx.roundRect(78, -12, 14, 40, 5); ctx.fill();
-  ctx.fillStyle = '#5a3a24'; ctx.beginPath(); ctx.roundRect(-80, 6, 168, 16, 5); ctx.fill();
-  ell(-44, -6, 26, 12); ctx.fillStyle = rad(-44, -6, 26, '#ffffff', '#f0ecf8', '#c8c0e0'); ctx.fill(); // almohada
-  ctx.save(); ctx.translate(-42, -22); ctx.rotate(-0.3); ctx.scale(0.95, 0.95); // cabeza dormida
-  const em = eyeMode, nh = noHelmet, sp = shootPose, po = poseOverride;
-  eyeMode = 'closed'; noHelmet = true; shootPose = 0; poseOverride = null;
-  CHARS[0].head('B');
-  eyeMode = em; noHelmet = nh; shootPose = sp; poseOverride = po;
-  ctx.restore();
-  const breath = Math.sin(frame * 0.05) * 1.5; // cobija que sube y baja al respirar
-  ctx.beginPath(); ctx.roundRect(-26, -14 - breath, 112, 30 + breath, 12); ctx.fillStyle = lin(0, -16, 0, 14, '#8a6ad0', '#4a3a8a'); ctx.fill();
-  ctx.strokeStyle = 'rgba(30,20,60,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
-  ctx.fillStyle = 'rgba(255,240,180,.75)'; for (const [sx, sy] of [[0, -2], [28, 4], [56, -4], [72, 8]]) { starPath(sx, sy - breath / 2, 4, 1.7); ctx.fill(); }
-  ctx.restore();
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; // Zzz
-  for (let i = 0; i < 3; i++) {
-    const k = (frame * 0.008 + i / 3) % 1;
-    ctx.fillStyle = `rgba(230,220,255,${Math.sin(k * Math.PI)})`; ctx.font = `bold ${12 + k * 14}px "Trebuchet MS", sans-serif`;
-    ctx.fillText('z', x - 30 * s + k * 50, y - 50 * s - k * 60);
-  }
-}
-const dreamFont = (px, bold = true) => `${bold ? 'bold ' : ''}${px}px "Trebuchet MS", "Comic Sans MS", sans-serif`;
 function drawCharIcon(c, x, y, s, locked = false) { // personaje quieto ya dibujado (o su silueta si está bloqueado)
   atSprite(x, y, `ch|${c.name}|${s}|${locked ? 1 : 0}`, 90 * s, 100 * s, 45 * s, 70 * s, () => {
     drawChar(c, 0, 0, s, 'B', 0, 0);
     if (locked) { // silueta: pinta de negro todo lo dibujado
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'source-in';
-      ctx.fillStyle = 'rgba(20,10,40,.55)'; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.restore();
+      ctx.fillStyle = 'rgba(14,14,10,.6)'; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.restore();
     }
   });
 }
 function drawCharLocked(c, x, y, s) { // silueta oscura con signo de pregunta
   drawCharIcon(c, x, y, s, true);
-  ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = dreamFont(Math.round(26 * s)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = armyFont(Math.round(26 * s)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('?', x, y - 14 * s);
 }
 
-const MENU_ITEMS = ['Nueva partida', 'Personajes', 'Estadísticas', 'Sonido', 'Configuración', 'Despertar'];
+const MENU_ITEMS = ['Nueva partida', 'Personajes', 'Estadísticas', 'Sonido', 'Configuración', 'Salir'];
 let menuIdx = 0, menuSub = null, galIdx = 0, selShake = 0; // menuSub: null | 'chars' | 'stats' | 'config'
 const MENU_Y = i => 190 + i * 50;
 let cfgIdx = 0, cfgScroll = 0;
@@ -6585,155 +6725,226 @@ function cfgKey(c) { // filas: una por acción, volumen de música, volumen de e
   else menuSub = null;
   sfx('select');
 }
-function menuHint(t) { ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(235,225,255,.7)'; ctx.font = dreamFont(14, false); ctx.fillText(t, CX, 556); }
-function drawMenu() {
-  dreamSky();
-  if (AC && AC.state === 'running' && musicName !== 'title') playMusic('title', 0.3);
-  drawSleepingIsaac(160, 470, 1.5);
-  if (menuSub === 'stats') return drawStatsCloud();
-  if (menuSub === 'chars') return drawCharsCloud();
-  if (menuSub === 'config') return drawConfigCloud();
-  trailBubbles(115, 385, 330, 330);
-  const cx = 600, cy = 280;
-  dreamBubble(cx, cy, 520, 450);
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(30); ctx.fillText('The Binding of Epic', cx, 112);
-  ctx.fillStyle = DREAM_SOFT; ctx.font = 'italic ' + dreamFont(15, false); ctx.fillText('~ todo es un sueño ~', cx, 142);
-  MENU_ITEMS.forEach((name, i) => {
-    const sel = i === menuIdx, y = MENU_Y(i) + (sel ? Math.sin(frame * 0.12) * 2 : 0);
-    const label = i === 3 ? 'Sonido: ' + (muted ? 'NO' : 'SÍ') : name;
-    if (sel) { ctx.fillStyle = 'rgba(170,140,240,.22)'; ctx.beginPath(); ctx.roundRect(cx - 150, y - 22, 300, 44, 22); ctx.fill(); }
-    ctx.fillStyle = sel ? DREAM_INK : '#7a6aa0'; ctx.font = dreamFont(sel ? 30 : 25); ctx.fillText(label, cx, y);
-    if (sel) { // cursor: una lagrimita de Isaac
-      const tx = cx - 135 + Math.sin(frame * 0.15) * 3;
-      ctx.beginPath(); ctx.moveTo(tx, y - 10); ctx.quadraticCurveTo(tx + 8, y + 1, tx, y + 9); ctx.quadraticCurveTo(tx - 8, y + 1, tx, y - 10);
-      ctx.fillStyle = rad(tx, y, 9, '#ffffff', '#7ac0ff', '#2a6ab0'); ctx.fill();
-    }
-  });
-  menuHint('↑ ↓ elegir  ·  ENTER aceptar  ·  ESC volver');
+const ARMY_TEXT = '#e8d8a0', ARMY_DIM = '#a8a47c', ARMY_SEL = '#ffe08a';
+function armyPanel(x, y, w, h) { // placa de metal verde oliva con remaches
+  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.roundRect(x - w / 2 + 6, y - h / 2 + 7, w, h, 10); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(x - w / 2, y - h / 2, w, h, 10);
+  ctx.fillStyle = lin(0, y - h / 2, 0, y + h / 2, '#5a6430', '#3e4620', '#262c12'); ctx.fill();
+  ctx.strokeStyle = '#12160a'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(x - w / 2 + 7, y - h / 2 + 7, w - 14, h - 14, 6); ctx.strokeStyle = 'rgba(232,216,160,.22)'; ctx.lineWidth = 1.5; ctx.stroke();
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+    const rx = x + sx * (w / 2 - 14), ry = y + sy * (h / 2 - 14);
+    ell(rx, ry, 3.6, 3.6); ctx.fillStyle = rad(rx, ry, 3.6, '#d8d8b8', '#7a7a60', '#2a2a1a'); ctx.fill();
+  }
 }
-function drawStatsCloud() {
-  trailBubbles(115, 385, 330, 330);
-  const cx = 600, cy = 275, s = SAVE.stats;
-  dreamBubble(cx, cy, 540, 460);
-  ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(30); ctx.fillText('Estadísticas', cx, 105);
+function selBand(x, y, w, h) { ctx.fillStyle = 'rgba(232,216,160,.15)'; ctx.beginPath(); ctx.roundRect(x - w / 2, y - h / 2, w, h, 6); ctx.fill(); }
+function bulletCursor(x, y) { // cursor: una bala que apunta a la opción
+  ctx.fillStyle = lin(x - 12, 0, x + 6, 0, '#8a5a18', '#e8b848', '#a06a18'); ctx.beginPath(); ctx.roundRect(x - 12, y - 5, 12, 10, 1.5); ctx.fill();
+  ctx.fillStyle = lin(0, y - 5, 0, y + 5, '#e8c8a0', '#b07040', '#6a3a18'); ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.quadraticCurveTo(x + 10, y - 4, x + 12, y); ctx.quadraticCurveTo(x + 10, y + 4, x, y + 5); ctx.closePath(); ctx.fill();
+}
+function drawMenu() {
+  if (AC && AC.state === 'running' && musicName !== 'title') playMusic('title', 0.3);
+  if (menuSub === 'chars') return drawCharsCloud();
+  drawBarracks();
+  if (menuSub === 'stats') return drawStatsCloud();
+  if (menuSub === 'config') return drawConfigCloud();
+  const ix = 250, iy = 290; // Isaac firme bajo el foco, listo para la guerra
+  ctx.fillStyle = rad(ix, iy + 70, 190, 'rgba(255,240,190,.3)', 'rgba(255,240,190,.08)', 'rgba(255,240,190,0)'); ell(ix, iy + 70, 190, 120); ctx.fill();
+  drawCharShaded(CHARS[0], ix, iy + Math.sin(frame * 0.05) * 3, 3.6, 'B', 0, 0);
+  armyTitle('THE BINDING OF EPIC');
+  const cx = 640, cy = 300;
+  armyPanel(cx, cy, 400, 410);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = ARMY_DIM; ctx.font = typeFont(14); ctx.fillText('— EDICIÓN SOLDADO VERDE —', cx, 132);
+  MENU_ITEMS.forEach((name, i) => {
+    const sel = i === menuIdx, y = MENU_Y(i);
+    const label = (i === 3 ? 'Sonido: ' + (muted ? 'NO' : 'SÍ') : name).toUpperCase();
+    if (sel) { selBand(cx, y, 330, 42); bulletCursor(cx - 150 + Math.sin(frame * 0.15) * 3, y); }
+    ctx.fillStyle = sel ? ARMY_SEL : ARMY_DIM; ctx.font = armyFont(sel ? 30 : 25); ctx.fillText(label, cx, y + 1);
+  });
+  armyHint('↑ ↓ elegir  ·  ENTER aceptar  ·  ESC volver');
+}
+function drawStatsCloud() { // hoja de servicio escrita a máquina
+  const s = SAVE.stats;
+  armyTitle('HOJA DE SERVICIO');
+  ctx.save(); ctx.translate(CX, 290); ctx.rotate(-0.01);
+  ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(-250 + 6, -200 + 6, 500, 400);
+  ctx.fillStyle = '#f4ecd4'; ctx.fillRect(-250, -200, 500, 400);
+  ctx.strokeStyle = '#8a8a92'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(200, -210, 16, 46, 8); ctx.stroke(); // clip
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#6a5a3a'; ctx.font = typeFont(12); ctx.fillText('SOLDADO: ISAAC  ·  PELOTÓN VERDE', -220, -172);
+  ctx.strokeStyle = 'rgba(42,32,16,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-220, -156); ctx.lineTo(220, -156); ctx.stroke();
   const nL = ISAAC_LEVELS.length, bf = s.bestFloor, lap = Math.floor((bf - 1) / nL);
   const rows = [['Partidas jugadas', s.runs], ['Muertes', s.deaths], ['Jefes derrotados', s.bosses], ['Objetos recogidos', s.items],
     ['Piso más profundo', ISAAC_LEVELS[(bf - 1) % nL].name + (lap ? ` (+${lap})` : '')], ['Pactos con el Diablo', s.devil],
-    ['Veces que despertaste', s.wins], ['Personajes', `${CHARS.filter(isUnlocked).length} / ${CHARS.length}`]];
+    ['Victorias', s.wins], ['Soldados reclutados', `${CHARS.filter(isUnlocked).length} / ${CHARS.length}`]];
   rows.forEach(([k, v], i) => {
-    const y = 150 + i * 34;
-    ctx.textAlign = 'left'; ctx.fillStyle = '#6a5a90'; ctx.font = dreamFont(17, false); ctx.fillText(k, cx - 200, y);
-    ctx.textAlign = 'right'; ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(18); ctx.fillText(String(v), cx + 200, y);
+    const y = -124 + i * 38;
+    ctx.textAlign = 'left'; ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(16, false); ctx.fillText(k.toUpperCase(), -220, y);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#2a2010'; ctx.font = typeFont(18); ctx.fillText(String(v), 220, y);
+    ctx.strokeStyle = 'rgba(42,32,16,.3)'; ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.moveTo(-220, y + 13); ctx.lineTo(220, y + 13); ctx.stroke(); ctx.setLineDash([]);
   });
-  menuHint('ENTER o ESC para volver');
+  ctx.restore();
+  armyHint('ENTER o ESC para volver');
 }
 function drawConfigCloud() {
-  trailBubbles(115, 385, 330, 330);
-  const cx = 600, cy = 280, n = ACTIONS.length + 4;
-  dreamBubble(cx, cy, 560, 480);
-  ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(30); ctx.fillText('Configuración', cx, 90);
+  const cx = CX, n = ACTIONS.length + 4;
+  armyTitle('CONFIGURACIÓN');
+  armyPanel(cx, 288, 560, 420);
+  ctx.textBaseline = 'middle';
   cfgScroll = clamp(clamp(cfgScroll, cfgIdx - CFG_ROWS + 1, cfgIdx), 0, n - CFG_ROWS);
   for (let r = 0; r < CFG_ROWS; r++) {
     const i = cfgScroll + r, y = CFG_Y0 + r * CFG_DY, sel = i === cfgIdx, j = i - ACTIONS.length;
-    if (sel) { ctx.fillStyle = 'rgba(170,140,240,.22)'; ctx.beginPath(); ctx.roundRect(cx - 220, y - 14, 440, 28, 14); ctx.fill(); }
+    if (sel) selBand(cx, y, 460, 28);
     if (j >= 2) { // botones
-      ctx.textAlign = 'center'; ctx.fillStyle = sel ? DREAM_INK : '#7a6aa0'; ctx.font = dreamFont(sel ? 19 : 17);
-      ctx.fillText(j === 2 ? 'Restablecer todo' : 'Volver', cx, y);
+      ctx.textAlign = 'center'; ctx.fillStyle = sel ? ARMY_SEL : ARMY_DIM; ctx.font = armyFont(sel ? 20 : 18);
+      ctx.fillText(j === 2 ? 'RESTABLECER TODO' : 'VOLVER', cx, y + 1);
       continue;
     }
-    ctx.textAlign = 'left'; ctx.fillStyle = sel ? DREAM_INK : '#6a5a90'; ctx.font = dreamFont(16, false);
-    ctx.fillText(j < 0 ? ACTIONS[i][1] : j ? 'Volumen efectos' : 'Volumen música', cx - 200, y);
+    ctx.textAlign = 'left'; ctx.fillStyle = sel ? ARMY_SEL : ARMY_DIM; ctx.font = typeFont(15, sel);
+    ctx.fillText(j < 0 ? ACTIONS[i][1] : j ? 'Volumen efectos' : 'Volumen música', cx - 210, y);
     if (j < 0) {
       const waiting = sel && cfgWait;
-      ctx.textAlign = 'right'; ctx.font = dreamFont(17);
-      ctx.fillStyle = waiting ? `rgba(160,90,140,${0.55 + Math.sin(frame * 0.2) * 0.45})` : DREAM_INK;
-      ctx.fillText(waiting ? 'pulsa una tecla…' : keyName(CFG.keys[ACTIONS[i][0]]), cx + 200, y);
-    } else { // barra de volumen
+      ctx.textAlign = 'right'; ctx.font = typeFont(16);
+      ctx.fillStyle = waiting ? `rgba(255,154,90,${0.55 + Math.sin(frame * 0.2) * 0.45})` : ARMY_TEXT;
+      ctx.fillText(waiting ? 'pulsa una tecla…' : keyName(CFG.keys[ACTIONS[i][0]]), cx + 210, y);
+    } else { // volumen: rayitas como un cargador
       const v = CFG[j ? 'sfx' : 'music'];
-      ctx.fillStyle = '#e4dcf8'; ctx.beginPath(); ctx.roundRect(cx + 40, y - 7, 130, 14, 7); ctx.fill();
-      if (v) { ctx.fillStyle = lin(cx + 40, 0, cx + 170, 0, '#ff9ad0', '#a07ae8'); ctx.beginPath(); ctx.roundRect(cx + 40, y - 7, 130 * v / 10, 14, 7); ctx.fill(); }
-      ctx.textAlign = 'right'; ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(14); ctx.fillText(v * 10 + '%', cx + 215, y);
+      for (let k = 0; k < 10; k++) { ctx.fillStyle = k < v ? '#d8c060' : 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.roundRect(cx + 30 + k * 13, y - 7, 10, 14, 2); ctx.fill(); }
+      ctx.textAlign = 'right'; ctx.fillStyle = ARMY_TEXT; ctx.font = typeFont(14); ctx.fillText(v * 10 + '%', cx + 210, y);
     }
   }
-  ctx.textAlign = 'center'; ctx.fillStyle = DREAM_SOFT; ctx.font = dreamFont(14);
+  ctx.textAlign = 'center'; ctx.fillStyle = ARMY_DIM; ctx.font = armyFont(14);
   if (cfgScroll > 0) ctx.fillText('▲', cx, CFG_Y0 - 24);
   if (cfgScroll < n - CFG_ROWS) ctx.fillText('▼', cx, CFG_Y0 + CFG_ROWS * CFG_DY - 8);
-  menuHint(cfgWait ? 'pulsa la tecla nueva  ·  ESC cancelar' : '↑ ↓ elegir  ·  ENTER cambiar tecla  ·  ← → volumen  ·  ESC volver');
+  armyHint(cfgWait ? 'pulsa la tecla nueva  ·  ESC cancelar' : '↑ ↓ elegir  ·  ENTER cambiar tecla  ·  ← → volumen  ·  ESC volver');
 }
-function drawCharsCloud() {
-  trailBubbles(115, 385, 290, 350, 3);
-  const cx = 580, cy = 262;
-  dreamBubble(cx, cy, 680, 470);
-  ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(26); ctx.fillText('Personajes', cx, 70);
+// ---------- menú de personajes con el estilo del juego: el cuarto del sótano, placas de soldado y expediente militar ----------
+const armyFont = px => `${px}px Impact, "Arial Black", sans-serif`;
+const typeFont = (px, bold = true) => `${bold ? 'bold ' : ''}${px}px "Courier New", monospace`;
+const barracksCv = mkCanvas(W * DPR, H * DPR), barracksX = barracksCv.getContext('2d');
+let barracksOk = false;
+function drawBarracks() { // el primer cuarto del Sótano, dibujado una sola vez
+  if (!barracksOk) {
+    barracksOk = true;
+    const prevCur = cur, rand = mulberry(4242);
+    cur = { stains: Array.from({ length: 7 }, () => ({ x: L + 40 + rand() * (R - L - 80), y: TOP + 40 + rand() * (BOT - TOP - 80), rx: 15 + rand() * 40, ry: 10 + rand() * 20, a: 0.04 + rand() * 0.06 })) };
+    try { withCtx(barracksX, () => { drawWalls(ISAAC_LEVELS[0], rand); drawFloor(ISAAC_LEVELS[0], rand); }); } finally { cur = prevCur; }
+  }
+  ctx.drawImage(barracksCv, 0, 0, W, H);
+  ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(0, 0, W, H);
+}
+function armyTitle(t, y = 34) {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = armyFont(30);
+  ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillText(t, CX + 2, y + 3);
+  ctx.fillStyle = '#e8d8a0'; ctx.fillText(t, CX, y);
+}
+function armyHint(t) { ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = 'rgba(232,216,160,.8)'; ctx.font = typeFont(14); ctx.fillText(t, CX, 548); }
+function wrapLines(text, maxW) {
+  const lines = []; let line = '';
+  for (const w of text.split(' ')) { const t = line ? line + ' ' + w : w; if (line && ctx.measureText(t).width > maxW) { lines.push(line); line = w; } else line = t; }
+  if (line) lines.push(line);
+  return lines;
+}
+function dogTag(x, y, w, h, sel, open) { // placa de identificación metálica
+  ctx.save(); ctx.translate(x, y);
+  if (sel) { ctx.shadowColor = 'rgba(255,214,90,.9)'; ctx.shadowBlur = 16; }
+  ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, 12);
+  ctx.fillStyle = open ? lin(0, -h / 2, 0, h / 2, '#e4e8ec', '#a8b0b8', '#6a727c') : lin(0, -h / 2, 0, h / 2, '#6a6e74', '#44484e', '#2a2c30'); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = sel ? '#ffd65a' : '#2a2e34'; ctx.lineWidth = sel ? 3 : 1.6; ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(-w / 2 + 4, -h / 2 + 4, w - 8, h - 8, 9); ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 1; ctx.stroke(); // borde estampado
+  ell(-w / 2 + 11, -h / 2 + 11, 3.2, 3.2); ctx.fillStyle = '#1a1c20'; ctx.fill(); // agujero de la cadena
+  ctx.restore();
+}
+function drawCharsCloud() { // galería: todo el pelotón en placas
+  drawBarracks();
+  armyTitle('EL PELOTÓN');
   CHARS.forEach((c, i) => {
-    const x = cx + (i % 5 - 2) * 122, y = 120 + Math.floor(i / 5) * 86, open = isUnlocked(c), sel = i === galIdx;
-    roundBubble(x, y - 6, 27, sel);
-    if (open) drawCharIcon(c, x, y + 4, 0.62); else drawCharLocked(c, x, y + 4, 0.62);
-    ctx.textAlign = 'center'; ctx.fillStyle = open ? DREAM_INK : '#8a7aa8'; ctx.font = dreamFont(12); ctx.fillText(open ? c.name : '???', x, y + 32);
+    const x = 160 + (i % 5) * 160, y = 112 + Math.floor(i / 5) * 92, open = isUnlocked(c), sel = i === galIdx;
+    dogTag(x, y, 144, 80, sel, open);
+    if (open) drawCharIcon(c, x, y + 2 + (sel ? Math.sin(frame * 0.15) * 2 : 0), 0.58); else drawCharLocked(c, x, y + 2, 0.58);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = armyFont(13);
+    ctx.fillStyle = open ? '#1e2228' : '#9aa0a8'; ctx.fillText((open ? c.name : '???').toUpperCase(), x, y + 30);
   });
-  const gc = CHARS[galIdx], go = isUnlocked(gc);
-  ctx.fillStyle = go ? '#5a9a4a' : '#a05a8a'; ctx.font = dreamFont(15);
-  ctx.fillText(go ? gc.name + ' · ¡Desbloqueado!' : '🔒 ' + UNLOCKS[gc.name].req, cx, 470);
-  menuHint('flechas para mirar  ·  ENTER o ESC para volver');
+  const gc = CHARS[galIdx], go = isUnlocked(gc); // tira de papel con la info del elegido
+  ctx.save(); ctx.translate(CX, 478); ctx.rotate(-0.008);
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(-300 + 4, -20 + 4, 600, 40);
+  ctx.fillStyle = '#f0e6c8'; ctx.fillRect(-300, -20, 600, 40);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = typeFont(15);
+  ctx.fillStyle = go ? '#2a2010' : '#8a1a10';
+  ctx.fillText(go ? `${gc.name.toUpperCase()} · ${gc.desc}` : 'BLOQUEADO · ' + UNLOCKS[gc.name].req, 0, 1);
+  ctx.restore();
+  armyHint('flechas para mirar  ·  ENTER o ESC para volver');
 }
 function drawSelect() {
-  dreamSky();
-  const c = CHARS[selIdx], open = isUnlocked(c);
+  drawBarracks();
+  const c = CHARS[selIdx], open = isUnlocked(c), n = CHARS.length;
   if (selShake > 0) selShake--;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#f2ecff'; ctx.font = dreamFont(32); ctx.fillText('¿Con quién vas a soñar?', CX, 42);
-  const bx = 260 + Math.sin(selShake * 1.3) * selShake * 0.8;
-  dreamBubble(bx, 255, 330, 300);
-  if (open) drawCharShaded(c, bx, 268 + Math.sin(frame * 0.06) * 5, 3.6, 'B', frame * 0.12, 0);
-  else drawCharLocked(c, bx, 268, 3.6);
-  ctx.fillStyle = '#f2ecff'; ctx.font = dreamFont(26); ctx.fillText('◀', 62, 255); ctx.fillText('▶', 458, 255);
-  const ix = 700; // nube con la información
-  dreamBubble(ix, 255, 440, 340);
-  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(28); ctx.fillText(open ? c.name : '???', ix, 125);
+  armyTitle('ELIGE A TU SOLDADO');
+  // el soldado, parado en el cuarto bajo un foco
+  const bx = 285 + Math.sin(selShake * 1.3) * selShake * 0.8, by = 265;
+  ctx.fillStyle = rad(bx, by + 60, 170, 'rgba(255,240,190,.28)', 'rgba(255,240,190,.08)', 'rgba(255,240,190,0)'); ell(bx, by + 60, 170, 110); ctx.fill();
+  if (open) drawCharShaded(c, bx, by + Math.sin(frame * 0.06) * 4, 3.4, 'B', frame * 0.12, 0);
+  else drawCharLocked(c, bx, by, 3.4);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = armyFont(34);
+  for (const [t, x] of [['◀', 110], ['▶', 460]]) { ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillText(t, x + 2, by + 3); ctx.fillStyle = '#e8d8a0'; ctx.fillText(t, x, by); }
+  // expediente: carpeta de cartón con una hoja escrita a máquina
+  ctx.save(); ctx.translate(712, 258); ctx.rotate(0.012);
+  ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(-172 + 6, -172 + 6, 344, 348);
+  ctx.fillStyle = '#c8a868'; ctx.beginPath(); ctx.roundRect(-172, -172, 120, 24, [8, 8, 0, 0]); ctx.fill(); // pestaña
+  ctx.fillStyle = lin(0, -160, 0, 176, '#d8bc7c', '#c0a060'); ctx.fillRect(-172, -160, 344, 336);
+  ctx.save(); ctx.rotate(-0.025); ctx.fillStyle = '#f4ecd4'; ctx.fillRect(-156, -146, 312, 308); ctx.restore(); // hoja
+  ctx.strokeStyle = '#8a8a92'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(110, -168, 16, 46, 8); ctx.stroke(); // clip
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#6a5a3a'; ctx.font = typeFont(12); ctx.fillText(`EXPEDIENTE Nº ${String(selIdx + 1).padStart(2, '0')} / ${n}`, -138, -126);
+  ctx.fillStyle = '#2a2010'; ctx.font = typeFont(26); ctx.fillText(open ? c.name.toUpperCase() : '???', -138, -96);
+  ctx.strokeStyle = 'rgba(42,32,16,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-138, -78); ctx.lineTo(138, -78); ctx.stroke();
   if (open) {
-    ctx.fillStyle = DREAM_SOFT; ctx.font = 'italic ' + dreamFont(15, false); ctx.fillText('Estilo: ' + c.ref, ix, 155);
-    ctx.fillStyle = '#4a3a6a'; ctx.font = dreamFont(14, false); ctx.fillText(c.desc, ix, 182);
-    const stats = [['VIDA', c.hp / 12], ['DAÑO', c.dmg / 6], ['VELOCIDAD', c.speed / 5.5], ['CADENCIA', (60 / c.delay) / 6.5], ['ALCANCE', c.range / 65]];
-    stats.forEach(([n, v], i) => {
-      const y = 218 + i * 28;
-      ctx.textAlign = 'left'; ctx.fillStyle = '#6a5a90'; ctx.font = dreamFont(12); ctx.fillText(n, ix - 165, y);
-      ctx.fillStyle = '#e4dcf8'; ctx.beginPath(); ctx.roundRect(ix - 70, y - 7, 230, 14, 7); ctx.fill();
-      ctx.fillStyle = lin(ix - 70, 0, ix + 160, 0, '#ff9ad0', '#a07ae8'); ctx.beginPath(); ctx.roundRect(ix - 70, y - 7, 230 * clamp(v, 0.05, 1), 14, 7); ctx.fill();
+    ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(13); ctx.fillText('ESPECIALIDAD: ' + c.ref.toUpperCase(), -138, -62);
+    ctx.fillStyle = '#2a2010'; ctx.font = typeFont(13, false);
+    wrapLines(c.desc, 276).forEach((l, i) => ctx.fillText(l, -138, -38 + i * 17));
+    const stats = [['VIDA', c.hp / 14], ['DAÑO', c.dmg / 7], ['VELOCIDAD', c.speed / 4.8], ['CADENCIA', (60 / c.delay) / 8], ['ALCANCE', c.range / 60]];
+    stats.forEach(([name, v], i) => { // barras como cargadores de balas
+      const y = 22 + i * 26, k = Math.round(clamp(v, 0.1, 1) * 10);
+      ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(12); ctx.fillText(name, -138, y);
+      for (let j = 0; j < 10; j++) { ctx.fillStyle = j < k ? '#55602a' : 'rgba(80,70,40,.18)'; ctx.beginPath(); ctx.roundRect(-34 + j * 17, y - 7, 13, 14, 3); ctx.fill(); }
     });
-    ctx.textAlign = 'center';
   } else {
-    ctx.fillStyle = '#a05a8a'; ctx.font = dreamFont(40); ctx.fillText('🔒', ix, 200);
-    ctx.fillStyle = '#6a5a90'; ctx.font = dreamFont(16, false); ctx.fillText('Para soñar con este personaje:', ix, 250);
-    ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(18); ctx.fillText(UNLOCKS[c.name].req, ix, 280);
+    ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(13); ctx.fillText('INFORMACIÓN CLASIFICADA', -138, -58);
+    ctx.fillStyle = '#2a2010'; ctx.font = typeFont(13, false); ctx.fillText('Para reclutar a este soldado:', -138, -20);
+    ctx.font = typeFont(15); wrapLines(UNLOCKS[c.name].req, 276).forEach((l, i) => ctx.fillText(l, -138, 6 + i * 20));
+    for (let i = 0; i < 4; i++) { ctx.fillStyle = '#1a1408'; ctx.fillRect(-138, 64 + i * 22, 140 + (i * 47) % 130, 12); } // texto tachado en negro
   }
-  const n = CHARS.length; // carrusel de burbujitas: el elegido siempre en el centro
+  ctx.save(); ctx.translate(86, 146); ctx.rotate(-0.1); // sello
+  ctx.strokeStyle = open ? 'rgba(40,120,40,.75)' : 'rgba(180,20,20,.75)'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(-54, -14, 108, 28, 4); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.font = armyFont(18); ctx.fillText(open ? 'APTO' : 'BLOQUEADO', 0, 1);
+  ctx.restore();
+  ctx.restore();
+  // placas para elegir: el elegido siempre en el centro
   for (let k = -4; k <= 4; k++) {
-    const i = (selIdx + k + n) % n, ch = CHARS[i], x = CX + k * 96, y = 478 + Math.sin(frame * 0.05 + i) * 3;
-    ctx.save(); ctx.globalAlpha = 1 - Math.abs(k) * 0.12;
-    roundBubble(x, y - 6, 40, k === 0);
-    if (isUnlocked(ch)) drawCharIcon(ch, x, y + 6, 0.8); else drawCharLocked(ch, x, y + 6, 0.8);
+    const i = (selIdx + k + n) % n, ch = CHARS[i], x = CX + k * 92, y = 470;
+    ctx.save(); ctx.globalAlpha = 1 - Math.abs(k) * 0.13;
+    dogTag(x, y, k ? 72 : 80, k ? 64 : 72, k === 0, isUnlocked(ch));
+    if (isUnlocked(ch)) drawCharIcon(ch, x, y + 6, k ? 0.6 : 0.68); else drawCharLocked(ch, x, y + 6, 0.6);
     ctx.restore();
   }
-  ctx.fillStyle = 'rgba(235,225,255,.8)'; ctx.font = dreamFont(13); ctx.textAlign = 'center'; ctx.fillText(`${selIdx + 1} / ${n}`, CX, 420);
-  menuHint('◀ ▶ elegir  ·  ENTER jugar  ·  ESC menú');
+  armyHint('◀ ▶ elegir  ·  ENTER jugar  ·  ESC menú');
 }
-function drawUnlockToasts() { // aviso de personaje nuevo dentro de una burbuja de sueño
+function drawUnlockToasts() { // aviso de recluta nuevo en una placa militar
   const t = unlockToasts[0];
   if (!t) return;
   if (++t.t > 300) { unlockToasts.shift(); return; }
   const prevCtx = ctx; ctx = mainCtx; ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.globalAlpha = clamp(Math.min(t.t / 20, (300 - t.t) / 30), 0, 1);
   const x = W - 175, y = 78 - Math.max(0, 20 - t.t) * 3;
-  dreamBubble(x, y, 310, 112);
-  drawCharIcon(t.c, x - 92, y + 20, 0.85);
+  armyPanel(x, y, 310, 100);
+  drawCharIcon(t.c, x - 92, y + 16, 0.85);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = DREAM_SOFT; ctx.font = dreamFont(14); ctx.fillText('¡Nuevo personaje!', x + 35, y - 22);
-  ctx.fillStyle = DREAM_INK; ctx.font = dreamFont(20); ctx.fillText(t.c.name, x + 35, y + 2);
-  ctx.fillStyle = '#6a5a90'; ctx.font = dreamFont(12, false); ctx.fillText('ya está disponible', x + 35, y + 24);
+  ctx.fillStyle = ARMY_SEL; ctx.font = armyFont(16); ctx.fillText('¡NUEVO RECLUTA!', x + 35, y - 22);
+  ctx.fillStyle = ARMY_TEXT; ctx.font = typeFont(19); ctx.fillText(t.c.name.toUpperCase(), x + 35, y + 2);
+  ctx.fillStyle = ARMY_DIM; ctx.font = typeFont(12, false); ctx.fillText('se une al pelotón', x + 35, y + 24);
   ctx.restore(); ctx = prevCtx;
 }
 

@@ -1,0 +1,54 @@
+{
+  "image": "espia_disparo.png",
+  "character": "Espía",
+  "homenaje": "Sigilo",
+  "frameWidth": 160,
+  "frameHeight": 160,
+  "columns": 6,
+  "rows": 6,
+  "pivot": {
+    "x": 80,
+    "y": 150,
+    "note": "punto de los pies dentro de cada cuadro"
+  },
+  "fireFrame": 2,
+  "projectile": "bullet",
+  "animations": {
+    "shoot_down": {
+      "row": 0,
+      "frames": 6,
+      "fps": 18,
+      "loop": false
+    },
+    "shoot_up": {
+      "row": 1,
+      "frames": 6,
+      "fps": 18,
+      "loop": false
+    },
+    "shoot_left": {
+      "row": 2,
+      "frames": 6,
+      "fps": 18,
+      "loop": false
+    },
+    "shoot_right": {
+      "row": 3,
+      "frames": 6,
+      "fps": 18,
+      "loop": false
+    },
+    "tear": {
+      "row": 4,
+      "frames": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "tear_splash": {
+      "row": 5,
+      "frames": 6,
+      "fps": 20,
+      "loop": false
+    }
+  }
+}

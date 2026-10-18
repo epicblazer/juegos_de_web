@@ -38,5 +38,55 @@
     "name": "Lanzallamas",
     "file": "lanzallamas",
     "projectile": "flame"
+  },
+  {
+    "name": "Médico",
+    "file": "medico",
+    "projectile": "tear"
+  },
+  {
+    "name": "Escopetero",
+    "file": "escopetero",
+    "projectile": "bullet"
+  },
+  {
+    "name": "Ametrallador",
+    "file": "ametrallador",
+    "projectile": "bullet"
+  },
+  {
+    "name": "Paracaidista",
+    "file": "paracaidista",
+    "projectile": "tear"
+  },
+  {
+    "name": "Radiooperador",
+    "file": "radiooperador",
+    "projectile": "bolt"
+  },
+  {
+    "name": "Ingeniero",
+    "file": "ingeniero",
+    "projectile": "bullet"
+  },
+  {
+    "name": "Explorador",
+    "file": "explorador",
+    "projectile": "arrow"
+  },
+  {
+    "name": "Tanquista",
+    "file": "tanquista",
+    "projectile": "bullet"
+  },
+  {
+    "name": "Marinero",
+    "file": "marinero",
+    "projectile": "tear"
+  },
+  {
+    "name": "Espía",
+    "file": "espia",
+    "projectile": "bullet"
   }
 ]
