@@ -220,7 +220,7 @@ cv.addEventListener('pointerdown', e => {
   }
   if (state === 'select') {
     const r = cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width;
-    const gx = fx * W, gy = (e.clientY - r.top) / r.height * H, di = DIFF_LV.findIndex((_, k) => { const [x, y] = DIFF_BTN(k); return Math.abs(gx - x) < 52 && Math.abs(gy - y) < 20; });
+    const gx = fx * W, gy = (e.clientY - r.top) / r.height * H, di = DIFF_LV.findIndex((_, k) => { const [x, y] = DIFF_BTN(k); return Math.abs(gx - x) < 44 && Math.abs(gy - y) < 20; });
     if (di >= 0) { setDiff(di); return; }
     if (fx < 0.3) { onKey('ArrowLeft'); return; }
     if (fx > 0.7) { onKey('ArrowRight'); return; }
@@ -1606,13 +1606,19 @@ const isFinalLevel = () => depth() === ISAAC_LEVELS.length - 1 && !curLevel.secr
 const tier = () => floorNum - 1;
 // la dificultad que eliges antes de jugar (pantalla de elegir soldado). SOLDADO es el juego normal
 const DIFF_LV = [
+  { name: 'CIVIL', tag: 'SÚPER FÁCIL', col: '#60c8e8', desc: '10 veces más fácil: todo el juego es un paseo', hearts: 8, inv: 3, spd: 0.45, fire: 0.25, shot: 0.55, bossHp: 0.1, enHp: 0.25, rush: 0, elite: 0, extra: -4, art: 0, soul: 4,
+    rest: 0.85, thin: 0.75, soft: true, dodge: 0.5, cup: 6, fet: 10, bone: 0.5 }, // enHp: vida de los enemigos normales · dodge: probabilidad de que un golpe no te haga nada
   { name: 'RECLUTA', tag: 'FÁCIL', col: '#7ac850', desc: '+2 corazones, enemigos lentos y jefes mucho más fáciles', hearts: 4, inv: 1.5, spd: 0.8, fire: 0.65, shot: 0.8, bossHp: 0.5, rush: 0, elite: 0, extra: -1, art: 0.4, soul: 1.8,
     rest: 0.45, thin: 0.35, soft: true, cup: 1.6, fet: 2, bone: 0.8 }, // rest: los jefes descansan más · thin: parte de las balas de los jefes no sale · soft: los golpes de un corazón quitan medio
   { name: 'SOLDADO', tag: 'NORMAL', col: '#e8c860', desc: 'El juego como fue pensado', hearts: 0, inv: 1, spd: 1, fire: 1, shot: 1, bossHp: 1, rush: 1, elite: 1, extra: 0, art: 1, soul: 1 },
   { name: 'VETERANO', tag: 'DIFÍCIL', col: '#e05040', desc: 'Enemigos rápidos y jefes con más vida', hearts: 0, inv: 0.8, spd: 1.15, fire: 1.25, shot: 1.15, bossHp: 1.3, rush: 1.3, elite: 1.6, extra: 1, art: 1.3, soul: 0.8 },
 ];
-let diffIdx = 1;
-try { const d = +localStorage.getItem('isaac_dificultad'); if (d >= 0 && d <= 2 && localStorage.getItem('isaac_dificultad') !== null) diffIdx = d; } catch (e) { }
+let diffIdx = 2;
+try { // 'isaac_dificultad' era la clave de antes (sin CIVIL): se corre un lugar
+  const n = localStorage.getItem('isaac_dif'), o = localStorage.getItem('isaac_dificultad');
+  const d = n !== null ? +n : o !== null ? +o + 1 : 2;
+  if (d >= 0 && d < DIFF_LV.length) diffIdx = d;
+} catch (e) { }
 const DL = () => DIFF_LV[diffIdx];
 const DIFF = {
   spd: () => Math.min(1.5, 1 + tier() * 0.06) * DL().spd,             // velocidad de los enemigos
@@ -1947,7 +1953,7 @@ function mkEnemy(type, x, y) {
     return { ...b, ...d, hp, maxHp: hp, boss: true, state: 'idle', timer: 80, spawn: 60, cd: 40, spin: 0 };
   }
   const d = EDEF[type], m = 1 + (floorNum - 1) * 0.25;
-  const e = { ...b, ...d, hp: d.hp * m };
+  const e = { ...b, ...d, hp: d.hp * m * (DL().enHp || 1) };
   if (type === 'shooter' || type === 'invader' || type === 'skeleton') e.cd = ri(60, 120);
   if (type === 'charger') { e.dir = [1, 0]; e.charging = 0; e.ccd = 0; }
   if (type === 'ghost') { e.color = pick(GHOST_COLORS); e.vx = 0; e.vy = 0; }
@@ -2783,6 +2789,7 @@ function hurt(n) {
     p.shield--; p.inv = 60; sfx('shield'); burst(p.x, p.y - 12, '#ffe680', 18);
     return;
   }
+  if (DL().dodge && !retro.on && Math.random() < DL().dodge) { p.inv = 50; sfx('swoosh'); burst(p.x, p.y - 12, '#60c8e8', 12); return; } // CIVIL: la mitad de los golpes no te hacen nada
   if (DL().soft && n > 1) n--; // RECLUTA: los golpes fuertes pegan menos
   p.deal.hits++; // recibir daño baja la probabilidad de Diablo/Ángel
   p.hp -= n; p.inv = Math.round(70 * DL().inv); shake = 8;
@@ -3019,10 +3026,10 @@ const isConfirm = c => c === 'Enter' || c === 'Space';
 function setDiff(i) {
   i = clamp(i, 0, DIFF_LV.length - 1); if (i === diffIdx) { sfx('bump'); return; }
   diffIdx = i; diffT = frame; sfx('select');
-  try { localStorage.setItem('isaac_dificultad', String(i)); } catch (e) { }
+  try { localStorage.setItem('isaac_dif', String(i)); } catch (e) { }
 }
 let diffT = -99;
-const DIFF_BTN = i => [175 + i * 110, 408]; // botones de dificultad (centro) en la pantalla de elegir
+const DIFF_BTN = i => [285 + (i - 1.5) * 88, 408]; // botones de dificultad (centro) en la pantalla de elegir
 function onKey(c, raw) {
   initAudio();
   // código secreto del minijuego retro (con la tecla física, aunque esté reasignada)
@@ -7247,19 +7254,19 @@ function drawSelect() {
   drawDiffPicker();
   armyHint('◀ ▶ soldado  ·  ▲ ▼ dificultad  ·  ENTER jugar  ·  ESC menú');
 }
-function drawDiffPicker() { // los tres botones de dificultad, debajo del soldado
+function drawDiffPicker() { // los cuatro botones de dificultad, debajo del soldado
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(232,216,160,.85)'; ctx.font = typeFont(12); ctx.fillText('DIFICULTAD', DIFF_BTN(1)[0], 380);
+  ctx.fillStyle = 'rgba(232,216,160,.85)'; ctx.font = typeFont(12); ctx.fillText('DIFICULTAD', 285, 380);
   DIFF_LV.forEach((d, i) => {
     const [x, y] = DIFF_BTN(i), on = i === diffIdx, pop = on ? 1 + Math.max(0, 1 - (frame - diffT) / 10) * 0.12 : 1;
     ctx.save(); ctx.translate(x, y); ctx.scale(pop, pop);
-    ctx.fillStyle = on ? 'rgba(20,16,8,.85)' : 'rgba(20,16,8,.5)'; ctx.beginPath(); ctx.roundRect(-50, -17, 100, 34, 6); ctx.fill();
+    ctx.fillStyle = on ? 'rgba(20,16,8,.85)' : 'rgba(20,16,8,.5)'; ctx.beginPath(); ctx.roundRect(-41, -17, 82, 34, 6); ctx.fill();
     ctx.strokeStyle = on ? d.col : 'rgba(232,216,160,.25)'; ctx.lineWidth = on ? 2.5 : 1.2; ctx.stroke();
-    ctx.fillStyle = on ? d.col : 'rgba(232,216,160,.45)'; ctx.font = armyFont(15); ctx.fillText(d.name, 0, -3);
+    ctx.fillStyle = on ? d.col : 'rgba(232,216,160,.45)'; ctx.font = armyFont(13); ctx.fillText(d.name, 0, -3);
     ctx.font = typeFont(9); ctx.fillText(d.tag, 0, 10);
     ctx.restore();
   });
-  ctx.fillStyle = DL().col; ctx.font = typeFont(11, false); ctx.fillText(DL().desc, DIFF_BTN(1)[0], 436);
+  ctx.fillStyle = DL().col; ctx.font = typeFont(11, false); ctx.fillText(DL().desc, 285, 436);
 }
 function drawUnlockToasts() { // aviso de recluta nuevo en una placa militar
   const t = unlockToasts[0];
