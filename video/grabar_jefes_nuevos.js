@@ -154,6 +154,8 @@ const BOTS = `(() => {
     const press = c => { f.botW = 0; fwKey(c); };
     if (f.bub) { const b = f.bub; if (b.n >= b.lines[b.i].length && f.botW > 50) press('Enter'); }
     if (f.phase === 'mercy') { if (f.botW > 70) press(f.btn !== 3 ? 'ArrowRight' : 'Enter'); return; } // PIEDAD
+    if (f.phase === 'fmenu') { if (f.botW > 60) press('Enter'); return; } // el Final: LUCHAR...
+    if (f.phase === 'faim') { if (Math.abs(f.aimX - 480) < 10) press('Enter'); return; } // ...y a la diana
     if (!['atk', 'soul', 'talk', 'loadTalk'].includes(f.phase)) { f.botIn = null; return; }
     const s = f.soul, b = FW_BOX;
     if (f.seg === 4 && f.phase === 'atk' && !f.loads) { if (f.hp > 8) f.hp = 8; f.botIn = { l: false, r: false, u: false, d: false }; return; } // se deja romper el corazón una vez a propósito: así se ve cuando Flowey carga su partida
