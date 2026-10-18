@@ -206,6 +206,11 @@ cv.addEventListener('pointerdown', e => {
     if (j === 0 || j === 1) { onKey(fx < CX + 105 ? 'ArrowLeft' : 'ArrowRight'); return; }
     if (j < 0) return; // asignar teclas solo tiene sentido con teclado
   }
+  if (state === 'menu' && menuSub === 'chars') {
+    const r = cv.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width * W, fy = (e.clientY - r.top) / r.height * H;
+    const i = CHARS.findIndex((_, k) => { const [x, y] = galTagPos(k); return Math.abs(fx - x) < 40 && Math.abs(fy - y) < 34; });
+    if (i >= 0) { if (i !== galIdx) { galIdx = i; galT = frame; sfx('select'); } return; }
+  }
   if (state === 'menu' && !menuSub) {
     const r = cv.getBoundingClientRect(), fy = (e.clientY - r.top) / r.height * H;
     const i = MENU_ITEMS.findIndex((_, k) => Math.abs(fy - MENU_Y(k)) < 26);
@@ -1395,16 +1400,16 @@ function maggyDress() { // vestidito con un corazón
 }
 
 const CHARS = [
-  { name: 'Isaac Soldado', ref: 'The Binding of Isaac', desc: 'Equilibrado. Lágrimas clásicas.', hp: 6, speed: 3.2, dmg: 3.5, delay: 22, range: 45, shotSpeed: 8, tear: 'tear', snd: 'shoot',
+  { name: 'Isaac Soldado', ref: 'Todoterreno', desc: 'Equilibrado. Lágrimas clásicas.', hp: 6, speed: 3.2, dmg: 3.5, delay: 22, range: 45, shotSpeed: 8, tear: 'tear', snd: 'shoot',
     body: w => isaacBody(w, ['#4e9a2e', '#78c850', '#4e9a2e', '#234a14']), head: f => isaacHead(f, ISAAC_PAL) },
   // personajes de Isaac
-  { name: 'Demonio', ref: 'Azazel', desc: 'Lágrimas infernales que cruzan rocas.', hp: 6, speed: 3.4, dmg: 4.2, delay: 26, range: 40, shotSpeed: 8, tear: 'hell', snd: 'fire', pierce: true, spectral: true,
+  { name: 'Demonio', ref: 'Fuego infernal', desc: 'Lágrimas infernales que cruzan rocas.', hp: 6, speed: 3.4, dmg: 4.2, delay: 26, range: 40, shotSpeed: 8, tear: 'hell', snd: 'fire', pierce: true, spectral: true,
     body: demonBody, head: f => isaacHead(f, { ...ISAAC_PAL, skin: '#3e2e3c', line: '#0a0408', hat: demonHat, face: demonFace }) },
-  { name: 'Alma Perdida', ref: 'The Lost', desc: 'Un solo corazón, muy veloz. Cruza rocas.', hp: 2, speed: 4.4, dmg: 3.4, delay: 16, range: 55, shotSpeed: 9.5, tear: 'tear', snd: 'shoot', spectral: true,
+  { name: 'Alma Perdida', ref: 'Velocidad', desc: 'Un solo corazón, muy veloz. Cruza rocas.', hp: 2, speed: 4.4, dmg: 3.4, delay: 16, range: 55, shotSpeed: 9.5, tear: 'tear', snd: 'shoot', spectral: true,
     body: ghostly(w => baseBody(w, '#c8d4ea', '#eef4ff', '#c8d4ea', '#6a7a9a')), head: ghostly(f => isaacHead(f, { ...ISAAC_PAL, skin: '#eef4ff', line: '#6a7a9a', hat: lostHat, face: lostFace })) },
-  { name: 'Judas', ref: 'Judas', desc: 'Poca vida, mucho daño. Lágrimas de sangre.', hp: 4, speed: 3.3, dmg: 5.2, delay: 24, range: 45, shotSpeed: 8.5, tear: 'red', snd: 'shoot',
+  { name: 'Judas', ref: 'Daño', desc: 'Poca vida, mucho daño. Lágrimas de sangre.', hp: 4, speed: 3.3, dmg: 5.2, delay: 24, range: 45, shotSpeed: 8.5, tear: 'red', snd: 'shoot',
     ...isaacTint('#f0a050', '#5a2a08', judasHat, judasRobe, judasFace) },
-  { name: 'Magdalena', ref: 'Magdalene', desc: 'Muchísima vida, pero lenta.', hp: 12, speed: 2.6, dmg: 3.3, delay: 24, range: 42, shotSpeed: 7.5, tear: 'tear', snd: 'shoot',
+  { name: 'Magdalena', ref: 'Resistencia', desc: 'Muchísima vida, pero lenta.', hp: 12, speed: 2.6, dmg: 3.3, delay: 24, range: 42, shotSpeed: 7.5, tear: 'tear', snd: 'shoot',
     ...isaacTint('#f4a0c0', '#6a1a3a', maggyHat, maggyDress, maggyFace) },
   // soldados. range = alcance del tajo en los de cuerpo a cuerpo
   { name: 'Comando Cuchillo', ref: 'Cuerpo a cuerpo', desc: 'Tajos de cerca muy fuertes. Corta balas.', hp: 8, speed: 3.8, dmg: 6, delay: 16, range: 16, shotSpeed: 2, tear: 'slash', snd: 'slash',
@@ -6690,8 +6695,8 @@ function enterMenu() {
 function menuKey(c) {
   const up = c === 'ArrowUp' || c === 'KeyW', down = c === 'ArrowDown' || c === 'KeyS';
   if (menuSub === 'chars') { // galería: flechas para mirar cada personaje
-    const d = c === 'ArrowLeft' || c === 'KeyA' ? -1 : c === 'ArrowRight' || c === 'KeyD' ? 1 : up ? -5 : down ? 5 : 0;
-    if (d) { galIdx = (galIdx + d + CHARS.length) % CHARS.length; sfx('select'); }
+    const d = c === 'ArrowLeft' || c === 'KeyA' ? -1 : c === 'ArrowRight' || c === 'KeyD' ? 1 : up ? -GAL_COLS : down ? GAL_COLS : 0;
+    if (d) { galIdx = (galIdx + d + CHARS.length) % CHARS.length; galT = frame; sfx('select'); }
     else if (c === 'Escape' || isConfirm(c)) { menuSub = null; sfx('select'); }
     return;
   }
@@ -6701,7 +6706,7 @@ function menuKey(c) {
   else if (c === 'Escape') { state = 'title'; sfx('select'); }
   else if (isConfirm(c)) {
     if (menuIdx === 0) enterSelect();
-    else if (menuIdx === 1) { menuSub = 'chars'; galIdx = 0; sfx('select'); }
+    else if (menuIdx === 1) { menuSub = 'chars'; galIdx = 0; galT = frame; sfx('select'); }
     else if (menuIdx === 2) { menuSub = 'stats'; sfx('select'); }
     else if (menuIdx === 3) { if (AC) { muted = !muted; master.gain.value = muted ? 0 : 0.6; } sfx('select'); }
     else if (menuIdx === 4) { menuSub = 'config'; cfgIdx = 0; cfgScroll = 0; sfx('select'); }
@@ -6857,25 +6862,110 @@ function dogTag(x, y, w, h, sel, open) { // placa de identificación metálica
   ell(-w / 2 + 11, -h / 2 + 11, 3.2, 3.2); ctx.fillStyle = '#1a1c20'; ctx.fill(); // agujero de la cadena
   ctx.restore();
 }
-function drawCharsCloud() { // galería: todo el pelotón en placas
+// rango e historia de cada soldado (se leen en su expediente, en Personajes)
+const LORE = {
+  'Isaac Soldado': ['Soldado raso', 'El más pequeño del pelotón verde. Se alistó con un casco que le queda grande y una cartuchera llena de lágrimas. Nadie sabe por qué llora tanto, pero cada lágrima pega como una bala. Juró bajar hasta el fondo del sótano y no volver hasta ganar la guerra.'],
+  'Demonio': ['Desertor del infierno', 'Cayó en el sótano durante un bombardeo y nadie se atrevió a echarlo. Dice que antes trabajaba para el Diablo, pero renunció porque no le daban vacaciones. Sus lágrimas queman y cruzan las rocas. El pelotón lo deja dormir lejos de las municiones, por si acaso.'],
+  'Alma Perdida': ['Fantasma del batallón', 'Era un soldado como cualquier otro hasta que pisó una mina en el Sótano II. Ahora flota entre las paredes, ligero como el humo, y sigue presentándose a pasar lista cada mañana. Un solo golpe lo desvanece, pero nadie corre más rápido que él.'],
+  'Judas': ['Cabo', 'Tiene fama de traidor porque una vez cambió las raciones del pelotón por treinta monedas. Jura que fue un malentendido. Tiene poca vida y mucho daño: dispara lágrimas de sangre con una puntería que da miedo. Nadie en el cuartel le presta dinero.'],
+  'Magdalena': ['Sargento', 'La sargento más dura del cuartel. Aguanta golpes que tumbarían a un tanque y después se sienta a tejer como si nada. Es lenta, pero cuando llega al frente nadie la mueve de ahí. Los reclutas le dicen "mamá" cuando creen que no los oye.'],
+  'Comando Cuchillo': ['Comando de élite', 'Perdió su rifle en su primera misión y descubrió que no lo necesitaba. Se mete entre los enemigos con su bandana roja y su cuchillo, y corta hasta las balas en el aire. Lleva una curita en el cachete que se niega a quitarse: dice que le da suerte.'],
+  'Granadero': ['Especialista en explosivos', 'Le encantan las explosiones desde que era chiquito. Lleva gafas en el casco porque ya le volaron las cejas tres veces. Sus granadas rebotan y revientan todo alrededor. En el cuartel tiene prohibido acercarse a la cocina.'],
+  'Francotirador': ['Tirador de precisión', 'Puede pasar horas quieto entre los matorrales sin parpadear. Habla poco, guiña un ojo cuando apunta y casi nunca falla. Sus balas atraviesan todo lo que encuentran. Dicen que una vez le dio a una mosca... desde el otro piso.'],
+  'Lanzallamas': ['Unidad de fuego', 'Nadie le ha visto la cara sin la máscara de gas. Su traje aguanta el fuego; su paciencia, no tanto. Cuando el sótano se llena de monstruos, simplemente prende el chorro y espera. Siempre huele a carbón y a malvaviscos quemados.'],
+  'Médico': ['Médico de campo', 'Sacó a medio pelotón del Sótano en la primera batalla. Siempre carga vendas, curitas y una sonrisa. Cada vez que limpia un cuarto se toma un momento para curarse. Odia que le digan "doctor": "soy médico de campo, no de consultorio".'],
+  'Escopetero': ['Infantería pesada', 'Viene de un pueblito donde todo se resolvía a escopetazos. Usa una gorra vieja con cartuchos en la cinta y dispara cinco perdigones a la vez. De lejos no le atina a nada, pero de cerca no hay monstruo que le aguante.'],
+  'Ametrallador': ['Apoyo de fuego', 'Lleva tantas balas encima que suena como sonaja al caminar. No apunta: dispara sin parar hasta que no queda nada en pie. Su lema es "si no le das con una, dale con cien". Gasta más munición que todo el pelotón junto.'],
+  'Paracaidista': ['Paracaidista', 'Saltó del avión equivocado y aterrizó justo en el sótano. En vez de quejarse, decidió quedarse. Es el más rápido del ejército y sus lágrimas cruzan las rocas como si nada. Nunca se quita las gafas de vuelo, aunque aquí abajo no haya cielo.'],
+  'Radiooperador': ['Comunicaciones', 'Escucha todo lo que pasa en el sótano con sus auriculares. Cuando ve a un enemigo, pide por radio disparos que lo persiguen hasta encontrarlo. La lucecita roja de su antena parpadea sin parar: dice que es para que la base sepa dónde está.'],
+  'Ingeniero': ['Ingeniero de combate', 'Arregla tanques con una llave inglesa y un chicle. Calcula cada ángulo para que sus balas reboten en las paredes y lleguen adonde nadie más puede. La linterna de su casco ilumina los pasillos más oscuros del sótano.'],
+  'Explorador': ['Explorador', 'Creció en el bosque y prefiere el arco a cualquier arma moderna. Dispara tres flechas a la vez y nunca se pierde, ni siquiera en las Profundidades. Según él, la pluma de su sombrero se la regaló un pájaro que le debía un favor.'],
+  'Tanquista': ['Piloto de tanque', 'Su tanque se atoró en la puerta del sótano, así que bajó a pie. Es lento como su máquina y aguanta los mismos golpes. Cada disparo suyo es un cañonazo. Huele a aceite y jura que no se baña hasta recuperar su tanque.'],
+  'Marinero': ['Infante de marina', 'Lo mandaron al mar, pero se equivocó de camino y llegó al sótano. Trajo su manguera de agua a presión y descubrió que atraviesa a cualquier monstruo. Saluda a la bandera cada mañana y le dice "cubierta" al piso.'],
+  'Espía': ['Agente secreto', 'Nadie sabe su nombre real, ni de qué bando es. Aparece y desaparece entre las sombras, y esquiva uno de cada tres golpes como si los viera venir. Nunca se quita los lentes oscuros, ni para dormir.'],
+};
+const GAL_COLS = 4;
+let galT = 0; // cuándo se abrió el expediente actual (para la animación)
+const galTagPos = i => [100 + (i % GAL_COLS) * 84, 112 + Math.floor(i / GAL_COLS) * 78];
+function drawCharsCloud() { // archivo del pelotón: placas a la izquierda, expediente abierto a la derecha
   drawBarracks();
-  armyTitle('EL PELOTÓN');
+  armyTitle('ARCHIVO DEL PELOTÓN');
   CHARS.forEach((c, i) => {
-    const x = 160 + (i % 5) * 160, y = 112 + Math.floor(i / 5) * 92, open = isUnlocked(c), sel = i === galIdx;
-    dogTag(x, y, 144, 80, sel, open);
-    if (open) drawCharIcon(c, x, y + 2 + (sel ? Math.sin(frame * 0.15) * 2 : 0), 0.58); else drawCharLocked(c, x, y + 2, 0.58);
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = armyFont(13);
-    ctx.fillStyle = open ? '#1e2228' : '#9aa0a8'; ctx.fillText((open ? c.name : '???').toUpperCase(), x, y + 30);
+    const [x, y] = galTagPos(i), open = isUnlocked(c), sel = i === galIdx;
+    dogTag(x, y, 74, 62, sel, open);
+    if (open) drawCharIcon(c, x + 2, y + 6 + (sel ? Math.sin(frame * 0.15) * 2 : 0), 0.5); else drawCharLocked(c, x + 2, y + 6, 0.5);
   });
-  const gc = CHARS[galIdx], go = isUnlocked(gc); // tira de papel con la info del elegido
-  ctx.save(); ctx.translate(CX, 478); ctx.rotate(-0.008);
-  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(-300 + 4, -20 + 4, 600, 40);
-  ctx.fillStyle = '#f0e6c8'; ctx.fillRect(-300, -20, 600, 40);
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = typeFont(15);
-  ctx.fillStyle = go ? '#2a2010' : '#8a1a10';
-  ctx.fillText(go ? `${gc.name.toUpperCase()} · ${gc.desc}` : 'BLOQUEADO · ' + UNLOCKS[gc.name].req, 0, 1);
+  drawDossier(CHARS[galIdx], galIdx);
+  armyHint('flechas para elegir  ·  ENTER o ESC para volver');
+}
+function drawDossier(c, idx) {
+  const open = isUnlocked(c), [rank, lore] = LORE[c.name] || ['Recluta', ''];
+  const k = clamp((frame - galT) / 10, 0, 1); // la hoja entra deslizándose
+  ctx.save(); ctx.translate(656, 290);
+  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(-232 + 7, -212 + 7, 464, 426);
+  ctx.fillStyle = '#c8a868'; ctx.beginPath(); ctx.roundRect(-232, -226, 140, 26, [8, 8, 0, 0]); ctx.fill(); // pestaña de la carpeta
+  ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(12); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(`Nº ${String(idx + 1).padStart(2, '0')} / ${CHARS.length}`, -220, -213);
+  ctx.fillStyle = lin(0, -212, 0, 214, '#d8bc7c', '#c0a060'); ctx.fillRect(-232, -212, 464, 426);
+  ctx.globalAlpha = k; ctx.translate((1 - k) * 26, 0); ctx.rotate(-0.012);
+  const PL = -218, PT = -198; // esquina de la hoja
+  ctx.fillStyle = '#f4ecd4'; ctx.fillRect(PL, PT, 436, 398);
+  // foto tipo polaroid sujeta con un clip
+  ctx.save(); ctx.translate(PL + 82, PT + 92); ctx.rotate(-0.06);
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(-64 + 3, -76 + 4, 128, 150);
+  ctx.fillStyle = '#fbfaf4'; ctx.fillRect(-64, -76, 128, 150);
+  ctx.fillStyle = open ? lin(0, -66, 0, 50, '#5a6430', '#262c12') : '#1a1a16'; ctx.fillRect(-56, -68, 112, 112);
+  ctx.save(); ctx.beginPath(); ctx.rect(-56, -68, 112, 112); ctx.clip();
+  if (open) drawCharShaded(c, 0, 4, 1.9, 'B', 0, 0); else drawCharLocked(c, 0, 4, 1.9);
   ctx.restore();
-  armyHint('flechas para mirar  ·  ENTER o ESC para volver');
+  ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(11); ctx.textAlign = 'center'; ctx.fillText(open ? c.name.toUpperCase() : '???', 0, 59);
+  ctx.strokeStyle = '#8a8a92'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(-46, -90, 14, 40, 7); ctx.stroke();
+  ctx.save(); ctx.translate(30, 34); ctx.rotate(-0.25); // sello sobre la foto
+  ctx.strokeStyle = open ? 'rgba(40,120,40,.8)' : 'rgba(180,20,20,.8)'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.roundRect(-44, -12, 88, 24, 3); ctx.stroke();
+  ctx.font = armyFont(15); ctx.textAlign = 'center'; ctx.fillText(open ? 'APTO' : 'BLOQUEADO', 0, 1);
+  ctx.restore();
+  ctx.restore();
+  // datos al lado de la foto
+  const DX = PL + 168;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#6a5a3a'; ctx.font = typeFont(11); ctx.fillText('EXPEDIENTE MILITAR · CONFIDENCIAL', DX, PT + 20);
+  ctx.fillStyle = '#2a2010'; ctx.font = typeFont(c.name.length > 13 ? 18 : 22); ctx.fillText(open ? c.name.toUpperCase() : '???', DX, PT + 44);
+  ctx.strokeStyle = 'rgba(42,32,16,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(DX, PT + 60); ctx.lineTo(PL + 420, PT + 60); ctx.stroke();
+  if (!open) { // expediente clasificado: requisito y todo tachado
+    ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(12); ctx.fillText('INFORMACIÓN CLASIFICADA', DX, PT + 80);
+    ctx.fillStyle = '#2a2010'; ctx.font = typeFont(12, false); ctx.fillText('Para reclutar a este soldado:', DX, PT + 106);
+    ctx.font = typeFont(13); wrapLines(UNLOCKS[c.name].req, 240).forEach((l, i) => ctx.fillText(l, DX, PT + 126 + i * 17));
+    ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(12); ctx.fillText('HISTORIA:', PL + 18, PT + 200);
+    for (let i = 0; i < 8; i++) { ctx.fillStyle = '#1a1408'; ctx.fillRect(PL + 18, PT + 216 + i * 21, 160 + (i * 67) % 240, 12); }
+    ctx.restore();
+    return;
+  }
+  ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(12);
+  ctx.fillText('RANGO: ' + rank.toUpperCase(), DX, PT + 78);
+  ctx.fillText('ESPECIALIDAD: ' + c.ref.toUpperCase(), DX, PT + 96);
+  const stats = [['VIDA', c.hp / 14, `${c.hp / 2} ♥`], ['DAÑO', c.dmg / 7, c.dmg.toFixed(1)], ['VELOCIDAD', c.speed / 4.8, c.speed.toFixed(1)],
+    ['CADENCIA', (60 / c.delay) / 8, (60 / c.delay).toFixed(1)], ['ALCANCE', c.range / 60, String(c.range)]];
+  stats.forEach(([name, v, txt], i) => { // barras como cargadores de balas, con el número exacto
+    const y = PT + 122 + i * 19, n = Math.round(clamp(v, 0.1, 1) * 10);
+    ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(11); ctx.fillText(name, DX, y);
+    for (let j = 0; j < 10; j++) { ctx.fillStyle = j < n ? '#55602a' : 'rgba(80,70,40,.18)'; ctx.beginPath(); ctx.roundRect(DX + 78 + j * 11, y - 5, 9, 10, 2); ctx.fill(); }
+    ctx.fillStyle = '#2a2010'; ctx.font = typeFont(11); ctx.textAlign = 'right'; ctx.fillText(txt, PL + 422, y); ctx.textAlign = 'left';
+  });
+  // habilidad e historia, a lo ancho de la hoja
+  let y = PT + 222;
+  ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(12); ctx.fillText('HABILIDAD:', PL + 18, y);
+  ctx.fillStyle = '#2a2010'; ctx.font = typeFont(12, false);
+  const dl = wrapLines(c.desc, 312);
+  dl.forEach((l, i) => ctx.fillText(l, PL + 104, y + i * 15));
+  y += 26 + (dl.length - 1) * 15;
+  ctx.fillStyle = '#4a3a1a'; ctx.font = typeFont(12); ctx.fillText('HISTORIA:', PL + 18, y);
+  const room = PT + 392 - (y + 14); // espacio que queda en la hoja
+  let size = 13, lines;
+  do { ctx.font = typeFont(size, false); lines = wrapLines(lore, 398); } while (lines.length * (size + 3) > room && --size > 10);
+  ctx.fillStyle = '#2a2010';
+  lines.forEach((l, i) => ctx.fillText(l, PL + 18, y + 20 + i * (size + 3)));
+  ctx.restore();
 }
 function drawSelect() {
   drawBarracks();
