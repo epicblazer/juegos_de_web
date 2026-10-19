@@ -1,0 +1,212 @@
+[
+  {
+    "file": "objeto_00.png",
+    "name": "Cebolla de Isaac",
+    "desc": "¡Cadencia y daño arriba!",
+    "kind": "normal",
+    "color": "#e8c070"
+  },
+  {
+    "file": "objeto_01.png",
+    "name": "Ración de Combate",
+    "desc": "+1 contenedor de corazón",
+    "kind": "normal",
+    "color": "#c33"
+  },
+  {
+    "file": "objeto_02.png",
+    "name": "Granada de Mano",
+    "desc": "¡Daño arriba!",
+    "kind": "normal",
+    "color": "#55602a"
+  },
+  {
+    "file": "objeto_03.png",
+    "name": "Ametralladora",
+    "desc": "¡Cadencia MUY arriba!",
+    "kind": "normal",
+    "color": "#666"
+  },
+  {
+    "file": "objeto_04.png",
+    "name": "Botas de Combate",
+    "desc": "¡Velocidad arriba!",
+    "kind": "normal",
+    "color": "#6a4320"
+  },
+  {
+    "file": "objeto_05.png",
+    "name": "Mira Telescópica",
+    "desc": "¡Alcance y velocidad de disparo!",
+    "kind": "normal",
+    "color": "#88c"
+  },
+  {
+    "file": "objeto_06.png",
+    "name": "Triple Cañón",
+    "desc": "¡Disparo triple!",
+    "kind": "normal",
+    "color": "#d90"
+  },
+  {
+    "file": "objeto_07.png",
+    "name": "Champiñón Rojo",
+    "desc": "+1 corazón y curación (Mario)",
+    "kind": "normal",
+    "color": "#e22"
+  },
+  {
+    "file": "objeto_08.png",
+    "name": "Flor de Fuego",
+    "desc": "Lágrimas de fuego que rebotan (Mario)",
+    "kind": "normal",
+    "color": "#f80"
+  },
+  {
+    "file": "objeto_09.png",
+    "name": "Súper Estrella",
+    "desc": "¡Invencible 10 segundos! (Mario)",
+    "kind": "normal",
+    "color": "#ff0"
+  },
+  {
+    "file": "objeto_10.png",
+    "name": "Espada Maestra",
+    "desc": "Daño arriba + atraviesa (Zelda)",
+    "kind": "normal",
+    "color": "#9cf"
+  },
+  {
+    "file": "objeto_11.png",
+    "name": "Anillos Dorados",
+    "desc": "Velocidad y cadencia (Sonic)",
+    "kind": "normal",
+    "color": "#fc0"
+  },
+  {
+    "file": "objeto_12.png",
+    "name": "Pico de Diamante",
+    "desc": "¡Gran daño arriba! (Minecraft)",
+    "kind": "normal",
+    "color": "#3ee"
+  },
+  {
+    "file": "objeto_13.png",
+    "name": "Tanque de Energía",
+    "desc": "+2 contenedores (Metroid)",
+    "kind": "normal",
+    "color": "#c3c"
+  },
+  {
+    "file": "objeto_14.png",
+    "name": "Misiles",
+    "desc": "Disparos teledirigidos (Metroid)",
+    "kind": "normal",
+    "color": "#f55"
+  },
+  {
+    "file": "objeto_15.png",
+    "name": "Cereza Power",
+    "desc": "Vida llena y cadencia (Pac-Man)",
+    "kind": "normal",
+    "color": "#d00"
+  },
+  {
+    "file": "objeto_16.png",
+    "name": "Pacto de Sangre",
+    "desc": "¡Daño MUY arriba!",
+    "kind": "diablo",
+    "color": "#8a0000"
+  },
+  {
+    "file": "objeto_17.png",
+    "name": "Cuernos del Diablo",
+    "desc": "Daño y velocidad arriba",
+    "kind": "diablo",
+    "color": "#5a0a0a"
+  },
+  {
+    "file": "objeto_18.png",
+    "name": "Tridente Infernal",
+    "desc": "Lágrimas infernales que atraviesan",
+    "kind": "diablo",
+    "color": "#c02000"
+  },
+  {
+    "file": "objeto_19.png",
+    "name": "Libro de Belial",
+    "desc": "Daño arriba + lágrimas infernales",
+    "kind": "diablo",
+    "color": "#3a0a0a"
+  },
+  {
+    "file": "objeto_20.png",
+    "name": "Ojo del Abismo",
+    "desc": "Disparos teledirigidos + daño",
+    "kind": "diablo",
+    "color": "#600030"
+  },
+  {
+    "file": "objeto_21.png",
+    "name": "Ala de Murciélago",
+    "desc": "Velocidad y cadencia arriba",
+    "kind": "diablo",
+    "color": "#2a1a2a"
+  },
+  {
+    "file": "objeto_22.png",
+    "name": "Cáliz Maldito",
+    "desc": "Disparo triple + daño",
+    "kind": "diablo",
+    "color": "#7a1010"
+  },
+  {
+    "file": "objeto_23.png",
+    "name": "Aureola",
+    "desc": "¡Todo arriba!",
+    "kind": "angel",
+    "color": "#ffe680"
+  },
+  {
+    "file": "objeto_24.png",
+    "name": "Alas de Serafín",
+    "desc": "Velocidad y cadencia arriba",
+    "kind": "angel",
+    "color": "#f4f4ff"
+  },
+  {
+    "file": "objeto_25.png",
+    "name": "Lágrima Sagrada",
+    "desc": "Lágrimas de luz que atraviesan",
+    "kind": "angel",
+    "color": "#fff6c0"
+  },
+  {
+    "file": "objeto_26.png",
+    "name": "Manto Celestial",
+    "desc": "+2 contenedores y vida llena",
+    "kind": "angel",
+    "color": "#a8d8ff"
+  },
+  {
+    "file": "objeto_27.png",
+    "name": "Escudo Divino",
+    "desc": "Bloquea el primer golpe de cada sala",
+    "kind": "angel",
+    "color": "#ffd700"
+  },
+  {
+    "file": "objeto_28.png",
+    "name": "Rosario",
+    "desc": "Cadencia arriba y vida llena",
+    "kind": "angel",
+    "color": "#d0c0a0"
+  },
+  {
+    "file": "objeto_29.png",
+    "name": "Pluma de Ángel",
+    "desc": "Alcance y velocidad de disparo arriba",
+    "kind": "angel",
+    "color": "#ffffff"
+  }
+]
